@@ -1,0 +1,99 @@
+#!/usr/bin/python
+#
+# BLAH GPL BLAH
+#
+# Copyright 2012 Red Hat Inc.
+#
+# Author: Will Woods <wwoods@redhat.com>
+
+import os, sys, time
+
+from fedup.download import FedupDownloader, YumBaseError
+from fedup.upgrade import FedupUpgrade, TransactionError
+
+import logging
+
+class MyFormatter(logging.Formatter):
+    levelsyms = {
+        logging.DEBUG:   '(DD)',
+        logging.INFO:    '(II)',
+        logging.WARNING: '(WW)',
+        logging.ERROR:   '(EE)',
+        logging.CRITICAL:'(CC)',
+        logging.FATAL:   '(FF)',
+    }
+    def format(self, record):
+        record.reltime = float(record.relativeCreated / 1000)
+        record.levelsym = self.levelsyms.get(record.levelno, '(--)')
+        return logging.Formatter.format(self, record)
+
+log = logging.getLogger("fedup")
+log.setLevel(logging.DEBUG)
+logformat = MyFormatter("[%(reltime)10.3f] %(levelsym)s %(name)s:%(funcName)s() %(message)s")
+fh = logging.FileHandler("fedup.log")
+fh.setLevel(logging.DEBUG)
+sh = logging.StreamHandler()
+sh.setLevel(logging.WARNING)
+fh.setFormatter(logformat)
+sh.setFormatter(logformat)
+log.addHandler(fh)
+log.addHandler(sh)
+
+_ = lambda x: x # TODO: i18n
+
+from fedup import textoutput as output
+
+def download_pkgs(version):
+    print "setting up downloader"
+    f = FedupDownloader(version=version)
+    repo_cb = output.RepoCallback()
+    repo_prog = output.RepoProgress(fo=sys.stdout)
+    f.check_repos(callback=repo_cb, progressbar=repo_prog)
+
+    print "looking for packages to update"
+    depsolve_cb = output.DepsolveCallback(f)
+    updates = f.build_update_transaction(callback=depsolve_cb)
+    print "%u updates found." % len(updates)
+
+    print "downloading packages..."
+    problems = f.downloadPkgs(updates)
+    # TODO: do something with problems
+
+    log.info("scrubbing unneeded packages from cache")
+    f.clean_cache()
+
+    return set(po.localPkg() for po in updates)
+
+def transaction_test(pkgs):
+    print "setting up upgrade transaction test"
+    fu = FedupUpgrade()
+    callback = output.TransactionCallback(numpkgs=len(pkgs))
+    fu.setup_transaction(pkgfiles=pkgs)
+    return fu.test_transaction(callback=callback)
+
+def main():
+    log.info("%s starting at %s", sys.argv[0], time.asctime())
+    # depsolve & download
+    pkgs = download_pkgs(version="18") # or "rawhide"
+    # TODO: checkpoint - don't depsolve again (until timeout)
+    # transaction test
+    rv = transaction_test(pkgs)
+    log.info("transaction_test returned %s" % rv)
+
+
+if __name__ == '__main__':
+    try:
+        main()
+    except KeyboardInterrupt:
+        log.info("exiting on keyboard interrupt")
+        raise SystemExit(1)
+    except YumBaseError as e:
+        print "Downloading failed: %s" % e
+        raise SystemExit(2)
+    except TransactionError as e:
+        print "Transaction test failed with the following problems:"
+        for p in e.problems:
+            print p
+        raise SystemExit(3)
+    finally:
+        log.info("%s exiting", sys.argv[0])
