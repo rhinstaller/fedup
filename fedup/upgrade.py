@@ -99,6 +99,7 @@ class FedupUpgrade(object):
             rpm.setLogFile(self.rpmlog)
         # run transaction
         assert callable(callback.callback)
+        # TODO raise error here if rv != 0?
         return self.ts.run(callback.callback, None,
                             ~rpm.RPMPROB_FILTER_DISKSPACE)
 

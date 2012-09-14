@@ -7,7 +7,7 @@ import rpm
 sys.path.insert(0, '/usr/share/yum-cli')
 from output import YumTextMeter, CacheProgressCallback
 
-from fedup.callback import RPMTsCallback, DepsolveCallbackBase
+from fedup.callback import *
 
 # TODO i18n
 _ = lambda x: x
@@ -30,7 +30,7 @@ class SimpleProgress(object):
                  update_interval=0.3, width_interval=1.0, tty=sys.stdout):
         self.maxval = maxval
         self.curval = 0
-        self.formatstr = "{0.prefix}{0.percent:2}% {0.bar}"
+        self.formatstr = "{0.prefix} {0.percent:2}% {0.bar}"
         self.barstyle = barstyle
         self.prefix = prefix
         # update screen at a certain interval
@@ -88,11 +88,11 @@ class RepoProgress(YumTextMeter):
     pass
 
 class RepoCallback(object):
-    def __init__(self, prefix="repo ", tty=sys.stderr):
+    def __init__(self, prefix="repo", tty=sys.stderr):
         self._pb = SimpleProgress(0, prefix=prefix, tty=tty)
     def progressbar(self, current, total, name=None):
         if name:
-            self._pb.prefix = "repo (%s) " % name
+            self._pb.prefix = "repo (%s)" % name
         self._pb.maxval = total
         self._pb.update(current)
     def __del__(self):
@@ -103,8 +103,8 @@ class DepsolveCallback(DepsolveCallbackBase):
         DepsolveCallbackBase.__init__(self, yumobj)
         self.progressbar = None
         if yumobj and tty:
-            self.progressbar = SimpleProgress(self.installed_packages,
-                                              prefix="depsolving: ", tty=tty)
+            self.progressbar = SimpleProgress(self.installed_packages, tty=tty,
+                                              prefix=_("finding updates"))
 
     def pkgAdded(self, tup, mode):
         DepsolveCallbackBase.pkgAdded(self, tup, mode)
@@ -117,12 +117,25 @@ class DepsolveCallback(DepsolveCallbackBase):
             self.progressbar.finish()
             self.progressbar = None
 
+class DownloadCallback(DownloadCallbackBase):
+    def __init__(self, tty=sys.stderr):
+        DownloadCallbackBase.__init__(self)
+        self.bar = SimpleProgress(0, tty=tty, prefix=_("verify local files"))
+
+    def verify(self, amount, total, filename, data):
+        DownloadCallbackBase.verify(self, amount, total, filename, data)
+        if self.bar.maxval == 0:
+            self.bar.maxval = total
+        self.bar.update(amount)
+        if amount+1 >= total:
+            self.bar.finish()
+
 class TransactionCallback(RPMTsCallback):
     def __init__(self, numpkgs=0, tty=sys.stderr, prefix="rpm"):
         RPMTsCallback.__init__(self)
         self.numpkgs = numpkgs
         self.donepkgs = 0
-        self.progressbar = SimpleProgress(0, prefix="rpm transaction ", tty=tty)
+        self.progressbar = SimpleProgress(0, prefix="rpm transaction", tty=tty)
     def trans_start(self, amount, total, key, data):
         if amount != 6:
             log.warn("weird: trans_start() with amount != 6")
@@ -136,7 +149,7 @@ class TransactionCallback(RPMTsCallback):
         log.info("installing %s (%u/%u)", os.path.basename(key),
                                           self.donepkgs+1, self.numpkgs)
         if self.donepkgs == 0:
-            self.progressbar.prefix = "rpm install "
+            self.progressbar.prefix = "rpm install"
             self.progressbar.maxval = self.numpkgs
         self.progressbar.update(self.donepkgs)
         return RPMTsCallback.inst_open_file(self, amount, total, key, data)

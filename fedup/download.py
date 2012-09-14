@@ -34,6 +34,7 @@ class FedupDownloader(yum.YumBase):
             self.preconf.releasever = version
         self.prerepoconf.cachedir = cachedir
         # TODO: locking to prevent multiple instances
+        # TODO: override logging objects so we get yum logging
 
     def _getConfig(self):
         conf = yum.YumBase._getConfig(self)
@@ -41,6 +42,7 @@ class FedupDownloader(yum.YumBase):
         return conf
 
     def check_repos(self, callback=None, progressbar=None):
+        # FIXME invalidate cache if the version doesn't match previous version
         log.info("checking repos")
         disabled_repos = []
         self.repos.setProgressBar(progressbar)
@@ -74,9 +76,20 @@ class FedupDownloader(yum.YumBase):
         return [t.po for t in self.tsInfo.getMembers()
                      if t.ts_state in ("i", "u")]
 
-    def clean_cache(self):
-        installpkgs = set(t.po.localPkg() for t in self.tsInfo.getMembers()
-                                          if t.ts_state in ("i", "u"))
+    def download_packages(self, pkgs, callback=None):
+        localpkgs = [p for p in pkgs if os.path.exists(p.localPkg())]
+        total = len(localpkgs)
+        for num, p in enumerate(localpkgs):
+            local = p.localPkg()
+            if hasattr(callback, "verify") and callable(callback.verify):
+                callback.verify(num, total, local, None)
+            ok = self.verifyPkg(local, p, False) # result will be cached by yum
+        log.info("beginning package download...")
+        updates = self._downloadPackages(callback)
+        self.clean_cache(updates)
+        # TODO check signatures of downloaded packages
+
+    def clean_cache(self, installpkgs):
         for repo in self.repos.repos.values():
             log.info("checking %i for unneeded packages", repo.id)
             # TODO: just return if the pkgdir is actually on a CD

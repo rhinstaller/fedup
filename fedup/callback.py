@@ -5,6 +5,7 @@
 import rpm
 import logging
 from rpmUtils.miscutils import formatRequire
+from yum.callbacks import ProcessTransBaseCallback
 
 log = logging.getLogger("fedup.callback")
 
@@ -63,6 +64,21 @@ class RPMTsCallback(BaseTsCallback):
 
     def inst_close_file(self, amount, total, filename, data):
         self.closefile(filename)
+
+class DownloadCallbackBase(ProcessTransBaseCallback):
+    def __init__(self):
+        ProcessTransBaseCallback.__init__(self)
+        self.logger = logging.getLogger("fedup.download")
+
+    # for Yum transaction callbacks (i.e. YumBase.processTransaction stuff)
+    def event(self, state, data=None):
+        ProcessTransBaseCallback.event(self, state, data)
+
+    # our 'verify' callback in download_packages (yum doesn't have one :/)
+    def verify(self, amount, total, filename, data):
+        shortname = filename.split('/')[-1]
+        log.debug("verifying %u/%u %s", amount+1, total, shortname)
+
 
 # callback object for depsolving
 
