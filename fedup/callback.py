@@ -7,8 +7,6 @@ import logging
 from rpmUtils.miscutils import formatRequire
 from yum.callbacks import ProcessTransBaseCallback
 
-log = logging.getLogger("fedup.callback")
-
 # callback objects for RPM transactions
 
 class BaseTsCallback(object):
@@ -22,14 +20,14 @@ class BaseTsCallback(object):
 
     def __init__(self):
         self._openfds = dict()
-        self.log = logging.getLogger("fedup.rpmcallback")
+        self.log = logging.getLogger("fedup.rpm")
 
     def callback(self, what, amount, total, key, data):
         if what not in self.callback_map:
-            self.log.debug("Ignoring unknown callback number %i", what)
+            self.log.info("Ignoring unknown callback number %i", what)
             return
         name = self.callback_map[what]
-        self.log.debug("%s(%s, %s, %s, %s)", name, amount, total, key, data)
+        #self.log.debug("%s(%s, %s, %s, %s)", name, amount, total, key, data)
         func = getattr(self, name, None)
         if callable(func):
             return func(amount, total, key, data)
@@ -68,7 +66,7 @@ class RPMTsCallback(BaseTsCallback):
 class DownloadCallbackBase(ProcessTransBaseCallback):
     def __init__(self):
         ProcessTransBaseCallback.__init__(self)
-        self.logger = logging.getLogger("fedup.download")
+        self.log = logging.getLogger("fedup.download")
 
     # for Yum transaction callbacks (i.e. YumBase.processTransaction stuff)
     def event(self, state, data=None):
@@ -77,7 +75,7 @@ class DownloadCallbackBase(ProcessTransBaseCallback):
     # our 'verify' callback in download_packages (yum doesn't have one :/)
     def verify(self, amount, total, filename, data):
         shortname = filename.split('/')[-1]
-        log.debug("verifying %u/%u %s", amount+1, total, shortname)
+        self.log.debug("verifying %u/%u %s", amount+1, total, shortname)
 
 
 # callback object for depsolving
@@ -107,7 +105,7 @@ class DepsolveCallbackBase(object):
     def tscheck(self):
         self.log.debug('running transaction check')
     def restartLoop(self):
-        self.log.debug('restarting depsolve')
+        eelf.log.debug('restarting depsolve')
     def end(self):
         self.log.debug('finished depsolve')
         self.log.debug('%u updates for %u packages',

@@ -30,7 +30,6 @@ def download_pkgs(version):
     print "setting up update..."
     updates = f.build_update_transaction(callback=output.DepsolveCallback(f))
     f.download_packages(updates, callback=output.DownloadCallback())
-    f.clean_cache()
 
     return set(po.localPkg() for po in updates)
 
@@ -40,20 +39,21 @@ def transaction_test(pkgs):
     fu.setup_transaction(pkgfiles=pkgs)
     fu.test_transaction(callback=output.TransactionCallback(numpkgs=len(pkgs)))
 
+def prep_upgrade(pkgs):
+    # FIXME: link packages into package dir
+    # FIXME: modify bootloader config (grub2-reboot)
+    # FIXME: reboot
+    pass
+
 def main():
     log.info("%s starting at %s", sys.argv[0], time.asctime())
-    # depsolve & download
-    pkgs = download_pkgs(version="18") # or "rawhide"
-    # TODO: checkpoint - don't depsolve again (until timeout)
-    # transaction test
-    transaction_test(pkgs)
-    # TODO: fetch kernel & initrd
-    # TODO: modify bootloader config
-    # TODO: reboot
-
-if __name__ == '__main__':
+    # FIXME: log exception
     try:
-        main()
+        pkgs = download_pkgs(version="18") # or "rawhide"
+        # TODO: checkpoint - don't depsolve again (until timeout)
+        # FIXME: fetch kernel & initrd
+        transaction_test(pkgs)
+        prep_upgrade(pkgs)
     except KeyboardInterrupt:
         print
         log.info("exiting on keyboard interrupt")
@@ -75,6 +75,7 @@ if __name__ == '__main__':
             print p
         raise SystemExit(3)
     finally:
-        def theend():
-            log.info("%s exiting", sys.argv[0])
-        theend()
+        log.info("%s exiting at %s", sys.argv[0], time.asctime())
+
+if __name__ == '__main__':
+    main()

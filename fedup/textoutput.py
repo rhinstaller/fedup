@@ -89,7 +89,7 @@ class RepoProgress(YumTextMeter):
 
 class RepoCallback(object):
     def __init__(self, prefix="repo", tty=sys.stderr):
-        self._pb = SimpleProgress(0, prefix=prefix, tty=tty)
+        self._pb = SimpleProgress(10, prefix=prefix, tty=tty)
     def progressbar(self, current, total, name=None):
         if name:
             self._pb.prefix = "repo (%s)" % name
@@ -120,11 +120,11 @@ class DepsolveCallback(DepsolveCallbackBase):
 class DownloadCallback(DownloadCallbackBase):
     def __init__(self, tty=sys.stderr):
         DownloadCallbackBase.__init__(self)
-        self.bar = SimpleProgress(0, tty=tty, prefix=_("verify local files"))
+        self.bar = SimpleProgress(10, tty=tty, prefix=_("verify local files"))
 
     def verify(self, amount, total, filename, data):
         DownloadCallbackBase.verify(self, amount, total, filename, data)
-        if self.bar.maxval == 0:
+        if self.bar.maxval != total:
             self.bar.maxval = total
         self.bar.update(amount)
         if amount+1 >= total:
@@ -135,7 +135,7 @@ class TransactionCallback(RPMTsCallback):
         RPMTsCallback.__init__(self)
         self.numpkgs = numpkgs
         self.donepkgs = 0
-        self.progressbar = SimpleProgress(0, prefix="rpm transaction", tty=tty)
+        self.progressbar = SimpleProgress(10, prefix="rpm transaction", tty=tty)
     def trans_start(self, amount, total, key, data):
         if amount != 6:
             log.warn("weird: trans_start() with amount != 6")

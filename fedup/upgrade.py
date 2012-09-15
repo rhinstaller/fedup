@@ -4,6 +4,9 @@
 import rpm
 from rpm._rpm import ts as TransactionSetCore
 
+import os, tempfile
+from threading import Thread
+
 import logging
 log = logging.getLogger('fedup.upgrade')
 
@@ -60,16 +63,41 @@ class TransactionError(FedupError):
     def __init__(self, problems):
         self.problems = problems
 
+def pipelogger(pipe, level=logging.INFO):
+    logger = logging.getLogger("fedup.rpm")
+    logger.info("opening pipe")
+    with open(pipe, 'r') as fd:
+        for line in fd:
+            if line.startswith('D: '):
+                logger.debug(line[3:].rstrip())
+            else:
+                logger.log(thislevel, line.rstrip())
+        logger.info("got EOF")
+    logger.info("exiting")
+
+logging_to_rpm = {
+    logging.DEBUG:      rpm.RPMLOG_DEBUG,
+    logging.INFO:       rpm.RPMLOG_INFO,
+    logging.WARNING:    rpm.RPMLOG_WARNING,
+    logging.ERROR:      rpm.RPMLOG_ERR,
+    logging.CRITICAL:   rpm.RPMLOG_CRIT,
+}
+
 class FedupUpgrade(object):
-    def __init__(self, root='/', rpmlog=None, scriptlog=None):
+    def __init__(self, root='/', logpipe=True, rpmloglevel=logging.INFO):
         self.root = root
-        self.rpmlog = rpmlog
-        self.scriptlog = scriptlog
         self.ts = None
+        self.logpipe = None
+        rpm.setVerbosity(logging_to_rpm[rpmloglevel])
+        if logpipe:
+            self.logpipe = self.openpipe()
 
     def setup_transaction(self, pkgfiles, check_fatal=False):
+        log.debug("starting")
         # initialize a transaction set
         self.ts = TransactionSet(self.root, rpm._RPMVSF_NOSIGNATURES)
+        if self.logpipe:
+            self.ts.scriptFd = self.logpipe.fileno()
         # populate the transaction set
         for pkg in pkgfiles:
             try:
@@ -91,17 +119,37 @@ class FedupUpgrade(object):
         self.ts.clean()
         log.debug('transaction is ready')
 
+    def openpipe(self):
+        log.debug("creating log pipe")
+        pipefile = tempfile.mktemp(prefix='fedup-rpm-log.')
+        os.mkfifo(pipefile, 0600)
+        log.debug("starting logging thread")
+        pipethread = Thread(target=pipelogger, name='pipelogger',
+                                 args=(pipefile,))
+        pipethread.daemon = True
+        pipethread.start()
+        log.debug("opening log pipe")
+        pipe = open(pipefile, 'w')
+        rpm.setLogFile(pipe)
+        return pipe
+
+    def closepipe(self):
+        log.debug("closing log pipe")
+        rpm.setVerbosity(rpm.RPMLOG_WARNING)
+        rpm.setLogFile(None)
+        if self.ts:
+            self.ts.scriptFd = None
+        self.logpipe.close()
+        os.remove(self.logpipe.name)
+        self.logpipe = None
+
     def run_transaction(self, callback):
-        # set up script logging
-        if self.scriptlog:
-            self.ts.scriptFd = open(self.scriptlog, 'w').fileno()
-        if self.rpmlog:
-            rpm.setLogFile(self.rpmlog)
-        # run transaction
         assert callable(callback.callback)
-        # TODO raise error here if rv != 0?
-        return self.ts.run(callback.callback, None,
-                            ~rpm.RPMPROB_FILTER_DISKSPACE)
+        probfilter = ~rpm.RPMPROB_FILTER_DISKSPACE
+        rv = self.ts.run(callback.callback, None, probfilter)
+        if rv != 0:
+            log.info("ts completed with problems - code %u", rv)
+        return rv
 
     def test_transaction(self, callback):
         self.ts.flags = rpm.RPMTRANS_FLAG_TEST
@@ -109,3 +157,7 @@ class FedupUpgrade(object):
             return self.run_transaction(callback)
         finally:
             self.ts.flags &= ~rpm.RPMTRANS_FLAG_TEST
+
+    def __del__(self):
+        if self.logpipe:
+            self.closepipe()

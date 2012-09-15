@@ -17,7 +17,8 @@ cachedir="/var/tmp/fedora-upgrade"
 log = logging.getLogger("fedup.yum")
 
 def listdir(d):
-    return [os.path.join(d, f) for f in os.listdir(d)]
+    for f in os.listdir(d):
+        yield os.path.join(d, f)
 
 class FedupDownloader(yum.YumBase):
     '''Yum-based downloader class for fedup. Based roughly on AnacondaYum.'''
@@ -48,8 +49,6 @@ class FedupDownloader(yum.YumBase):
         self.repos.setProgressBar(progressbar)
         self.repos.callback = callback
         for repo in self.repos.listEnabled():
-            log.info("checking %s..." % repo.id)
-            #repo.setCallback(callback)
             try:
                 md_types = repo.repoXML.fileTypes()
             except yum.Errors.RepoError:
@@ -59,8 +58,8 @@ class FedupDownloader(yum.YumBase):
             else:
                 log.info("repo %s seems OK" % repo.id)
         if disabled_repos:
-            log.warn("No upgrade available for the following repos:")
-            log.warn(" ".join(disabled_repos))
+            log.warn("No upgrade available for the following repos: %s",
+                     " ".join(disabled_repos))
 
     # NOTE: could raise RepoError if metadata is missing/busted
     def build_update_transaction(self, callback=None):
@@ -77,6 +76,11 @@ class FedupDownloader(yum.YumBase):
                      if t.ts_state in ("i", "u")]
 
     def download_packages(self, pkgs, callback=None):
+        # Verifying a full upgrade payload of ~2000 pkgs takes a good 90-120
+        # seconds with no callback. Unacceptable!
+        # So: here we have our own verifyPkg loop, with callback.
+        # The results get cached, so when yum does it again in the real
+        # _downloadPackages function it's a negligible delay.
         localpkgs = [p for p in pkgs if os.path.exists(p.localPkg())]
         total = len(localpkgs)
         for num, p in enumerate(localpkgs):
@@ -86,17 +90,25 @@ class FedupDownloader(yum.YumBase):
             ok = self.verifyPkg(local, p, False) # result will be cached by yum
         log.info("beginning package download...")
         updates = self._downloadPackages(callback)
-        self.clean_cache(updates)
+        if set(updates) != set(pkgs):
+            log.debug("differences between requested pkg set and downloaded:")
+            for p in set(pkgs).difference(updates):
+                log.debug("  -%s", p)
+            for p in set(updates).difference(pkgs):
+                log.debug("  +%s", p)
+        self.clean_cache(p.localPkg() for p in updates)
         # TODO check signatures of downloaded packages
 
     def clean_cache(self, installpkgs):
-        for repo in self.repos.repos.values():
-            log.info("checking %i for unneeded packages", repo.id)
-            # TODO: just return if the pkgdir is actually on a CD
-            for f in listdir(repo.pkgdir):
-                if f.endswith(".rpm") and f not in installpkgs:
-                    try:
-                        log.debug("removing %s", f)
-                        os.remove(f)
-                    except IOError as e:
-                        log.info("failed to remove %s", f)
+        log.info("checking for unneeded rpms in cache")
+        # Only clean stuff that's not on media
+        repos = [r for r in self.repos.repos.values() if r.mediaid is None]
+        # Find all the packages in the caches
+        localpkgs = set(f for r in self.repos.listEnabled() if not r.mediaid
+                          for f in listdir(r.pkgdir) if f.endswith(".rpm"))
+        for f in localpkgs.difference(installpkgs):
+            try:
+                log.debug("removing %s", f)
+                #os.remove(f)
+            except IOError as e:
+                log.info("failed to remove %s", f)
