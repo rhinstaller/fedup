@@ -8,7 +8,7 @@ check() {
 # pull in any other "system-upgrade-*" modules that exist
 depends() {
     local mod_dir mod
-    for mod_dir in $moddir/../[0-9][0-9]*; do
+    for mod_dir in $dracutbasedir/modules.d/[0-9][0-9]*; do
         [ -d $mod_dir ] || continue
         mod=${mod_dir##*/[0-9][0-9]}
         strstr "$mod" "system-upgrade-" && echo $mod
