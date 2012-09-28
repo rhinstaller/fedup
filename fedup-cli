@@ -19,7 +19,7 @@ log = logging.getLogger("fedup")
 fedup.logutils.debuglog("fedup.log") # FIXME: better dir for this
 fedup.logutils.consolelog()          # FIXME: control output with cli args
 
-from gettext import gettext as _
+from fedup import _
 
 def download_pkgs(version):
     print "setting up repos..."

@@ -10,7 +10,7 @@ from threading import Thread
 import logging
 log = logging.getLogger('fedup.upgrade')
 
-_ = lambda x: x # FIXME i18n
+from fedup import _
 
 class TransactionSet(TransactionSetCore):
     flags = TransactionSetCore._flags

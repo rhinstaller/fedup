@@ -4,3 +4,6 @@
 import logging
 log = logging.getLogger("fedup")
 log.addHandler(logging.NullHandler())
+
+import gettext
+_ = lambda x: gettext.ldgettext("fedup", x)

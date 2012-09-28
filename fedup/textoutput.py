@@ -9,8 +9,7 @@ from output import YumTextMeter, CacheProgressCallback
 
 from fedup.callback import *
 
-# TODO i18n
-_ = lambda x: x
+from fedup import _
 
 import logging
 log = logging.getLogger("fedup.cli")
