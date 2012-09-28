@@ -7,18 +7,19 @@
 # Author: Will Woods <wwoods@redhat.com>
 
 import os, sys, time
+import argparse, platform
+from subprocess import call
 
 from fedup.download import FedupDownloader, YumBaseError
 from fedup.upgrade import FedupUpgrade, TransactionError
+from fedup import textoutput as output
 
 import logging, fedup.logutils
 log = logging.getLogger("fedup")
 fedup.logutils.debuglog("fedup.log") # FIXME: better dir for this
 fedup.logutils.consolelog()          # FIXME: control output with cli args
 
-_ = lambda x: x # TODO: i18n
-
-from fedup import textoutput as output
+from gettext import gettext as _
 
 def download_pkgs(version):
     print "setting up repos..."
@@ -29,6 +30,7 @@ def download_pkgs(version):
 
     print "setting up update..."
     updates = f.build_update_transaction(callback=output.DepsolveCallback(f))
+    # TODO: checkpoint - write update list somewhere and skip depsolving
     f.download_packages(updates, callback=output.DownloadCallback())
 
     return set(po.localPkg() for po in updates)
@@ -40,20 +42,85 @@ def transaction_test(pkgs):
     fu.test_transaction(callback=output.TransactionCallback(numpkgs=len(pkgs)))
 
 def prep_upgrade(pkgs):
-    # FIXME: link packages into package dir
+    # FIXME: empty package dir
+    for p in pkgs:
+        # FIXME: link packages into package dir
+        pass
     # FIXME: modify bootloader config (grub2-reboot)
-    # FIXME: reboot
-    pass
 
-def main():
+def reboot():
+    call(['systemctl', 'reboot'])
+
+def get_versions():
+    '''Possible versions to upgrade to. Given Fedora N, this is N+1 and N+2.'''
+    distro, version, id = platform.linux_distribution()
+    version = int(version)
+    return [str(version+1), str(version+2)]
+
+def parse_args():
+    p = argparse.ArgumentParser(
+        description=_('Prepare system for upgrade.'),
+        usage=_('%(prog)s SOURCE [options]'),
+    )
+
+    p.add_argument('--reboot', action='store_true', default=False,
+        help=_('Automatically reboot to start the upgrade when ready'))
+    p.add_argument('--sshd', action='store_true', default=False,
+        #help=_('Enable sshd during the upgrade (for remote monitoring)'))
+        help='[TODO] '+_('Enable sshd during the upgrade (for remote monitoring)'))
+
+    req = p.add_argument_group('SOURCE',
+                               _('Specify the location of the upgrade data.'))
+    req.add_argument('--iso',
+        help='[TODO] '+_('Installation image file'))
+    req.add_argument('--device', metavar=_('DEVICE'),
+        help='[TODO] '+_('Installation image on device (DVD, USB, etc.)'))
+    req.add_argument('--network', metavar=_('VERSION'), nargs='?',
+        const='latest', choices=['latest', 'rawhide'] + get_versions(),
+        help=_('Download VERSION from the network (default: newest release)'))
+
+    #net = p.add_argument_group(_('optional arguments for --network'))
+    #net.add_argument('--disablerepo', metavar='REPO', action='append',
+    #    help=_('Repositories to disable for network upgrade'))
+    #net.add_argument('--enablerepo', metavar='REPO', action='append',
+    #    help=_('Repositories to enable for network upgrade'))
+    # TODO: arbitrary repos with --repourl
+
+    args = p.parse_args()
+
+    if not args.network or args.device or args.iso:
+        p.error(_('One of (--network, --device, --iso) is required.'))
+
+    return args
+
+def main(args):
+    # Get our packages set up where we can use 'em
+    if args.network:
+        if args.network == 'latest':
+            # FIXME: fetch releases.txt to determine this
+            args.network = '18'
+        # TODO args.{enablerepo,disablerepo}
+        pkgs = download_pkgs(version=args.network)
+    else:
+        print "Upgrade from local media not implemented yet!"
+        raise SystemExit(255)
+
+    # FIXME: fetch kernel & initrd
+
+    # Run a test transaction
+    transaction_test(pkgs)
+
+    # And prepare for upgrade
+    prep_upgrade(pkgs)
+
+    if args.reboot:
+        reboot()
+
+if __name__ == '__main__':
+    args = parse_args()
     log.info("%s starting at %s", sys.argv[0], time.asctime())
-    # FIXME: log exception
     try:
-        pkgs = download_pkgs(version="18") # or "rawhide"
-        # TODO: checkpoint - don't depsolve again (until timeout)
-        # FIXME: fetch kernel & initrd
-        transaction_test(pkgs)
-        prep_upgrade(pkgs)
+        main(args)
     except KeyboardInterrupt:
         print
         log.info("exiting on keyboard interrupt")
@@ -75,7 +142,5 @@ def main():
             print p
         raise SystemExit(3)
     finally:
+        # FIXME: log exception
         log.info("%s exiting at %s", sys.argv[0], time.asctime())
-
-if __name__ == '__main__':
-    main()
