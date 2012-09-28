@@ -6,4 +6,5 @@ log = logging.getLogger("fedup")
 log.addHandler(logging.NullHandler())
 
 import gettext
-_ = lambda x: gettext.ldgettext("fedup", x)
+t = gettext.translation("fedup", "/usr/share/locale", fallback=True)
+_ = t.lgettext
