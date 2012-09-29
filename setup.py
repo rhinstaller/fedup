@@ -21,15 +21,16 @@ class Gettext(Command):
         name = self.distribution.get_name()
         version = self.distribution.get_version()
         email = self.distribution.get_author_email()
-        cmd = ['xgettext', '-j', '--default-domain', name, '--package-name', name,
+        cmd = ['xgettext', '--default-domain', name, '--package-name', name,
                '--package-version', version, '--msgid-bugs-address', email,
+               '--from-code', self.encoding,
                '--output', join(self.po_dir, name + '.pot')]
         if self.add_comments:
             cmd.append('--add-comments')
         check_call(cmd + opts)
 
     def run(self):
-        self._xgettext(['--language=Python', '-f', 'po/POTFILES.in'])
+        self._xgettext(['-f', 'po/POTFILES.in'])
 
 class Msgfmt(Command):
     description = "Generate po/*.mo from po/*.po"
