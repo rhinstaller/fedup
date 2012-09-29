@@ -47,8 +47,17 @@ class FedupDownloader(yum.YumBase):
         # FIXME invalidate cache if the version doesn't match previous version
         log.info("checking repos")
         disabled_repos = []
-        self.repos.setProgressBar(progressbar)
-        self.repos.callback = callback
+
+        # set up callbacks etc.
+        if hasattr(self, 'prerepoconf'):
+            self.prerepoconf.progressbar = progressbar
+            self.prerepoconf.callback = callback
+            if hasattr(callback, 'interrupt') and callable(callback.interrupt):
+                self.prerepoconf.interrupt_callback = callback.interrupt
+        else:
+            log.warn("check_repos called after repo setup")
+
+        # check repos
         for repo in self.repos.listEnabled():
             try:
                 md_types = repo.repoXML.fileTypes()

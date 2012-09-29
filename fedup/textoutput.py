@@ -86,7 +86,7 @@ class SimpleProgress(object):
 class RepoProgress(YumTextMeter):
     pass
 
-class RepoCallback(object):
+class RepoCallback(RepoCallbackBase):
     def __init__(self, prefix="repo", tty=sys.stderr):
         self._pb = SimpleProgress(10, prefix=prefix, tty=tty)
     def progressbar(self, current, total, name=None):
