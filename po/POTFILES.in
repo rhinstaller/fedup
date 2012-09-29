@@ -1,4 +1,6 @@
 fedup-cli.py
+fedup-gtk.py
 fedup/textoutput.py
 fedup/plymouthoutput.py
 fedup/upgrade.py
+ui/fedup.glade

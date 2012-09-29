@@ -1,0 +1,512 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <!-- interface-requires gtk+ 3.0 -->
+  <object class="GtkMessageDialog" id="nosourcedialog">
+    <property name="can_focus">False</property>
+    <property name="border_width">5</property>
+    <property name="resizable">False</property>
+    <property name="modal">True</property>
+    <property name="type_hint">dialog</property>
+    <property name="skip_taskbar_hint">True</property>
+    <property name="has_resize_grip">False</property>
+    <property name="message_type">error</property>
+    <property name="text" translatable="yes">No installation media could be found</property>
+    <property name="secondary_text" translatable="yes">Connect to the internet or insert installation media and try again.</property>
+    <child internal-child="vbox">
+      <object class="GtkBox" id="messagedialog-vbox">
+        <property name="can_focus">False</property>
+        <property name="orientation">vertical</property>
+        <property name="spacing">2</property>
+        <child internal-child="action_area">
+          <object class="GtkButtonBox" id="messagedialog-action_area">
+            <property name="can_focus">False</property>
+            <property name="layout_style">end</property>
+            <child>
+              <object class="GtkButton" id="retrybutton">
+                <property name="label" translatable="yes">_Retry</property>
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="receives_default">True</property>
+                <property name="use_underline">True</property>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="position">0</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkButton" id="quitbutton">
+                <property name="label">gtk-quit</property>
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="receives_default">True</property>
+                <property name="use_stock">True</property>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="position">1</property>
+              </packing>
+            </child>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="pack_type">end</property>
+            <property name="position">0</property>
+          </packing>
+        </child>
+      </object>
+    </child>
+    <action-widgets>
+      <action-widget response="0">retrybutton</action-widget>
+      <action-widget response="0">quitbutton</action-widget>
+    </action-widgets>
+  </object>
+  <object class="GtkTextBuffer" id="relnotebuffer">
+    <property name="text">Release notes go here.
+Yes.
+These are release notes.
+They go on for quite some time.
+They'll keep going long enough to make this window scroll, for certain, definitely, yes. This is scrolling. It is a long line. Wow.
+That's why there's so much dumb placeholder text here.
+Just to make sure the window scrolls like it should.
+Here's a bunch of dumb Unicode.
+☭
+♥
+¤
+©
+µ
+™
+§
+☺
+‽</property>
+  </object>
+  <object class="GtkMessageDialog" id="searchdialog">
+    <property name="can_focus">False</property>
+    <property name="border_width">5</property>
+    <property name="type">popup</property>
+    <property name="resizable">False</property>
+    <property name="modal">True</property>
+    <property name="window_position">center-on-parent</property>
+    <property name="destroy_with_parent">True</property>
+    <property name="type_hint">dialog</property>
+    <property name="skip_taskbar_hint">True</property>
+    <property name="transient_for">assistant</property>
+    <property name="attached_to">assistant</property>
+    <property name="buttons">cancel</property>
+    <property name="text" translatable="yes">Looking for installation media</property>
+    <child internal-child="vbox">
+      <object class="GtkBox" id="messagedialog-vbox3">
+        <property name="can_focus">False</property>
+        <property name="orientation">vertical</property>
+        <property name="spacing">2</property>
+        <child internal-child="action_area">
+          <object class="GtkButtonBox" id="messagedialog-action_area3">
+            <property name="can_focus">False</property>
+            <property name="layout_style">end</property>
+            <child>
+              <placeholder/>
+            </child>
+            <child>
+              <placeholder/>
+            </child>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="pack_type">end</property>
+            <property name="position">0</property>
+          </packing>
+        </child>
+      </object>
+    </child>
+  </object>
+  <object class="GtkListStore" id="srcliststore">
+    <columns>
+      <!-- column-name name -->
+      <column type="gchararray"/>
+      <!-- column-name iconname -->
+      <column type="gchararray"/>
+      <!-- column-name sourceid -->
+      <column type="gchararray"/>
+      <!-- column-name version -->
+      <column type="gchararray"/>
+    </columns>
+    <data>
+      <row>
+        <col id="0" translatable="yes">Install from DVD</col>
+        <col id="1">media-optical</col>
+        <col id="2" translatable="yes">dvd</col>
+      </row>
+      <row>
+        <col id="0" translatable="yes">Install from USB</col>
+        <col id="1">media-removable</col>
+        <col id="2" translatable="yes">usb</col>
+      </row>
+      <row>
+        <col id="0" translatable="yes">Download from network</col>
+        <col id="1">application-internet</col>
+        <col id="2" translatable="yes">net</col>
+      </row>
+    </data>
+  </object>
+  <object class="GtkAssistant" id="assistant">
+    <property name="width_request">440</property>
+    <property name="height_request">440</property>
+    <property name="can_focus">False</property>
+    <property name="title" translatable="yes">Fedora Upgrade</property>
+    <property name="window_position">center</property>
+    <property name="default_width">440</property>
+    <signal name="close" handler="close" swapped="no"/>
+    <signal name="cancel" handler="cancel" swapped="no"/>
+    <child>
+      <object class="GtkBox" id="sourcebox">
+        <property name="visible">True</property>
+        <property name="can_focus">False</property>
+        <property name="halign">center</property>
+        <property name="orientation">vertical</property>
+        <child>
+          <object class="GtkBox" id="sourceheaderbox">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="margin_top">10</property>
+            <child>
+              <object class="GtkImage" id="logo1">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="pixbuf">fedora.svg</property>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="padding">10</property>
+                <property name="position">0</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkLabel" id="header1">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="xalign">0</property>
+                <property name="label" translatable="yes">A new version of Fedora is available.</property>
+                <attributes>
+                  <attribute name="weight" value="bold"/>
+                  <attribute name="size" value="14336"/>
+                </attributes>
+              </object>
+              <packing>
+                <property name="expand">True</property>
+                <property name="fill">True</property>
+                <property name="position">1</property>
+              </packing>
+            </child>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">0</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkSeparator" id="sourceseparator">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="padding">10</property>
+            <property name="position">1</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkGrid" id="sourcegrid">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="halign">center</property>
+            <property name="valign">start</property>
+            <property name="column_homogeneous">True</property>
+            <child>
+              <object class="GtkImage" id="sourceimage">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="pixel_size">128</property>
+                <property name="icon_name">media-optical</property>
+              </object>
+              <packing>
+                <property name="left_attach">0</property>
+                <property name="top_attach">0</property>
+                <property name="width">1</property>
+                <property name="height">1</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkImage" id="targetimage">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="pixel_size">128</property>
+                <property name="icon_name">drive-harddisk</property>
+              </object>
+              <packing>
+                <property name="left_attach">2</property>
+                <property name="top_attach">0</property>
+                <property name="width">1</property>
+                <property name="height">1</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkImage" id="sourcearrow">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="valign">center</property>
+                <property name="pixel_size">64</property>
+                <property name="icon_name">forward</property>
+              </object>
+              <packing>
+                <property name="left_attach">1</property>
+                <property name="top_attach">0</property>
+                <property name="width">1</property>
+                <property name="height">1</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkLabel" id="newreleaselabel">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="label">Fedora 18
+(Spherical Cow)</property>
+                <property name="justify">center</property>
+              </object>
+              <packing>
+                <property name="left_attach">0</property>
+                <property name="top_attach">1</property>
+                <property name="width">1</property>
+                <property name="height">1</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkLabel" id="currentreleaselabel">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="label">Fedora 17
+(Beefy Miracle)</property>
+                <property name="use_markup">True</property>
+                <property name="justify">center</property>
+              </object>
+              <packing>
+                <property name="left_attach">2</property>
+                <property name="top_attach">1</property>
+                <property name="width">1</property>
+                <property name="height">1</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkComboBox" id="sourcecombo">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="model">srcliststore</property>
+                <property name="active">0</property>
+                <property name="id_column">2</property>
+                <child>
+                  <object class="GtkCellRendererText" id="renderer1"/>
+                  <attributes>
+                    <attribute name="text">0</attribute>
+                  </attributes>
+                </child>
+              </object>
+              <packing>
+                <property name="left_attach">0</property>
+                <property name="top_attach">2</property>
+                <property name="width">1</property>
+                <property name="height">1</property>
+              </packing>
+            </child>
+            <child>
+              <placeholder/>
+            </child>
+            <child>
+              <placeholder/>
+            </child>
+            <child>
+              <placeholder/>
+            </child>
+          </object>
+          <packing>
+            <property name="expand">True</property>
+            <property name="fill">True</property>
+            <property name="position">2</property>
+          </packing>
+        </child>
+      </object>
+      <packing>
+        <property name="page_type">intro</property>
+        <property name="title" translatable="yes">Choose installation source</property>
+      </packing>
+    </child>
+    <child>
+      <object class="GtkBox" id="relnotebox">
+        <property name="visible">True</property>
+        <property name="can_focus">False</property>
+        <property name="orientation">vertical</property>
+        <child>
+          <object class="GtkBox" id="relnoteheaderbox">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="margin_top">10</property>
+            <child>
+              <object class="GtkImage" id="logo2">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="pixbuf">fedora.svg</property>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="padding">10</property>
+                <property name="position">0</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkLabel" id="header2">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="xalign">0</property>
+                <property name="label" translatable="yes">A new version of Fedora is available.</property>
+                <attributes>
+                  <attribute name="weight" value="bold"/>
+                  <attribute name="size" value="14336"/>
+                </attributes>
+              </object>
+              <packing>
+                <property name="expand">True</property>
+                <property name="fill">True</property>
+                <property name="position">1</property>
+              </packing>
+            </child>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">0</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkScrolledWindow" id="scrolledrelnotes">
+            <property name="visible">True</property>
+            <property name="can_focus">True</property>
+            <property name="border_width">10</property>
+            <property name="shadow_type">in</property>
+            <child>
+              <object class="GtkTextView" id="relnoteview">
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="border_width">5</property>
+                <property name="editable">False</property>
+                <property name="buffer">relnotebuffer</property>
+              </object>
+            </child>
+          </object>
+          <packing>
+            <property name="expand">True</property>
+            <property name="fill">True</property>
+            <property name="position">1</property>
+          </packing>
+        </child>
+      </object>
+      <packing>
+        <property name="title" translatable="yes">Review release notes</property>
+        <property name="complete">True</property>
+      </packing>
+    </child>
+    <child>
+      <object class="GtkBox" id="summarybox">
+        <property name="visible">True</property>
+        <property name="can_focus">False</property>
+        <property name="orientation">vertical</property>
+        <child>
+          <object class="GtkLabel" id="label1">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="label" translatable="yes">Install summary</property>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">0</property>
+          </packing>
+        </child>
+        <child>
+          <placeholder/>
+        </child>
+      </object>
+      <packing>
+        <property name="page_type">confirm</property>
+        <property name="title" translatable="yes">Customize installation</property>
+        <property name="complete">True</property>
+      </packing>
+    </child>
+    <child>
+      <object class="GtkBox" id="progressbox">
+        <property name="visible">True</property>
+        <property name="can_focus">False</property>
+        <property name="orientation">vertical</property>
+        <child>
+          <object class="GtkLabel" id="label2">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="label" translatable="yes">PROGRESS GOES HERE</property>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">0</property>
+          </packing>
+        </child>
+        <child>
+          <placeholder/>
+        </child>
+      </object>
+      <packing>
+        <property name="page_type">progress</property>
+        <property name="title" translatable="yes">Prepare system</property>
+        <property name="complete">True</property>
+      </packing>
+    </child>
+    <child>
+      <object class="GtkBox" id="completebox">
+        <property name="visible">True</property>
+        <property name="can_focus">False</property>
+        <property name="orientation">vertical</property>
+        <child>
+          <object class="GtkLabel" id="label3">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="label" translatable="yes">ALL DONE REBOOT YEAHH</property>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">0</property>
+          </packing>
+        </child>
+        <child>
+          <placeholder/>
+        </child>
+      </object>
+      <packing>
+        <property name="page_type">summary</property>
+        <property name="title" translatable="yes">Reboot to start installation</property>
+      </packing>
+    </child>
+    <child internal-child="action_area">
+      <object class="GtkBox" id="assistant_action_area">
+        <property name="can_focus">False</property>
+      </object>
+      <packing>
+        <property name="complete">True</property>
+      </packing>
+    </child>
+  </object>
+</interface>
