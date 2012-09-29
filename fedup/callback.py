@@ -76,11 +76,6 @@ class DownloadCallbackBase(ProcessTransBaseCallback):
         shortname = filename.split('/')[-1]
         self.log.debug("verifying %u/%u %s", amount+1, total, shortname)
 
-class RepoCallbackBase(object):
-    def interrupt(self, grabber_cb_obj):
-        log.debug("RepoCallback.interrupt()!")
-        raise KeyboardInterrupt
-
 # callback object for depsolving
 
 class DepsolveCallbackBase(object):

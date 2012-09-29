@@ -1,6 +1,4 @@
 # fedup.download - yum-based download/depsolver for Fedora Upgrade
-#
-# TODO: interrupt_callback
 
 import os
 import yum
@@ -49,13 +47,8 @@ class FedupDownloader(yum.YumBase):
         disabled_repos = []
 
         # set up callbacks etc.
-        if hasattr(self, 'prerepoconf'):
-            self.prerepoconf.progressbar = progressbar
-            self.prerepoconf.callback = callback
-            if hasattr(callback, 'interrupt') and callable(callback.interrupt):
-                self.prerepoconf.interrupt_callback = callback.interrupt
-        else:
-            log.warn("check_repos called after repo setup")
+        self.repos.setProgressBar(progressbar)
+        self.repos.callback = callback
 
         # check repos
         for repo in self.repos.listEnabled():

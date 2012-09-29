@@ -86,7 +86,7 @@ class SimpleProgress(object):
 class RepoProgress(YumTextMeter):
     pass
 
-class RepoCallback(RepoCallbackBase):
+class RepoCallback(object):
     def __init__(self, prefix="repo", tty=sys.stderr):
         self._pb = SimpleProgress(10, prefix=prefix, tty=tty)
     def progressbar(self, current, total, name=None):
@@ -94,8 +94,6 @@ class RepoCallback(RepoCallbackBase):
             self._pb.prefix = "repo (%s)" % name
         self._pb.maxval = total
         self._pb.update(current)
-    def __del__(self):
-        self._pb.finish()
 
 class DepsolveCallback(DepsolveCallbackBase):
     def __init__(self, yumobj=None, tty=sys.stderr):
