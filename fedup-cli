@@ -62,6 +62,7 @@ def get_versions():
 def parse_args():
     p = argparse.ArgumentParser(
         description=_('Prepare system for upgrade.'),
+        # Translators: This is the CLI's "usage:" string
         usage=_('%(prog)s SOURCE [options]'),
     )
 
@@ -75,8 +76,10 @@ def parse_args():
                                _('Specify the location of the upgrade data.'))
     req.add_argument('--iso',
         help='[TODO] '+_('Installation image file'))
+    # Translators: This is for '--device DEVICE' in --help output
     req.add_argument('--device', metavar=_('DEVICE'),
         help='[TODO] '+_('Installation image on device (DVD, USB, etc.)'))
+    # Translators: This is for '--network [VERSION]' in --help output
     req.add_argument('--network', metavar=_('VERSION'), nargs='?',
         const='latest', choices=['latest', 'rawhide'] + get_versions(),
         help=_('Download VERSION from the network (default: newest release)'))
