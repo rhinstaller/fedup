@@ -1,5 +1,5 @@
 # textoutput - text output routines for fedora-upgrade
-# vim: set fileencoding=utf8:
+# vim: set fileencoding=UTF-8:
 
 import os, sys, time
 
@@ -17,7 +17,7 @@ log = logging.getLogger("fedup.cli")
 import fcntl, struct, termios
 def termwidth(fd=1):
     try:
-        buf = 'abcdefgh'
+        buf = 'DEADBEEF' # 8 bytes
         buf = fcntl.ioctl(fd, termios.TIOCGWINSZ, buf)
         width = struct.unpack('hhhh', buf)[1]
     except IOError:

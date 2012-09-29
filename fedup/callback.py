@@ -1,6 +1,5 @@
 # fedup.callback
-# vim: set fileencoding=utf8:
-# TODO: interrupt_callback
+# vim: set fileencoding=UTF-8:
 
 import rpm
 import logging
