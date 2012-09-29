@@ -91,6 +91,10 @@ class FedupDownloader(yum.YumBase):
                 callback.verify(num, total, local, None)
             ok = self.verifyPkg(local, p, False) # result will be cached by yum
         log.info("beginning package download...")
+        # XXX if updates ==
+        # [t in self.tsInfo.getMembers() if t.ts_state in ("i", "u")], then
+        # probably we could do the clean_cache before this and save disk space?
+        # (do they have localPkg() before the actual download?)
         updates = self._downloadPackages(callback)
         if set(updates) != set(pkgs):
             log.debug("differences between requested pkg set and downloaded:")
@@ -114,3 +118,23 @@ class FedupDownloader(yum.YumBase):
                 #os.remove(f)
             except IOError as e:
                 log.info("failed to remove %s", f)
+
+    def link_pkgs(self):
+        log.info("linking required packages into packagedir")
+        log.info("packagedir = %s", packagedir)
+        pkgbasenames = set()
+        pkgs = (t.po.localPkg() for t in self.tsInfo.getMembers()
+                                if t.ts_state in ("i", "u"))
+        for pkgpath in pkgs:
+            assert os.path.exists(pkgpath)
+            pkgbasename = os.path.basename(pkgpath)
+            pkgbasenames.add(pkgbasename)
+            target = os.path.join(packagedir, pkgbasename)
+            if os.path.exists(target) and os.lstat(pkgpath) == os.lstat(target):
+                continue
+            else:
+                if os.path.isdir(target):
+                    shutil.rmtree(target)
+                else:
+                    os.remove(target)
+                os.link(pkgpath, target)
