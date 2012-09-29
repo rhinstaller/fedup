@@ -22,13 +22,15 @@ fedup.logutils.consolelog()          # FIXME: control output with cli args
 from fedup import _
 
 def download_pkgs(version):
-    print "setting up repos..."
+    print _("setting up repos...")
     f = FedupDownloader(version=version)
     repo_cb = output.RepoCallback()
     repo_prog = output.RepoProgress(fo=sys.stderr)
-    f.check_repos(callback=repo_cb, progressbar=repo_prog)
+    disabled_repos = f.check_repos(callback=repo_cb, progressbar=repo_prog)
+    print _("No upgrade available for the following repos") + ": " + \
+          " ".join(disabled_repos)
 
-    print "setting up update..."
+    print _("setting up update...")
     updates = f.build_update_transaction(callback=output.DepsolveCallback(f))
     # TODO: checkpoint - write update list somewhere and skip depsolving
     f.download_packages(updates, callback=output.DownloadCallback())
@@ -36,7 +38,7 @@ def download_pkgs(version):
     return set(po.localPkg() for po in updates)
 
 def transaction_test(pkgs):
-    print "setting up upgrade transaction test"
+    print _("setting up upgrade transaction test")
     fu = FedupUpgrade()
     fu.setup_transaction(pkgfiles=pkgs)
     fu.test_transaction(callback=output.TransactionCallback(numpkgs=len(pkgs)))

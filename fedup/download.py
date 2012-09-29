@@ -43,6 +43,7 @@ class FedupDownloader(yum.YumBase):
         return conf
 
     def check_repos(self, callback=None, progressbar=None):
+        '''Return a list of repos that had problems setting up.'''
         # FIXME invalidate cache if the version doesn't match previous version
         log.info("checking repos")
         disabled_repos = []
@@ -57,9 +58,8 @@ class FedupDownloader(yum.YumBase):
                 disabled_repos.append(repo.id)
             else:
                 log.info("repo %s seems OK" % repo.id)
-        if disabled_repos:
-            log.warn("No upgrade available for the following repos: %s",
-                     " ".join(disabled_repos))
+
+        return disabled_repos
 
     # NOTE: could raise RepoError if metadata is missing/busted
     def build_update_transaction(self, callback=None):
