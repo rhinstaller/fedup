@@ -38,7 +38,7 @@ def download_pkgs(version):
     return set(po.localPkg() for po in updates)
 
 def transaction_test(pkgs):
-    print _("setting up upgrade transaction test")
+    print _("testing upgrade transaction")
     fu = FedupUpgrade()
     fu.setup_transaction(pkgfiles=pkgs)
     fu.test_transaction(callback=output.TransactionCallback(numpkgs=len(pkgs)))
@@ -100,6 +100,7 @@ def parse_args():
 
 def main(args):
     # Get our packages set up where we can use 'em
+    # TODO: FedupMedia setup for DVD/USB/ISO
     if args.network:
         if args.network == 'latest':
             # FIXME: fetch releases.txt to determine this
@@ -120,6 +121,8 @@ def main(args):
 
     if args.reboot:
         reboot()
+    else:
+        print _('Finished. Reboot to start upgrade.')
 
 if __name__ == '__main__':
     args = parse_args()
