@@ -87,11 +87,11 @@ class RepoProgress(YumTextMeter):
     pass
 
 class RepoCallback(object):
-    def __init__(self, prefix="repo", tty=sys.stderr):
+    def __init__(self, prefix="repodata", tty=sys.stderr):
         self._pb = SimpleProgress(10, prefix=prefix, tty=tty)
     def progressbar(self, current, total, name=None):
         if name:
-            self._pb.prefix = "repo (%s)" % name
+            self._pb.prefix = "repodata (%s)" % name
         self._pb.maxval = total
         self._pb.update(current)
 
