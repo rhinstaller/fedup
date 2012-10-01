@@ -26,7 +26,7 @@ def download_pkgs(version):
     f = FedupDownloader(version=version)
     repo_cb = output.RepoCallback()
     repo_prog = output.RepoProgress(fo=sys.stderr)
-    disabled_repos = f.check_repos(callback=repo_cb, progressbar=repo_prog)
+    disabled_repos = f.setup_repos(callback=repo_cb, progressbar=repo_prog)
     print _("No upgrade available for the following repos") + ": " + \
           " ".join(disabled_repos)
 

@@ -40,7 +40,7 @@ class FedupDownloader(yum.YumBase):
         conf.disable_excludes = ['all']
         return conf
 
-    def check_repos(self, callback=None, progressbar=None):
+    def setup_repos(self, callback=None, progressbar=None):
         '''Return a list of repos that had problems setting up.'''
         # FIXME invalidate cache if the version doesn't match previous version
         log.info("checking repos")
