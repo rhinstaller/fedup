@@ -120,8 +120,12 @@ class FedupDownloader(yum.YumBase):
 def link_pkgs(pkgs):
     '''link the named pkgs into packagedir, overwriting existing files.
        also removes any .rpm files in packagedir that aren't in pkgs.'''
+
     log.info("linking required packages into packagedir")
     log.info("packagedir = %s", packagedir)
+    if not os.path.isdir(packagedir):
+        os.mkdir(packagedir, 0755)
+
     pkgbasenames = set()
     for pkgpath in pkgs:
         if not os.path.exists(pkgpath):
@@ -137,7 +141,7 @@ def link_pkgs(pkgs):
             if os.path.isdir(target):
                 log.info("deleting weirdo directory named %s", pkgbasename)
                 shutil.rmtree(target)
-            else:
+            elif os.path.exists(target):
                 os.remove(target)
             os.link(pkgpath, target)
 
@@ -146,6 +150,6 @@ def link_pkgs(pkgs):
         if f.endswith(".rpm") and f not in pkgbasenames:
             os.remove(os.path.join(packagedir, f))
 
-    # write packagefile
-    with open(packagefile, 'w') as outf:
-        outf.writelines(p+'\n' for p in pkgs)
+    # write packagelist
+    with open(packagelist, 'w') as outf:
+        outf.writelines(p+'\n' for p in pkgbasenames)
