@@ -46,7 +46,8 @@ def transaction_test(pkgs):
     fu.test_transaction(callback=output.TransactionCallback(numpkgs=len(pkgs)))
 
 def prep_upgrade(pkgs):
-    # set up packagedir (also writes packagelist)
+    print _("setting up system for upgrade")
+    # put packages in packagedir (also writes packagelist)
     link_pkgs(pkgs)
 
     # FIXME: modify bootloader config (grub2-reboot)
@@ -118,6 +119,7 @@ def main(args):
     transaction_test(pkgs)
 
     # And prepare for upgrade
+    # TODO: need root privs here
     prep_upgrade(pkgs)
 
     if args.reboot:
