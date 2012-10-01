@@ -12,11 +12,46 @@ disabled_plugins = ['rpm-warm-cache', 'remove-with-leaves', 'presto',
 
 cachedir="/var/tmp/fedora-upgrade"
 
-log = logging.getLogger("fedup.yum")
+from fedup import packagedir, packagelist
+
+log = logging.getLogger("fedup.yum") # XXX kind of misleading?
 
 def listdir(d):
     for f in os.listdir(d):
         yield os.path.join(d, f)
+
+def link_pkgs(self, pkgs):
+    '''link the named pkgs into packagedir, overwriting existing files.
+       also removes any .rpm files in packagedir that aren't in pkgs.'''
+    log.info("linking required packages into packagedir")
+    log.info("packagedir = %s", packagedir)
+    pkgbasenames = set()
+    for pkgpath in pkgs:
+        if not os.path.exists(pkgpath):
+            log.warning("%s missing", pkgpath)
+            continue
+        pkgbasename = os.path.basename(pkgpath)
+        pkgbasenames.add(pkgbasename)
+        target = os.path.join(packagedir, pkgbasename)
+        if os.path.exists(target) and os.lstat(pkgpath) == os.lstat(target):
+            log.info("%s already in packagedir", pkgbasename)
+            continue
+        else:
+            if os.path.isdir(target):
+                log.info("deleting weirdo directory named %s", pkgbasename)
+                shutil.rmtree(target)
+            else:
+                os.remove(target)
+            os.link(pkgpath, target)
+
+    # remove spurious / leftover RPMs
+    for f in os.listdir(packagedir):
+        if f.endswith(".rpm") and f not in pkgbasenames:
+            os.remove(os.path.join(packagedir, f))
+
+    # write packagefile
+    with open(packagefile, 'w') as outf:
+        outf.writelines(p+'\n' for p in pkgs)
 
 class FedupDownloader(yum.YumBase):
     '''Yum-based downloader class for fedup. Based roughly on AnacondaYum.'''
@@ -113,23 +148,5 @@ class FedupDownloader(yum.YumBase):
                 #os.remove(f)
             except IOError as e:
                 log.info("failed to remove %s", f)
+        # TODO remove dirs that don't belong to any repo
 
-    def link_pkgs(self):
-        log.info("linking required packages into packagedir")
-        log.info("packagedir = %s", packagedir)
-        pkgbasenames = set()
-        pkgs = (t.po.localPkg() for t in self.tsInfo.getMembers()
-                                if t.ts_state in ("i", "u"))
-        for pkgpath in pkgs:
-            assert os.path.exists(pkgpath)
-            pkgbasename = os.path.basename(pkgpath)
-            pkgbasenames.add(pkgbasename)
-            target = os.path.join(packagedir, pkgbasename)
-            if os.path.exists(target) and os.lstat(pkgpath) == os.lstat(target):
-                continue
-            else:
-                if os.path.isdir(target):
-                    shutil.rmtree(target)
-                else:
-                    os.remove(target)
-                os.link(pkgpath, target)

@@ -10,14 +10,14 @@ import os, sys, time
 import argparse, platform
 from subprocess import call
 
-from fedup.download import FedupDownloader, YumBaseError
+from fedup.download import FedupDownloader, YumBaseError, link_pkgs
 from fedup.upgrade import FedupUpgrade, TransactionError
 from fedup import textoutput as output
 
 import logging, fedup.logutils
 log = logging.getLogger("fedup")
 fedup.logutils.debuglog("fedup.log") # FIXME: better dir for this
-fedup.logutils.consolelog()          # FIXME: control output with cli args
+fedup.logutils.consolelog()          # TODO: control output with cli args
 
 from fedup import _
 
@@ -46,10 +46,9 @@ def transaction_test(pkgs):
     fu.test_transaction(callback=output.TransactionCallback(numpkgs=len(pkgs)))
 
 def prep_upgrade(pkgs):
-    # FIXME: empty package dir
-    for p in pkgs:
-        # FIXME: link packages into package dir
-        pass
+    # set up packagedir (also writes packagelist)
+    link_pkgs(pkgs)
+
     # FIXME: modify bootloader config (grub2-reboot)
 
 def reboot():
@@ -152,5 +151,5 @@ if __name__ == '__main__':
             print p
         raise SystemExit(3)
     finally:
-        # FIXME: log exception
+        # TODO: log exception
         log.info("%s exiting at %s", sys.argv[0], time.asctime())

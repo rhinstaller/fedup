@@ -9,4 +9,5 @@ import gettext
 t = gettext.translation("fedup", "/usr/share/locale", fallback=True)
 _ = t.lgettext
 
-packagedir = '/var/cache/fedora-upgrade-packages'
+packagedir = '/var/lib/fedora-upgrade'
+packagelist = packagedir + '/package.list'
