@@ -91,10 +91,6 @@ class FedupDownloader(yum.YumBase):
                 callback.verify(num, total, local, None)
             ok = self.verifyPkg(local, p, False) # result will be cached by yum
         log.info("beginning package download...")
-        # XXX if updates ==
-        # [t in self.tsInfo.getMembers() if t.ts_state in ("i", "u")], then
-        # probably we could do the clean_cache before this and save disk space?
-        # (do they have localPkg() before the actual download?)
         updates = self._downloadPackages(callback)
         if set(updates) != set(pkgs):
             log.debug("differences between requested pkg set and downloaded:")
@@ -102,10 +98,9 @@ class FedupDownloader(yum.YumBase):
                 log.debug("  -%s", p)
             for p in set(updates).difference(pkgs):
                 log.debug("  +%s", p)
-        self.clean_cache(p.localPkg() for p in updates)
         # TODO check signatures of downloaded packages
 
-    def clean_cache(self, installpkgs):
+    def clean_cache(self, keepfiles):
         log.info("checking for unneeded rpms in cache")
         # Only clean stuff that's not on media
         repos = [r for r in self.repos.repos.values() if r.mediaid is None]

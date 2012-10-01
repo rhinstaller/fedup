@@ -32,7 +32,9 @@ def download_pkgs(version):
 
     print _("setting up update...")
     updates = f.build_update_transaction(callback=output.DepsolveCallback(f))
-    # TODO: checkpoint - write update list somewhere and skip depsolving
+    # clean out any unneeded packages from the cache
+    f.clean_cache(keepfiles=(p.localPkg() for p in updates))
+    # download packages
     f.download_packages(updates, callback=output.DownloadCallback())
 
     return set(po.localPkg() for po in updates)
