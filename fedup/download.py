@@ -142,7 +142,7 @@ class FedupDownloader(yum.YumBase):
         # Find all the packages in the caches
         localpkgs = set(f for r in self.repos.listEnabled() if not r.mediaid
                           for f in listdir(r.pkgdir) if f.endswith(".rpm"))
-        for f in localpkgs.difference(installpkgs):
+        for f in localpkgs.difference(keepfiles):
             try:
                 log.debug("removing %s", f)
                 #os.remove(f)
