@@ -27,8 +27,9 @@ def download_pkgs(version):
     repo_cb = output.RepoCallback()
     repo_prog = output.RepoProgress(fo=sys.stderr)
     disabled_repos = f.setup_repos(callback=repo_cb, progressbar=repo_prog)
-    print _("No upgrade available for the following repos") + ": " + \
-          " ".join(disabled_repos)
+    if disabled_repos:
+        print _("No upgrade available for the following repos") + ": " + \
+                " ".join(disabled_repos)
 
     print _("setting up update...")
     updates = f.build_update_transaction(callback=output.DepsolveCallback(f))

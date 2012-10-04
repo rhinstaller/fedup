@@ -81,7 +81,7 @@ class SimpleProgress(object):
 
     def finish(self):
         self.update(self.maxval)
-        self.tty.write("\r\n")
+        self.tty.write("\n")
 
 class RepoProgress(YumTextMeter):
     pass
