@@ -42,7 +42,7 @@ class FedupDownloader(yum.YumBase):
         conf.disable_excludes = ['all']
         return conf
 
-    def setup_repos(self, callback=None, progressbar=None):
+    def setup_repos(self, callback=None, progressbar=None, repos=[]):
         '''Return a list of repos that had problems setting up.'''
         # FIXME invalidate cache if the version doesn't match previous version
         log.info("checking repos")
@@ -51,6 +51,14 @@ class FedupDownloader(yum.YumBase):
         # set up callbacks etc.
         self.repos.setProgressBar(progressbar)
         self.repos.callback = callback
+
+        # commandline overrides for the enabled/disabled repos
+        # NOTE: will raise YumBaseError if there are problems
+        for action, repoid in repos:
+            if action == 'enable':
+                self.repos.enableRepo(repoid)
+            elif action == 'disable':
+                self.repos.disableRepo(repoid)
 
         # check repos
         for repo in self.repos.listEnabled():

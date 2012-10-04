@@ -21,12 +21,15 @@ fedup.logutils.consolelog()          # TODO: control output with cli args
 
 from fedup import _
 
-def download_pkgs(version):
+def download_pkgs(version, repos=[]):
+    log.debug("download_pkgs(version=%s, repos=%s)", version, repos)
     print _("setting up repos...")
     f = FedupDownloader(version=version)
     repo_cb = output.RepoCallback()
     repo_prog = output.RepoProgress(fo=sys.stderr)
-    disabled_repos = f.setup_repos(callback=repo_cb, progressbar=repo_prog)
+    disabled_repos = f.setup_repos(callback=repo_cb,
+                                   progressbar=repo_prog,
+                                   repos=repos)
     if disabled_repos:
         print _("No upgrade available for the following repos") + ": " + \
                 " ".join(disabled_repos)
@@ -62,6 +65,17 @@ def get_versions():
     version = int(version)
     return [str(version+1), str(version+2)]
 
+class RepoAction(argparse.Action):
+    def __call__(self, parser, namespace, value, option_string=None):
+        curval = getattr(namespace, self.dest, [])
+        action = ''
+        if option_string.startswith('--enable'):
+            action = 'enable'
+        elif option_string.startswith('--disable'):
+            action = 'disable'
+        curval.append((action, value))
+        setattr(namespace, self.dest, curval)
+
 def parse_args():
     p = argparse.ArgumentParser(
         description=_('Prepare system for upgrade.'),
@@ -87,12 +101,13 @@ def parse_args():
         const='latest', choices=['latest', 'rawhide'] + get_versions(),
         help=_('Download VERSION from the network (default: newest release)'))
 
-    #net = p.add_argument_group(_('optional arguments for --network'))
-    #net.add_argument('--disablerepo', metavar='REPO', action='append',
-    #    help=_('Repositories to disable for network upgrade'))
-    #net.add_argument('--enablerepo', metavar='REPO', action='append',
-    #    help=_('Repositories to enable for network upgrade'))
+    net = p.add_argument_group(_('optional arguments for --network'))
+    net.add_argument('--disablerepo', metavar='REPO', action=RepoAction,
+        dest='repos', help=_('Repositories to disable for network upgrade'))
+    net.add_argument('--enablerepo', metavar='REPO', action=RepoAction,
+        dest='repos', help=_('Repositories to enable for network upgrade'))
     # TODO: arbitrary repos with --repourl
+    p.set_defaults(repos=[])
 
     args = p.parse_args()
 
@@ -108,8 +123,7 @@ def main(args):
         if args.network == 'latest':
             # FIXME: fetch releases.txt to determine this
             args.network = '18'
-        # TODO args.{enablerepo,disablerepo}
-        pkgs = download_pkgs(version=args.network)
+        pkgs = download_pkgs(version=args.network, repos=args.repos)
     else:
         print "Upgrade from local media not implemented yet!"
         raise SystemExit(255)
