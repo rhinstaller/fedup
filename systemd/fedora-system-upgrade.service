@@ -1,0 +1,9 @@
+[Unit]
+Description=System Upgrade
+DefaultDependencies=no
+OnFailure=reboot.target
+OnFailureIsolate=yes
+
+[Service]
+ExecStartPre=-/usr/bin/plymouth change-mode updates
+ExecStart=/usr/lib/systemd/fedora-system-upgrade --plymouth --reboot
