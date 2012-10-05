@@ -20,7 +20,6 @@
  * TODO: PLYMOUTH_LIBS stuff is untested/unused
  *       Translation/i18n
  *       Handle RPMCALLBACK_{SCRIPT,CPIO,UNPACK}_ERROR
- *       Do more useful things with RPMCALLBACK_UNINST_{START,STOP}
  *       Use RPMCALLBACK_SCRIPT_{START,STOP} (rpm >= 4.10 only)
  *       Take btrfs/LVM snapshot before upgrade and revert on failure
  *       Clean out packagedir after upgrade
@@ -427,6 +426,8 @@ void *rpm_trans_callback(const void *arg,
             prevpercent = percent;
         }
         rfree(nvr);
+        /* TODO: if (erased == erasecount)
+         *          print message about %posttrans */
         break;
 
     /* These only exist in rpm >= 4.10 */
@@ -443,6 +444,7 @@ void *rpm_trans_callback(const void *arg,
 
     /* errors! oh no! */
     case RPMCALLBACK_SCRIPT_ERROR:
+        /* NOTE: hdr is OK, file is NULL */
         g_warning("script_error()");
         break;
     /* TODO: RPMCALLBACK_{UNPACK,CPIO}_ERROR */
