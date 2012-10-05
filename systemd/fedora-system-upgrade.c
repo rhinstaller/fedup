@@ -108,18 +108,18 @@ gboolean call(const gchar *cmd, const gchar *arg) {
 #ifdef USE_PLYMOUTH_LIBS
 typedef struct
 {
-    ply_boot_client_t *client = NULL;
-    ply_event_loop_t *loop = NULL;
+    ply_boot_client_t *client;
+    ply_event_loop_t *loop;
 } ply_t;
 
 ply_t ply = { 0 };
 
 /* callback handlers */
 void ply_success(void *user_data, ply_boot_client_t *client) {
-    ply_event_loop_exit(&ply.loop, TRUE);
+    ply_event_loop_exit(ply.loop, TRUE);
 }
 void ply_failure(void *user_data, ply_boot_client_t *client) {
-    ply_event_loop_exit(&ply.loop, FALSE);
+    ply_event_loop_exit(ply.loop, FALSE);
 }
 
 /* display-message <text> */
@@ -153,7 +153,7 @@ gboolean plymouth_setup(void) {
     ply.loop = ply_event_loop_new();
     ply.client = ply_boot_client_new();
 
-    if (!ply_boot_client_connect(ply_client, ply_disconnect, ply.loop)) {
+    if (!ply_boot_client_connect(ply.client, ply_disconnect, ply.loop)) {
         g_warning("Couldn't connect to plymouth");
         goto out;
     }
