@@ -43,7 +43,7 @@
 /* plymouth */
 #include "ply-boot-client.h"
 
-/* A couple of our own definitions */
+/* File names and locations */
 #define UPGRADE_SYMLINK  "/system-update"
 #define UPGRADE_FILELIST "package.list"
 
@@ -57,12 +57,15 @@ static gboolean reboot = FALSE;
 static gboolean plymouth = FALSE;
 static gboolean plymouth_verbose = FALSE;
 static gboolean debug = FALSE;
+static gchar *root = NULL;
 
 static GOptionEntry options[] =
 {
     { "testing", 'n', 0, G_OPTION_ARG_NONE, &testing,
         "Test mode - don't actually install anything", NULL },
-    { "reboot", 'r', 0, G_OPTION_ARG_NONE, &reboot,
+    { "root", 'r', 0' G_OPTION_ARG_FILENAME, &root,
+        "Top level directory for upgrade (default: \"/\")", NULL },
+    { "reboot", 'b', 0, G_OPTION_ARG_NONE, &reboot,
         "Reboot after upgrade", NULL },
     { "plymouth", 'p', 0, G_OPTION_ARG_NONE, &plymouth,
         "Show progress on plymouth splash screen", NULL },
@@ -244,7 +247,7 @@ out:
 }
 
 /* Set up the RPM transaction using the list of packages to install */
-rpmts setup_transaction(gchar *files[]) {
+rpmts setup_transaction(gchar *root, gchar *files[]) {
     rpmts ts = NULL;
     rpmps probs = NULL;
     gchar **file = NULL;
@@ -254,6 +257,7 @@ rpmts setup_transaction(gchar *files[]) {
     /* Read config and initialize transaction */
     rpmReadConfigFiles(NULL, NULL);
     ts = rpmtsCreate();
+    rpmtsSetRootDir(ts, root);
 
     /* Disable signature checking, as anaconda did */
     rpmtsSetVSFlags(ts, rpmtsVSFlags(ts) | _RPMVSF_NOSIGNATURES);
@@ -490,6 +494,10 @@ int main(int argc, char* argv[]) {
     g_option_context_add_main_entries(context, options, GETTEXT_PACKAGE);
     if (!g_option_context_parse(context, &argc, &argv, &error))
         g_critical("option_parsing failed: %s", error->message);
+
+    if (g_getenv("UPGRADE_TEST") != NULL)
+        testing = TRUE;
+
     if (testing)
         reboot = FALSE;
 
@@ -504,9 +512,6 @@ int main(int argc, char* argv[]) {
 
     if (!plymouth)
         plymouth_verbose = FALSE;
-
-    if (g_getenv("UPGRADE_TEST") != NULL)
-        testing = TRUE;
 
     if (getuid() != 0 || geteuid() != 0)
         g_critical("This program must be run as root.");
@@ -532,7 +537,7 @@ int main(int argc, char* argv[]) {
 
     /* set up RPM transaction - this takes ~90s (~2% total duration) */
     g_message("preparing for upgrade...");
-    ts = setup_transaction(files);
+    ts = setup_transaction(root, files);
     if (ts == NULL)
         goto out;
 
@@ -550,9 +555,12 @@ int main(int argc, char* argv[]) {
     else
         retval = EXIT_SUCCESS;
 
+    g_debug("cleaning up...");
     /* cleanup */
     rpmpsFree(probs);
     rpmtsFree(ts);
+    rpmFreeMacros(NULL);
+    rpmFreeRpmrc();
 
 out:
     if (filelist != NULL)
@@ -561,11 +569,9 @@ out:
         g_free(packagedir);
     if (files != NULL)
         g_strfreev(files);
-    if (reboot) {
-        if (testing)
-            g_message("TESTING: skipping reboot");
-        else
-            call("/usr/bin/systemctl --fail --no-block reboot", NULL);
-    }
+    if (reboot)
+        call("/usr/bin/systemctl --fail --no-block reboot", NULL);
+    else
+        g_debug("skipping reboot");
     return retval;
 }
