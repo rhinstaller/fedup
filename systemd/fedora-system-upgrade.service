@@ -3,8 +3,12 @@ Description=System Upgrade
 DefaultDependencies=no
 OnFailure=reboot.target
 OnFailureIsolate=yes
+# TODO: would be nice if we could just capture the journal for one boot...
+Wants=syslog.socket
+After=syslog.socket
 
 [Service]
 ExecStartPre=-/usr/bin/plymouth change-mode updates
 ExecStart=/usr/lib/systemd/fedora-system-upgrade --plymouth --reboot
 StandardOutput=journal+console
+StandardError=journal+console
