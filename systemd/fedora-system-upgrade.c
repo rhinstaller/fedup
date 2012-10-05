@@ -17,7 +17,7 @@
  *
  * Author(s): Will Woods <wwoods@redhat.com>
  *
- * TODO: PLYMOUTH_LIBS stuff is untested
+ * TODO: PLYMOUTH_LIBS stuff is untested/unused
  *       Translation/i18n
  *       Handle RPMCALLBACK_{SCRIPT,CPIO,UNPACK}_ERROR
  *       Do more useful things with RPMCALLBACK_UNINST_{START,STOP}
@@ -281,6 +281,7 @@ rpmts setup_transaction(gchar *files[]) {
     rc = rpmtsCheck(ts);
     probs = rpmtsProblems(ts);
     if (rc || rpmpsNumProblems(probs) > 0) {
+        /* FIXME: ignore anything but RPMPROB_{CONFLICT,REQUIRES} */
         rpmpsPrint(NULL, probs);
         rpmpsFree(probs);
         /* once again: ignore errors, following anaconda tradition */
@@ -313,43 +314,53 @@ void *rpm_trans_callback(const void *arg,
                          fnpyKey key,
                          void *data)
 {
+    Header hdr = (Header) arg;
     static guint percent;
     static guint prevpercent;
     static guint curpkg;
     gchar *pkgfile;
+    gchar *nvr = NULL;
     gchar *file = (gchar *)key;
-    void *retval;
+    void *retval = NULL;
+
+    /*
+     * The upgrade transaction goes through three phases:
+     * prep: TRANS_START, TRANS_PROGRESS, TRANS_STOP
+     *     duration: basically negligible
+     * install: INST_START, INST_OPEN_FILE, INST_CLOSE_FILE
+     *     duration: very roughly 2/3 the transaction
+     * cleanup:  UNINST_START, UNINST_STOP
+     *     duration: the remainder
+     */
 
     switch (what) {
-    case RPMCALLBACK_TRANS_START:       /* Preparing for installation */
+    /* prep phase: (start, progress..., stop), just once */
+    case RPMCALLBACK_TRANS_START:
         g_debug("trans_start()");
         g_message("preparing RPM transaction, one moment...");
         break;
-    case RPMCALLBACK_TRANS_STOP:        /* Finished preparing */
+    case RPMCALLBACK_TRANS_PROGRESS:
+        break;
+    case RPMCALLBACK_TRANS_STOP:
         g_debug("trans_stop()");
         curpkg = 0;
         break;
-    case RPMCALLBACK_INST_START:        /* Installing package */
+
+    /* install phase: (open, start, progress..., close) for each package */
+    case RPMCALLBACK_INST_START:
         g_debug("inst_start(\"%s\")", file);
+        nvr = headerGetAsString(hdr, RPMTAG_NVR);
+        g_message("installing %s...", nvr);
+        rfree(nvr);
         break;
     case RPMCALLBACK_INST_OPEN_FILE:
+        /* NOTE: hdr is NULL (because we haven't opened the file yet) */
         g_debug("inst_open_file(\"%s\")", file);
-        if (g_str_has_suffix(file, ".rpm")) {
-            /* FIXME: this doesn't work.. I wonder what 'arg' is?
-            Header h = (Header) arg;
-            gchar *nvr;
-            nvr = headerFormat(h, "%{NAME}-%{VERSION}-%{RELEASE}", NULL);
-            g_message("installing %s...", nvr);
-            rfree(nvr);
-            */
-            g_message("installing %s...", file);
-        } else {
-            g_warning("inst_open_file for non-RPM file %s", file);
-        }
         pkgfile = g_strjoin("/", packagedir, file, NULL);
         retval = rpmShowProgress(arg, what, amount, total, pkgfile, NULL);
         g_free(pkgfile);
-        return retval;
+        break;
+    case RPMCALLBACK_INST_PROGRESS:
         break;
     case RPMCALLBACK_INST_CLOSE_FILE:   /* Finished installing */
         g_debug("inst_close_file(\"%s\")", file);
@@ -361,12 +372,21 @@ void *rpm_trans_callback(const void *arg,
             prevpercent = percent;
         }
         break;
+
+    /* cleanup phase: (start, stop) for each cleanup */
+    /* NOTE: file is NULL */
     case RPMCALLBACK_UNINST_START:
-        g_debug("uninst_start(\"%s\")", file);
+        nvr = headerGetAsString(hdr, RPMTAG_NVR);
+        g_debug("uninst_start(\"%s\")", nvr);
+        rfree(nvr);
         break;
     case RPMCALLBACK_UNINST_STOP:
-        g_debug("uninst_stop(\"%s\")", file);
+        nvr = headerGetAsString(hdr, RPMTAG_NVR);
+        g_debug("uninst_stop(\"%s\")", nvr);
+        rfree(nvr);
         break;
+
+    /* These only exist in rpm >= 4.10 */
 #ifdef RPMCALLBACK_SCRIPT_START
     case RPMCALLBACK_SCRIPT_START:
         g_debug("script_start(\"%s\")", file);
@@ -377,11 +397,17 @@ void *rpm_trans_callback(const void *arg,
         g_debug("script_stop(\"%s\")", file);
         break;
 #endif
-    /* TODO: RPMCALLBACK_{SCRIPT,UNPACK,CPIO}_ERROR */
+
+    /* errors! oh no! */
+    case RPMCALLBACK_SCRIPT_ERROR:
+        g_warning("script_error()");
+        break;
+    /* TODO: RPMCALLBACK_{UNPACK,CPIO}_ERROR */
     default:
+        g_debug("unhandled callback number %u", what);
         break;
     }
-    return NULL;
+    return retval;
 }
 
 rpmps run_transaction(rpmts ts, gint tsflags) {
@@ -435,12 +461,14 @@ void log_handler(const gchar *log_domain, GLogLevelFlags log_level,
                 g_printf("DEBUG: %s\n", message);
             break;
     }
+    fflush(stdout);
 }
 
 /****************
  * main program *
  ****************/
 
+/* Total runtime for my test system (F17->F18) is ~70m. */
 int main(int argc, char* argv[]) {
     gchar *filelist = NULL;
     gchar *filelist_data = NULL;
@@ -502,7 +530,7 @@ int main(int argc, char* argv[]) {
     files = g_strsplit(filelist_data, "\n", -1);
     g_free(filelist_data);
 
-    /* set up RPM transaction */
+    /* set up RPM transaction - this takes ~90s (~2% total duration) */
     g_message("preparing for upgrade...");
     ts = setup_transaction(files);
     if (ts == NULL)
@@ -512,7 +540,7 @@ int main(int argc, char* argv[]) {
     if (testing)
         tsflags |= RPMTRANS_FLAG_TEST;
 
-    /* LET'S ROCK */
+    /* LET'S ROCK. 98% of the program runtime is here. */
     g_message("starting upgrade...");
     probs = run_transaction(ts, tsflags);
 
