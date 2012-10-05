@@ -47,9 +47,15 @@
 #define UPGRADE_SYMLINK  "/system-update"
 #define UPGRADE_FILELIST "package.list"
 
+/* How much of the progress bar should each phase use? */
+#define TRANS_PERCENT 2
+#define INSTALL_PERCENT 70
+#define ERASE_PERCENT 28
+
 /* globals */
 gchar *packagedir = NULL; /* target of UPGRADE_SYMLINK */
-guint numpkgs = 0;        /* number of packages in transaction */
+guint installcount = 0;   /* number of installs in transaction */
+guint erasecount = 0;     /* number of erases in transaction */
 
 /* commandline options */
 static gboolean testing = FALSE;
@@ -255,6 +261,8 @@ out:
 rpmts setup_transaction(gchar *root, gchar *files[]) {
     rpmts ts = NULL;
     rpmps probs = NULL;
+    rpmtsi tsi = NULL;
+    rpmte te = NULL;
     gchar **file = NULL;
     gint rc = 1;
     guint numfiles = 0;
@@ -267,20 +275,29 @@ rpmts setup_transaction(gchar *root, gchar *files[]) {
     /* Disable signature checking, as anaconda did */
     rpmtsSetVSFlags(ts, rpmtsVSFlags(ts) | _RPMVSF_NOSIGNATURES);
 
+
     /* Populate the transaction */
-    numpkgs = 0;
     numfiles = g_strv_length(files);
     g_message("found %u packages to install", numfiles);
     g_message("building RPM transaction, one moment...");
     for (file = files; *file && **file; file++) {
-        if (add_upgrade(ts, *file) == 0)
-            numpkgs++;
-        else
+        if (add_upgrade(ts, *file))
             g_warning("couldn't add %s to the transaction", *file);
         /* Ignore errors, just like anaconda did */
     }
 
-    if (numpkgs == 0) {
+    /* get some transaction info */
+    tsi = rpmtsiInit(ts);
+    while ((te = rpmtsiNext(tsi, 0)) != NULL) {
+        if (rpmteType(te) == TR_ADDED)
+            installcount++;
+        else
+            erasecount++;
+    }
+    g_message("%u packages to install, %u to erase", installcount, erasecount);
+    tsi = rpmtsiFree(tsi);
+
+    if (installcount == 0) {
         g_warning("nothing to upgrade");
         goto fail;
     }
@@ -326,7 +343,8 @@ void *rpm_trans_callback(const void *arg,
     Header hdr = (Header) arg;
     static guint percent;
     static guint prevpercent;
-    static guint curpkg;
+    static guint installed = 0;
+    static guint erased = 0;
     gchar *pkgfile;
     static guint cb_seen = 0;
     gchar *nvr = NULL;
@@ -358,16 +376,9 @@ void *rpm_trans_callback(const void *arg,
         break;
     case RPMCALLBACK_TRANS_STOP:
         g_debug("trans_stop()");
-        curpkg = 0;
         break;
 
     /* install phase: (open, start, progress..., close) for each package */
-    case RPMCALLBACK_INST_START:
-        g_debug("inst_start(\"%s\")", file);
-        nvr = headerGetAsString(hdr, RPMTAG_NVR);
-        g_message("installing %s...", nvr);
-        rfree(nvr);
-        break;
     case RPMCALLBACK_INST_OPEN_FILE:
         /* NOTE: hdr is NULL (because we haven't opened the file yet) */
         g_debug("inst_open_file(\"%s\")", file);
@@ -375,13 +386,21 @@ void *rpm_trans_callback(const void *arg,
         retval = rpmShowProgress(arg, what, amount, total, pkgfile, NULL);
         g_free(pkgfile);
         break;
+    case RPMCALLBACK_INST_START:
+        g_debug("inst_start(\"%s\")", file);
+        nvr = headerGetAsString(hdr, RPMTAG_NVR);
+        g_message("[%u/%u] (%u%%) installing %s...",
+                  installed+1, installcount, percent, nvr);
+        rfree(nvr);
+        break;
     case RPMCALLBACK_INST_PROGRESS:
         break;
     case RPMCALLBACK_INST_CLOSE_FILE:   /* Finished installing */
         g_debug("inst_close_file(\"%s\")", file);
         rpmShowProgress(arg, what, amount, total, key, NULL);
-        curpkg++;
-        percent = (100 * curpkg) / numpkgs;
+        installed++;
+        percent = TRANS_PERCENT + \
+                    ((INSTALL_PERCENT*installed) / installcount);
         if (percent > prevpercent) {
             set_plymouth_percent(percent);
             prevpercent = percent;
@@ -393,11 +412,20 @@ void *rpm_trans_callback(const void *arg,
     case RPMCALLBACK_UNINST_START:
         nvr = headerGetAsString(hdr, RPMTAG_NVR);
         g_debug("uninst_start(\"%s\")", nvr);
+        g_message("[%u/%u] (%u%%) cleaning %s...",
+                  erased+1, erasecount, percent, nvr);
         rfree(nvr);
         break;
     case RPMCALLBACK_UNINST_STOP:
         nvr = headerGetAsString(hdr, RPMTAG_NVR);
         g_debug("uninst_stop(\"%s\")", nvr);
+        erased++;
+        percent = TRANS_PERCENT + INSTALL_PERCENT + \
+                    ((ERASE_PERCENT*erased) / erasecount);
+        if (percent > prevpercent) {
+            set_plymouth_percent(percent);
+            prevpercent = percent;
+        }
         rfree(nvr);
         break;
 
@@ -434,6 +462,7 @@ rpmps run_transaction(rpmts ts, gint tsflags) {
     rpmtsSetNotifyCallback(ts, rpm_trans_callback, NULL);
     rpmtsSetFlags(ts, rpmtsFlags(ts)|tsflags);
     rc = rpmtsRun(ts, NULL, (rpmprobFilterFlags)probFilter);
+    g_debug("transaction finished");
     if (rc) {
         probs = rpmtsProblems(ts);
         if (rpmpsNumProblems(probs) == 0) {
