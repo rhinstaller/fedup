@@ -69,7 +69,7 @@ static GOptionEntry options[] =
 {
     { "testing", 'n', 0, G_OPTION_ARG_NONE, &testing,
         "Test mode - don't actually install anything", NULL },
-    { "root", 'r', 0' G_OPTION_ARG_FILENAME, &root,
+    { "root", 'r', 0, G_OPTION_ARG_FILENAME, &root,
         "Top level directory for upgrade (default: \"/\")", NULL },
     { "reboot", 'b', 0, G_OPTION_ARG_NONE, &reboot,
         "Reboot after upgrade", NULL },
