@@ -328,6 +328,7 @@ void *rpm_trans_callback(const void *arg,
     static guint prevpercent;
     static guint curpkg;
     gchar *pkgfile;
+    static guint cb_seen = 0;
     gchar *nvr = NULL;
     gchar *file = (gchar *)key;
     void *retval = NULL;
@@ -341,6 +342,11 @@ void *rpm_trans_callback(const void *arg,
      * cleanup:  UNINST_START, UNINST_STOP
      *     duration: the remainder
      */
+
+    if (!(what & cb_seen)) {
+        g_debug("API note: rpm callback %u: hdr=%p, key=%s", what, hdr, file);
+        cb_seen |= what;
+    }
 
     switch (what) {
     /* prep phase: (start, progress..., stop), just once */
