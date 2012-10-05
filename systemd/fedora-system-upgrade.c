@@ -168,6 +168,11 @@ out:
 
 #else /* !USE_PLYMOUTH_LIBS */
 
+/* a bit hacky - just check to see if we can change mode */
+gboolean plymouth_setup(void) {
+    return call("plymouth change-mode %s", "updates");
+}
+
 /* display-message <text> */
 gboolean set_plymouth_message(const gchar *message) {
     gboolean retval = TRUE;
@@ -501,14 +506,12 @@ int main(int argc, char* argv[]) {
     if (testing)
         reboot = FALSE;
 
-#ifdef USE_PLYMOUTH_LIBS
     if (plymouth) {
         if (!plymouth_setup()) {
             g_warning("Disabling plymouth output");
             plymouth = FALSE;
         }
     }
-#endif
 
     if (!plymouth)
         plymouth_verbose = FALSE;
