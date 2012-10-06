@@ -5,7 +5,7 @@ OnFailure=reboot.target
 OnFailureIsolate=yes
 # TODO: would be nice if we could just capture the journal for one boot...
 Wants=syslog.socket
-After=syslog.socket
+After=syslog.socket system-update.target
 
 [Service]
 ExecStartPre=-/usr/bin/plymouth change-mode updates
