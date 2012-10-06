@@ -8,7 +8,7 @@ Wants=syslog.socket
 After=syslog.socket system-update.target
 
 [Service]
-ExecStartPre=-/usr/bin/plymouth change-mode updates
+ExecStartPre=-/usr/bin/plymouth change-mode --updates
 ExecStart=/usr/lib/systemd/fedora-system-upgrade --plymouth --reboot
 StandardOutput=journal+console
 StandardError=journal+console

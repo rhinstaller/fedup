@@ -181,9 +181,9 @@ out:
 
 #else /* !USE_PLYMOUTH_LIBS */
 
-/* a bit hacky - just check to see if we can change mode */
+/* just see if plymouth is alive */
 gboolean plymouth_setup(void) {
-    return call("plymouth change-mode %s", "updates");
+    return call("plymouth --ping", NULL);
 }
 
 /* display-message <text> */
@@ -192,9 +192,9 @@ gboolean set_plymouth_message(const gchar *message) {
     if (!plymouth)
         return TRUE;
     if (message == NULL || *message == '\0')
-        retval = call("plymouth hide-message --text=%s", message);
+        retval = call("plymouth hide-message --text=\"%s\"", message);
     else
-        retval = call("plymouth display-message --text=%s", message);
+        retval = call("plymouth display-message --text=\"%s\"", message);
     return retval;
 }
 
