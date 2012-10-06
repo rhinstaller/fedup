@@ -120,6 +120,12 @@ void ply_success(void *user_data, ply_boot_client_t *client) {
 void ply_failure(void *user_data, ply_boot_client_t *client) {
     ply_event_loop_exit(ply.loop, FALSE);
 }
+void ply_disconnect(void *unused) {
+    g_warning("unexpectedly disconnected from plymouth");
+    plymouth = FALSE;
+    ply_event_loop_exit(ply.loop, FALSE);
+    /* TODO: attempt reconnect? */
+}
 
 /* display-message <text> */
 gboolean set_plymouth_message(const gchar *message) {
@@ -152,7 +158,9 @@ gboolean plymouth_setup(void) {
     ply.loop = ply_event_loop_new();
     ply.client = ply_boot_client_new();
 
-    if (!ply_boot_client_connect(ply.client, ply_disconnect, ply.loop)) {
+    if (!ply_boot_client_connect(ply.client,
+            (ply_boot_client_disconnect_handler_t) ply_disconnect,
+            NULL)) {
         g_warning("Couldn't connect to plymouth");
         goto out;
     }
