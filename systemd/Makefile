@@ -7,8 +7,10 @@ PACKAGES=glib-2.0 gio-2.0 rpm ply-boot-client
 all: fedora-system-upgrade
 
 fedora-system-upgrade: fedora-system-upgrade.c
-	$(CC) $(shell pkg-config $(PACKAGES) --cflags --libs) \
-	      $(CFLAGS) $< -o $@
+	$(CC) $(shell pkg-config $(PACKAGES) --cflags --libs) $(CFLAGS) $< -o $@
 
 clean:
 	rm -f fedora-system-upgrade
+
+install:
+	install fedora-system-upgrade $(DESTDIR)/usr/lib/systemd
