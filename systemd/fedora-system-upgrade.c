@@ -1,4 +1,4 @@
-/* fedora-system-upgrade.c: upgrade a Fedora system from system-update.target
+/* fedora-system-upgrade.c: upgrade a Fedora system
  *
  * Copyright © 2012 Red Hat Inc.
  *
@@ -43,7 +43,7 @@
 #include "ply-boot-client.h"
 
 /* File names and locations */
-#define UPGRADE_SYMLINK  "/system-update"
+#define UPGRADE_SYMLINK  "system-update"
 #define UPGRADE_FILELIST "package.list"
 
 /* How much of the progress bar should each phase use? */
@@ -62,7 +62,7 @@ static gboolean reboot = FALSE;
 static gboolean plymouth = FALSE;
 static gboolean plymouth_verbose = FALSE;
 static gboolean debug = FALSE;
-static gchar *root = NULL;
+static gchar *root = "/";
 
 static GOptionEntry options[] =
 {
@@ -526,6 +526,8 @@ void log_handler(const gchar *log_domain, GLogLevelFlags log_level,
 int main(int argc, char* argv[]) {
     gchar *filelist = NULL;
     gchar *filelist_data = NULL;
+    gchar *symlink = NULL;
+    gchar *link_target = NULL;
     gchar **files = NULL;
     GError *error = NULL;
     rpmts ts = NULL;
@@ -539,8 +541,9 @@ int main(int argc, char* argv[]) {
     /* g_type_init(); */
     g_log_set_handler(NULL, G_LOG_LEVEL_MASK, log_handler, NULL);
 
+
     /* parse commandline */
-    context = g_option_context_new("update system from system-update.target");
+    context = g_option_context_new("upgrade a Fedora system");
     g_option_context_add_main_entries(context, options, GETTEXT_PACKAGE);
     if (!g_option_context_parse(context, &argc, &argv, &error))
         g_critical("option_parsing failed: %s", error->message);
@@ -564,24 +567,36 @@ int main(int argc, char* argv[]) {
     if (getuid() != 0 || geteuid() != 0)
         g_critical("This program must be run as root.");
 
-    /* do this early to avoid a reboot loop if we crash.. */
-    packagedir = g_file_read_link(UPGRADE_SYMLINK, &error);
-    if (packagedir == NULL)
+
+    /* read the magic symlink */
+    symlink = g_build_filename(root, UPGRADE_SYMLINK, NULL);
+
+    link_target = g_file_read_link(symlink, &error);
+    if (link_target == NULL)
         g_critical(error->message);
 
-    g_debug(UPGRADE_SYMLINK " -> %s", packagedir);
+    packagedir = g_build_filename(root, link_target, NULL);
+    g_debug("%s -> %s", symlink, packagedir);
 
+    /* delete the symlink immediately (avoid reboot loop if we crash..) */
     if (!testing)
-        g_unlink(UPGRADE_SYMLINK);
+        g_unlink(symlink);
+    g_free(symlink);
+    g_free(link_target);
 
-    /* read filelist */
-    filelist = g_strdup_printf("%s/"UPGRADE_FILELIST, packagedir);
+
+    /* read filelist from packagedir */
+    filelist = g_build_filename(packagedir, UPGRADE_FILELIST, NULL);
     if (!g_file_get_contents(filelist, &filelist_data, NULL, &error))
         g_critical(error->message);
 
+    /* parse the data into a list of files */
     g_strchomp(filelist_data);
     files = g_strsplit(filelist_data, "\n", -1);
+
+    g_free(filelist);
     g_free(filelist_data);
+
 
     /* set up RPM transaction - this takes ~90s (~2% total duration) */
     g_message("preparing for upgrade...");
@@ -593,9 +608,11 @@ int main(int argc, char* argv[]) {
     if (testing)
         tsflags |= RPMTRANS_FLAG_TEST;
 
+
     /* LET'S ROCK. 98% of the program runtime is here. */
     g_message("starting upgrade...");
     probs = run_transaction(ts, tsflags);
+
 
     /* check for failures */
     if (probs != NULL)
@@ -603,16 +620,14 @@ int main(int argc, char* argv[]) {
     else
         retval = EXIT_SUCCESS;
 
-    g_debug("cleaning up...");
     /* cleanup */
+    g_debug("cleaning up...");
     rpmpsFree(probs);
     rpmtsFree(ts);
     rpmFreeMacros(NULL);
     rpmFreeRpmrc();
 
 out:
-    if (filelist != NULL)
-        g_free(filelist);
     if (packagedir != NULL)
         g_free(packagedir);
     if (files != NULL)
