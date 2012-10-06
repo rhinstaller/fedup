@@ -223,7 +223,7 @@ int add_upgrade(rpmts ts, gchar *file) {
     gchar *fullfile = NULL;
     gint rc = 1;
 
-    fullfile = g_strjoin("/", packagedir, file, NULL);
+    fullfile = g_build_filename(packagedir, file, NULL);
     if (fullfile == NULL) {
         g_warning("failed to allocate memory");
         goto out;
@@ -389,7 +389,7 @@ void *rpm_trans_callback(const void *arg,
     case RPMCALLBACK_INST_OPEN_FILE:
         /* NOTE: hdr is NULL (because we haven't opened the file yet) */
         g_debug("inst_open_file(\"%s\")", file);
-        pkgfile = g_strjoin("/", packagedir, file, NULL);
+        pkgfile = g_build_filename(packagedir, file, NULL);
         retval = rpmShowProgress(arg, what, amount, total, pkgfile, NULL);
         g_free(pkgfile);
         break;
