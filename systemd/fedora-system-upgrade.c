@@ -264,7 +264,7 @@ out:
 }
 
 /* Set up the RPM transaction using the list of packages to install */
-rpmts setup_transaction(gchar *root, gchar *files[]) {
+rpmts setup_transaction(gchar *files[]) {
     rpmts ts = NULL;
     rpmps probs = NULL;
     rpmtsi tsi = NULL;
@@ -527,6 +527,7 @@ int main(int argc, char* argv[]) {
     gchar *filelist_data = NULL;
     gchar *symlink = NULL;
     gchar *link_target = NULL;
+    gchar *origroot = NULL;
     gchar **files = NULL;
     GError *error = NULL;
     rpmts ts = NULL;
@@ -547,6 +548,9 @@ int main(int argc, char* argv[]) {
     if (!g_option_context_parse(context, &argc, &argv, &error))
         g_critical("option_parsing failed: %s", error->message);
 
+    if (getuid() != 0 || geteuid() != 0)
+        g_critical("This program must be run as root.");
+
     if (g_getenv("UPGRADE_TEST") != NULL)
         testing = TRUE;
 
@@ -563,8 +567,13 @@ int main(int argc, char* argv[]) {
     if (!plymouth)
         plymouth_verbose = FALSE;
 
-    if (getuid() != 0 || geteuid() != 0)
-        g_critical("This program must be run as root.");
+    if (!g_path_is_absolute(root)) {
+        origroot = root;
+        root = realpath(origroot, NULL);
+        g_debug("root is \"%s\"", root);
+    }
+    if ((root == NULL) || (!g_file_test(root, G_FILE_TEST_IS_DIR)))
+        g_critical("--root: \"%s\" is not a directory", origroot);
 
 
     /* read the magic symlink */
@@ -599,7 +608,7 @@ int main(int argc, char* argv[]) {
 
     /* set up RPM transaction - this takes ~90s (~2% total duration) */
     g_message("preparing for upgrade...");
-    ts = setup_transaction(root, files);
+    ts = setup_transaction(files);
     if (ts == NULL)
         goto out;
 
