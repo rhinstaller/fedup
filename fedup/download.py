@@ -95,6 +95,7 @@ class FedupDownloader(yum.YumBase):
         # _downloadPackages function it's a negligible delay.
         localpkgs = [p for p in pkgs if os.path.exists(p.localPkg())]
         total = len(localpkgs)
+        # XXX: multithreading?
         for num, p in enumerate(localpkgs):
             local = p.localPkg()
             if hasattr(callback, "verify") and callable(callback.verify):
@@ -120,7 +121,7 @@ class FedupDownloader(yum.YumBase):
         for f in localpkgs.difference(keepfiles):
             try:
                 log.debug("removing %s", f)
-                #os.remove(f)
+                os.remove(f)
             except IOError as e:
                 log.info("failed to remove %s", f)
         # TODO remove dirs that don't belong to any repo
