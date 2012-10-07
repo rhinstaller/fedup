@@ -39,9 +39,6 @@
 #include <locale.h>
 #include <glib/gi18n.h>
 
-/* plymouth */
-#include "ply-boot-client.h"
-
 /* File names and locations */
 #define UPGRADE_SYMLINK  "system-update"
 #define UPGRADE_FILELIST "package.list"
@@ -105,6 +102,8 @@ gboolean call(const gchar *cmd, const gchar *arg) {
  ******************/
 
 #ifdef USE_PLYMOUTH_LIBS
+#include "ply-boot-client.h"
+
 typedef struct
 {
     ply_boot_client_t *client;
