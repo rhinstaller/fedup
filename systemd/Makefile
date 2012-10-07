@@ -2,7 +2,7 @@
 
 .PHONY: all clean
 
-PACKAGES=glib-2.0 gio-2.0 rpm ply-boot-client
+PACKAGES=glib-2.0 rpm ply-boot-client
 
 all: fedora-system-upgrade
 
