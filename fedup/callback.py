@@ -74,7 +74,7 @@ class DownloadCallbackBase(ProcessTransBaseCallback):
     # our 'verify' callback in download_packages (yum doesn't have one :/)
     def verify(self, amount, total, filename, data):
         shortname = filename.split('/')[-1]
-        self.log.debug("verifying %u/%u %s", amount+1, total, shortname)
+        self.log.debug("verifying %u/%u %s", amount, total, shortname)
 
 # callback object for depsolving
 

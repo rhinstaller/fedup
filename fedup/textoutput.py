@@ -71,16 +71,16 @@ class SimpleProgress(object):
     def __str__(self):
         return self.formatstr.format(self)
 
-    def update(self, newval):
+    def update(self, newval, forceupdate=False):
         now = time.time()
         self.curval = min(newval, self.maxval)
-        if now - self.screenupdate > self.update_interval:
+        if forceupdate or (now - self.screenupdate > self.update_interval):
             self.screenupdate = now
             self.tty.write("\r%s" % self)
             self.tty.flush()
 
     def finish(self):
-        self.update(self.maxval)
+        self.update(self.maxval, forceupdate=True)
         self.tty.write("\n")
 
 class RepoProgress(YumTextMeter):
@@ -124,7 +124,7 @@ class DownloadCallback(DownloadCallbackBase):
         if self.bar.maxval != total:
             self.bar.maxval = total
         self.bar.update(amount)
-        if amount+1 >= total:
+        if amount == total:
             self.bar.finish()
 
 class TransactionCallback(RPMTsCallback):

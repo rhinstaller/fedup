@@ -96,7 +96,7 @@ class FedupDownloader(yum.YumBase):
         localpkgs = [p for p in pkgs if os.path.exists(p.localPkg())]
         total = len(localpkgs)
         # XXX: multithreading?
-        for num, p in enumerate(localpkgs):
+        for num, p in enumerate(localpkgs, 1):
             local = p.localPkg()
             if hasattr(callback, "verify") and callable(callback.verify):
                 callback.verify(num, total, local, None)
