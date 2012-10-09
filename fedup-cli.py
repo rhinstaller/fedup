@@ -14,7 +14,7 @@ from fedup.download import FedupDownloader, YumBaseError, prep_upgrade
 from fedup.upgrade import FedupUpgrade, TransactionError
 from fedup import textoutput as output
 
-import logging, fedup.logutils
+import logging, fedup.logutils, fedup.media
 log = logging.getLogger("fedup")
 fedup.logutils.debuglog("fedup.log") # FIXME: better dir for this
 fedup.logutils.consolelog()          # TODO: control output with cli args
@@ -52,6 +52,8 @@ def transaction_test(pkgs):
 def reboot():
     call(['systemctl', 'reboot'])
 
+## argument parsing stuff ##
+
 def get_versions():
     '''Possible versions to upgrade to. Given Fedora N, this is N+1 and N+2.'''
     distro, version, id = platform.linux_distribution()
@@ -68,6 +70,25 @@ class RepoAction(argparse.Action):
             action = 'disable'
         curval.append((action, value))
         setattr(namespace, self.dest, curval)
+
+# check the argument to '--device' to see if it refers to install media
+def device_or_mnt(arg):
+    if arg == 'auto':
+        media = fedup.media.find()
+    else:
+        media = [m for m in fedup.media.find() if arg in (m.dev, m.mntpoint)]
+
+    if len(media) == 1:
+        return media.pop()
+
+    if not media:
+        msg = _("no install media found")
+        if arg != 'auto':
+            msg = "%s: %s" % (arg, msg)
+    else:
+        devs = ", ".join(m.dev for m in media)
+        msg = _("multiple devices found. please choose one of (%s)") % devs
+    raise argparse.ArgumentTypeError(msg)
 
 def parse_args():
     p = argparse.ArgumentParser(
@@ -86,13 +107,14 @@ def parse_args():
                                _('Specify the location of the upgrade data.'))
     req.add_argument('--iso',
         help='[TODO] '+_('Installation image file'))
-    # Translators: This is for '--device DEVICE' in --help output
-    req.add_argument('--device', metavar=_('DEVICE'),
-        help='[TODO] '+_('Installation image on device (DVD, USB, etc.)'))
+    req.add_argument('--device', metavar='DEV', nargs='?', type=device_or_mnt,
+        const='auto',
+        # Translators: keep 'DEV' as-is
+        help=_('Installation media on DVD/USB device DEV. Default: autodetect'))
     # Translators: This is for '--network [VERSION]' in --help output
     req.add_argument('--network', metavar=_('VERSION'), nargs='?',
         const='latest', choices=['latest', 'rawhide'] + get_versions(),
-        help=_('Download VERSION from the network (default: newest release)'))
+        help=_('Download VERSION from the network. Default: newest release'))
 
     net = p.add_argument_group(_('optional arguments for --network'))
     net.add_argument('--disablerepo', metavar='REPO', action=RepoAction,
@@ -117,11 +139,16 @@ def main(args):
             # FIXME: fetch releases.txt to determine this
             args.network = '18'
         pkgs = download_pkgs(version=args.network, repos=args.repos)
+        # FIXME: fetch kernel & initrd
     else:
-        print "Upgrade from local media not implemented yet!"
-        raise SystemExit(255)
-
-    # FIXME: fetch kernel & initrd
+        if args.iso:
+            # FIXME: mount iso so we can use files etc.
+            # FIXME: set args.device = FstabEntry for mounted iso
+            raise NotImplementedError("--iso isn't implemented yet")
+        # FIXME: set up repo for args.device.mntpoint
+        # FIXME: prep update transaction, get pkglist for repo
+        # FIXME: copy kernel & initrd into place
+        raise NotImplementedError("--device isn't implemented yet")
 
     # Run a test transaction
     transaction_test(pkgs)
@@ -131,6 +158,7 @@ def main(args):
     print _("setting up system for upgrade")
     prep_upgrade(pkgs)
     # FIXME: args.bootloader
+    # FIXME: if args.device: add ${dev}.mount to system-update.target.wants
 
     if args.reboot:
         reboot()
