@@ -86,14 +86,13 @@ gboolean call(const gchar *cmd, const gchar *arg) {
     if (arg != NULL)
         command = g_strdup_printf(cmd, arg);
     else
-        command = (char *)cmd;
+        command = g_strdup(cmd);
     retval = g_spawn_command_line_async(command, &error);
     if (!retval) {
-        g_warning("command \"%s\" failed: %s", command, error->message);
+        g_warning("failed to spawn \"%s\": %s", command, error->message);
         g_error_free(error);
     }
-    if (command != NULL)
-        g_free(command);
+    g_free(command);
     return retval;
 }
 
