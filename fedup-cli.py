@@ -111,7 +111,7 @@ def parse_args():
 
     args = p.parse_args()
 
-    if not args.network or args.device or args.iso:
+    if not (args.network or args.device or args.iso):
         p.error(_('One of (--network, --device, --iso) is required.'))
 
     return args
