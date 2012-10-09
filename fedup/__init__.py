@@ -11,3 +11,5 @@ _ = t.lgettext
 
 packagedir = '/var/lib/fedora-upgrade'
 packagelist = packagedir + '/package.list'
+magic_symlink = '/system-update'
+magic_file = magic_symlink+'/.fedup'
