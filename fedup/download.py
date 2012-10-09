@@ -4,6 +4,7 @@ import os
 import yum
 import logging
 from fedup.callback import BaseTsCallback
+from fedup.grubby import Grubby
 from yum.Errors import YumBaseError
 
 enabled_plugins = ['blacklist', 'whiteout']
@@ -12,7 +13,7 @@ disabled_plugins = ['rpm-warm-cache', 'remove-with-leaves', 'presto',
 
 cachedir="/var/tmp/fedora-upgrade"
 
-from fedup import packagedir, packagelist
+from fedup import packagedir, packagelist, magic_symlink, magic_file
 
 log = logging.getLogger("fedup.yum") # XXX kind of misleading?
 
@@ -162,3 +163,44 @@ def link_pkgs(pkgs):
     # write packagelist
     with open(packagelist, 'w') as outf:
         outf.writelines(p+'\n' for p in pkgbasenames)
+
+def setup_magic_link():
+    log.info("setting up magic symlink: %s->%s", magic_symlink, packagedir)
+    try:
+        os.remove(magic_symlink)
+    except OSError:
+        pass
+    os.symlink(packagedir, magic_symlink)
+    log.info("creating magic file %s", magic_file)
+    open(magic_file, 'a')
+
+def modify_bootloader():
+    log.info("reading bootloader config")
+    bootloader = Grubby()
+    default = bootloader.default_entry()
+    log.info("default boot entry: \"%s\", %s", default.title, default.root)
+
+    # avoid duplicate boot entries
+    for e in bootloader.get_entries():
+        if e.kernel == "/boot/upgrade/vmlinuz":
+            log.info("removing existing boot entry for %s", e.kernel)
+            bootloader.remove_entry(e.index)
+
+    log.info("adding new boot entry")
+    bootloader.add_entry(kernel="/boot/upgrade/vmlinuz",
+                         initrd="/boot/upgrade/upgrade.img",
+                         title=_("System Upgrade"),
+                         args="systemd.unit=system-update.target")
+    # FIXME: systemd.unit isn't necessary if we're running F18 or later -
+    #        check the system version to see if we actually need that.
+
+    # FIXME: use grub2-reboot to change to new bootloader config
+
+def prep_upgrade(pkgs, bootloader=True):
+    # put packages in packagedir (also writes packagelist)
+    link_pkgs(pkgs)
+    # make magic symlink and touch magic file
+    setup_magic_link()
+    # mess with the bootloader, if requested
+    if bootloader:
+        modify_bootloader()

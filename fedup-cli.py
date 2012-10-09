@@ -10,7 +10,7 @@ import os, sys, time
 import argparse, platform
 from subprocess import call
 
-from fedup.download import FedupDownloader, YumBaseError, link_pkgs
+from fedup.download import FedupDownloader, YumBaseError, prep_upgrade
 from fedup.upgrade import FedupUpgrade, TransactionError
 from fedup import textoutput as output
 
@@ -48,13 +48,6 @@ def transaction_test(pkgs):
     fu = FedupUpgrade()
     fu.setup_transaction(pkgfiles=pkgs)
     fu.test_transaction(callback=output.TransactionCallback(numpkgs=len(pkgs)))
-
-def prep_upgrade(pkgs):
-    print _("setting up system for upgrade")
-    # put packages in packagedir (also writes packagelist)
-    link_pkgs(pkgs)
-
-    # FIXME: modify bootloader config (grub2-reboot)
 
 def reboot():
     call(['systemctl', 'reboot'])
@@ -134,8 +127,10 @@ def main(args):
     transaction_test(pkgs)
 
     # And prepare for upgrade
-    # TODO: need root privs here
+    # TODO: we need root privs here... use polkit to get 'em?
+    print _("setting up system for upgrade")
     prep_upgrade(pkgs)
+    # FIXME: args.bootloader
 
     if args.reboot:
         reboot()
