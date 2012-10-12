@@ -1,15 +1,13 @@
 [Unit]
 Description=System Upgrade
 DefaultDependencies=no
-After=system-update.target
+ConditionPathExists=/system-upgrade
+After=system-upgrade.target
+Before=reboot.target
 
 # Reboot (back to the working system) if something goes wrong
 OnFailure=reboot.target
 OnFailureIsolate=yes
-
-# If this is actually a full Fedora upgrade, suppress packagekit-offline-update
-ConditionPathExists=/system-update/.fedup
-Conflicts=packagekit-offline-update.service
 
 # TODO: would be nice if we could just move the journal to disk for one boot..
 Wants=syslog.socket

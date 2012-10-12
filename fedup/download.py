@@ -13,7 +13,7 @@ disabled_plugins = ['rpm-warm-cache', 'remove-with-leaves', 'presto',
 
 cachedir="/var/tmp/fedora-upgrade"
 
-from fedup import packagedir, packagelist, magic_symlink, magic_file
+from fedup import packagedir, packagelist, magic_symlink
 
 log = logging.getLogger("fedup.yum") # XXX kind of misleading?
 
@@ -171,8 +171,6 @@ def setup_magic_link():
     except OSError:
         pass
     os.symlink(packagedir, magic_symlink)
-    log.info("creating magic file %s", magic_file)
-    open(magic_file, 'a')
 
 def modify_bootloader():
     log.info("reading bootloader config")
@@ -190,7 +188,7 @@ def modify_bootloader():
     bootloader.add_entry(kernel="/boot/upgrade/vmlinuz",
                          initrd="/boot/upgrade/upgrade.img",
                          title=_("System Upgrade"),
-                         args="systemd.unit=system-update.target")
+                         args="systemd.unit=system-upgrade.target")
     # FIXME: systemd.unit isn't necessary if we're running F18 or later -
     #        check the system version to see if we actually need that.
 

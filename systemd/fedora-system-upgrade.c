@@ -40,7 +40,7 @@
 #include <glib/gi18n.h>
 
 /* File names and locations */
-#define UPGRADE_SYMLINK  "system-update"
+#define UPGRADE_SYMLINK  "system-upgrade"
 #define UPGRADE_FILELIST "package.list"
 
 /* How much of the progress bar should each phase use? */
