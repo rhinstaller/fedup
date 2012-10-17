@@ -310,13 +310,20 @@ rpmts setup_transaction(gchar *files[]) {
     /* Check transaction */
     g_message("checking RPM transaction...");
     rc = rpmtsCheck(ts);
-    probs = rpmtsProblems(ts);
-    if (rc || rpmpsNumProblems(probs) > 0) {
-        /* FIXME: ignore anything but RPMPROB_{CONFLICT,REQUIRES} */
-        rpmpsPrint(NULL, probs);
-        rpmpsFree(probs);
-        /* once again: ignore errors, following anaconda tradition */
+    if (rc) {
+        g_warning("transaction check failed (couldn't open rpmdb)");
+        goto fail;
     }
+
+    /* Log any transaction problems encountered */
+    probs = rpmtsProblems(ts);
+    if (probs != NULL) {
+        g_message("non-fatal problems with RPM transaction:");
+        /* FIXME: ignore anything but RPMPROB_{CONFLICT,REQUIRES} */
+        rpmpsPrint(stdout, probs);
+        rpmpsFree(probs);
+    }
+    /* Continue on, ignoring errors, as is anaconda tradition... */
 
     /* Order transaction */
     rc = rpmtsOrder(ts);
@@ -471,15 +478,11 @@ rpmps run_transaction(rpmts ts, gint tsflags) {
     rpmtsSetFlags(ts, rpmtsFlags(ts)|tsflags);
     rc = rpmtsRun(ts, NULL, (rpmprobFilterFlags)probFilter);
     g_debug("transaction finished");
-    if (rc) {
+    if (rc > 0)
         probs = rpmtsProblems(ts);
-        if (rpmpsNumProblems(probs) == 0) {
-            g_warning("RPM transaction finished with errors (code %i)", rc);
-            probs = NULL; /* upgrade finished, so basically a success */
-        } else {
-            g_warning("RPM transaction failed");
-        }
-    }
+    if (rc < 0)
+        g_message("Upgrade finished with non-fatal errors.");
+        /* AFAICT probs would be empty here, so that's all we can say.. */
     return probs;
 }
 
@@ -622,10 +625,13 @@ int main(int argc, char* argv[]) {
 
 
     /* check for failures */
-    if (probs != NULL)
-        rpmpsPrint(NULL, probs);
-    else
+    if (probs != NULL) {
+        g_message("ERROR: upgrade failed due to the following problems:");
+        rpmpsPrint(stdout, probs);
+    } else {
+        g_message("upgrade finished.");
         retval = EXIT_SUCCESS;
+    }
 
     /* cleanup */
     g_debug("cleaning up...");
