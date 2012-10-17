@@ -53,12 +53,7 @@ def reboot():
     call(['systemctl', 'reboot'])
 
 ## argument parsing stuff ##
-
-def get_versions():
-    '''Possible versions to upgrade to. Given Fedora N, this is N+1 and N+2.'''
-    distro, version, id = platform.linux_distribution()
-    version = int(version)
-    return [str(version+1), str(version+2)]
+# TODO: move to fedup/parse_args.py so it can be shared with GUI?
 
 class RepoAction(argparse.Action):
     def __call__(self, parser, namespace, value, option_string=None):
@@ -90,6 +85,19 @@ def device_or_mnt(arg):
         msg = _("multiple devices found. please choose one of (%s)") % devs
     raise argparse.ArgumentTypeError(msg)
 
+def VERSION(arg):
+    if arg.lower() == 'rawhide':
+        return 'rawhide'
+
+    distro, version, id = platform.linux_distribution()
+    version = int(version)
+
+    if int(arg) >= version:
+        return arg
+    else:
+        msg = _("version must be greater than %i") % version
+        raise argparse.ArgumentTypeError(msg)
+
 def parse_args():
     p = argparse.ArgumentParser(
         description=_('Prepare system for upgrade.'),
@@ -104,30 +112,27 @@ def parse_args():
         help='[TODO] '+_('Enable sshd during the upgrade (for remote monitoring)'))
 
     req = p.add_argument_group('SOURCE',
-                               _('Specify the location of the upgrade data.'))
+                               _('Location to search for upgrade data.'))
+    req.add_argument('--device', metavar='DEV', nargs='?',
+        type=device_or_mnt, const='auto',
+        help=_('device or mountpoint. default: check mounted devices'))
     req.add_argument('--iso',
-        help='[TODO] '+_('Installation image file'))
-    req.add_argument('--device', metavar='DEV', nargs='?', type=device_or_mnt,
-        const='auto',
-        # Translators: keep 'DEV' as-is
-        help=_('Installation media on DVD/USB device DEV. Default: autodetect'))
+        help='[TODO] '+_('installation image file'))
     # Translators: This is for '--network [VERSION]' in --help output
-    req.add_argument('--network', metavar=_('VERSION'), nargs='?',
-        const='latest', choices=['latest', 'rawhide'] + get_versions(),
-        help=_('Download VERSION from the network. Default: newest release'))
+    req.add_argument('--network', metavar=_('VERSION'), type=VERSION,
+        help=_('online repos matching VERSION (a number or "rawhide")'))
 
     net = p.add_argument_group(_('optional arguments for --network'))
-    net.add_argument('--disablerepo', metavar='REPO', action=RepoAction,
-        dest='repos', help=_('Repositories to disable for network upgrade'))
     net.add_argument('--enablerepo', metavar='REPO', action=RepoAction,
-        dest='repos', help=_('Repositories to enable for network upgrade'))
-    # TODO: arbitrary repos with --repourl
+        dest='repos', help=_('enable one or more repos (wildcards allowed)'))
+    net.add_argument('--disablerepo', metavar='REPO', action=RepoAction,
+        dest='repos', help=_('disable one or more repos (wildcards allowed)'))
     p.set_defaults(repos=[])
 
     args = p.parse_args()
 
     if not (args.network or args.device or args.iso):
-        p.error(_('One of (--network, --device, --iso) is required.'))
+        p.error(_('SOURCE is required (--network, --device, --iso)'))
 
     return args
 
