@@ -1,0 +1,17 @@
+[Unit]
+Description=Prepare Upgrade Image
+Documentation=man:upgrade-switch-root.service(8)
+DefaultDependencies=no
+ConditionPathExists=/run/initramfs/upgrade.conf
+OnFailure=emergency.service
+After=upgrade-switch-root.target
+
+[Service]
+Type=oneshot
+EnvironmentFile=/run/initramfs/upgrade.conf
+ExecStart=-/usr/bin/systemctl --no-block --force switch-root ${UPGRADEROOT}
+ExecStopPost=-/bin/rm -f /run/initramfs/upgrade.conf
+StandardInput=null
+StandardOutput=null
+StandardError=null
+KillMode=none
