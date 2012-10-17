@@ -2,3 +2,4 @@
 .*.swp
 build/
 fedup.log
+systemd/fedora-system-upgrade
