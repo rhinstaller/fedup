@@ -49,17 +49,21 @@ class FedupDownloader(yum.YumBase):
         log.info("checking repos")
         disabled_repos = []
 
+        # commandline overrides for the enabled/disabled repos
+        # NOTE: will raise YumBaseError if there are problems
+        for action, repo in repos:
+            if action == 'enable':
+                self.repos.enableRepo(repo)
+            elif action == 'disable':
+                self.repos.disableRepo(repo)
+            elif action == 'add':
+                (repoid, url) = repo.split('=',1)
+                self.add_enable_repo(repoid, [url], variable_convert=True)
+
         # set up callbacks etc.
         self.repos.setProgressBar(progressbar)
         self.repos.callback = callback
 
-        # commandline overrides for the enabled/disabled repos
-        # NOTE: will raise YumBaseError if there are problems
-        for action, repoid in repos:
-            if action == 'enable':
-                self.repos.enableRepo(repoid)
-            elif action == 'disable':
-                self.repos.disableRepo(repoid)
 
         # check repos
         for repo in self.repos.listEnabled():

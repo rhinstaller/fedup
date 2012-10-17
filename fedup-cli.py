@@ -63,6 +63,8 @@ class RepoAction(argparse.Action):
             action = 'enable'
         elif option_string.startswith('--disable'):
             action = 'disable'
+        elif option_string.startswith('--repourl'):
+            action = 'add'
         curval.append((action, value))
         setattr(namespace, self.dest, curval)
 
@@ -127,6 +129,8 @@ def parse_args():
         dest='repos', help=_('enable one or more repos (wildcards allowed)'))
     net.add_argument('--disablerepo', metavar='REPO', action=RepoAction,
         dest='repos', help=_('disable one or more repos (wildcards allowed)'))
+    net.add_argument('--repourl', metavar='REPO=URL', action=RepoAction,
+        dest='repos', help=_('add a repo named REPO at the given URL'))
     p.set_defaults(repos=[])
 
     args = p.parse_args()
