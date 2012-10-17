@@ -108,10 +108,7 @@ def parse_args():
     )
 
     p.add_argument('--reboot', action='store_true', default=False,
-        help=_('Automatically reboot to start the upgrade when ready'))
-    p.add_argument('--sshd', action='store_true', default=False,
-        #help=_('Enable sshd during the upgrade (for remote monitoring)'))
-        help='[TODO] '+_('Enable sshd during the upgrade (for remote monitoring)'))
+        help=_('automatically reboot to start the upgrade when ready'))
 
     req = p.add_argument_group('SOURCE',
                                _('Location to search for upgrade data.'))
