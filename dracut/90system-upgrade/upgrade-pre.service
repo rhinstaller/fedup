@@ -1,0 +1,16 @@
+[Unit]
+Description=System Upgrade (pre)
+Documentation=man:upgrade-pre.service(8)
+DefaultDependencies=no
+After=upgrade.target plymouth-start.service
+Before=upgrade.service
+
+[Service]
+Type=oneshot
+ExecStartPre=-/bin/plymouth change-mode --updates
+ExecStart=-/bin/upgrade-pre
+StandardInput=null
+StandardOutput=journal+console
+StandardError=journal+console
+KillMode=process
+KillSignal=SIGHUP
