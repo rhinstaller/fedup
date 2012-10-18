@@ -7,7 +7,6 @@ Before=upgrade.service
 
 [Service]
 Type=oneshot
-ExecStartPre=-/bin/plymouth change-mode --updates
 ExecStart=-/bin/upgrade-pre
 StandardInput=null
 StandardOutput=journal+console
