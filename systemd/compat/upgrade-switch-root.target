@@ -11,8 +11,6 @@
 Description=Switch Root
 DefaultDependencies=no
 Requires=upgrade-switch-root.service
-Before=upgrade-switch-root.service
 After=cryptsetup.target
 AllowIsolate=yes
-Wants=systemd-journald.service
 ConditionPathExists=/run/initramfs/upgrade.conf
