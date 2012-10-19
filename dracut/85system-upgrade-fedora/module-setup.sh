@@ -38,4 +38,7 @@ install() {
 
     # workaround: systemd won't reboot without swapoff
     dracut_install swapoff
+
+    # save the journal/logs after we're done
+    inst_hook upgrade-post 99 "$moddir/save-journal.sh"
 }
