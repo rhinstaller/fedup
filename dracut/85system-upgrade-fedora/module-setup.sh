@@ -20,6 +20,11 @@ install() {
     dracut_install /etc/selinux/*/policy/*
     # script to save initramfs at UPGRADEROOT
     inst_hook pre-pivot 99 "$moddir/keep-initramfs.sh"
+    # make sure plymouth gets started in initramfs
+    basic_wants="${initdir}${systemdsystemunitdir}/basic.target.wants"
+    mkdir -p "$basic_wants"
+    ln -sf ../plymouth-start.target "$basic_wants"
+
 
     # stuff we use in upgrade hook(s)
     # -------------------------------
