@@ -1,18 +1,28 @@
 fedup - the Fedora Upgrader
 ===========================
 Will Woods <wwoods@redhat.com>
-First draft, September 29 2012
 
-`fedup` is the Fedora Upgrade tool. It has two main parts:
+This is 'fedup', the Fedora Upgrade tool. It has the following components:
 
-Pre-upgrade::
-    Not literally `preupgrade`, but similar in principle. The `fedup-cli` or
-    `fedup-gtk` scripts prepare a system for upgrade by getting all the
-    needed packages, modifying the bootloader, etc.
+Frontend / pre-upgrade::
+    This is the GUI/CLI frontend. It's responsible for setting up the system
+    to be upgraded: downloading packages, modifying the bootloader, etc.
+    * Language: Python
+    * Files: `fedup/`, `fedup-cli.py`, `fedup-gtk.py` (and `ui/`)
 
-Upgrade::
-    After the system reboots, the `fedora-upgrade` service actually installs
-    all the packages to upgrade the system.
+Upgrade services::
+    This is a distro-neutral framework for performing major system upgrades,
+    using 'systemd' and 'dracut', with a 'plymouth' progress screen.
+    It's repsonsible for populating a special initramfs with upgrade scripts
+    and tools, bringing up the system to be upgraded, and then switching back
+    into the initramfs to perform the upgrade.
+    * Languages: systemd unit files, bash
+    * Files: `systemd/compat/`, `dracut/90system-upgrade/`
 
+`system-upgrade-fedora`::
+    This is the stuff that actually upgrades a Fedora system, using the
+    upgrade services above.
+    * Languages: bash, C
+    * Files: `dracut/85system-upgrade-fedora/`, `systemd/fedora-system-upgrade*`
 
 // vim: syntax=asciidoc tw=78:
