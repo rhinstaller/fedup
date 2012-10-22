@@ -13,7 +13,10 @@ do_upgrade() {
     getargbool 1 plymouth.enable && args="$args --plymouth"
 
     # and off we go...
-    $upgradepath/fedora-system-upgrade --root=/sysroot $args
+    $upgradepath/fedora-system-upgrade --root=/sysroot $args \
+        >> /sysroot/var/log/upgrade.out
+    # FIXME: we're only writing to that log file because our output isn't going
+    # to journald - see https://bugzilla.redhat.com/show_bug.cgi?id=869061
 }
 
 do_upgrade
