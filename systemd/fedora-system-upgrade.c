@@ -20,7 +20,6 @@
  * TODO: PLYMOUTH_LIBS stuff is untested/unused
  *       Translation/i18n
  *       Handle RPMCALLBACK_{SCRIPT,CPIO,UNPACK}_ERROR
- *       Use RPMCALLBACK_SCRIPT_{START,STOP} (rpm >= 4.10 only)
  *       Take btrfs/LVM snapshot before upgrade and revert on failure
  *       Clean out packagedir after upgrade
  */
@@ -344,6 +343,25 @@ fail:
     return NULL;
 }
 
+/* tag -> string helper (copied from rpm/lib/rpmscript.c) */
+const char *script_type(rpmTagVal tag) {
+    switch (tag) {
+    case RPMTAG_PRETRANS:       return "%pretrans";
+    case RPMTAG_TRIGGERPREIN:   return "%triggerprein";
+    case RPMTAG_PREIN:          return "%pre";
+    case RPMTAG_POSTIN:         return "%post";
+    case RPMTAG_TRIGGERIN:      return "%triggerin";
+    case RPMTAG_TRIGGERUN:      return "%triggerun";
+    case RPMTAG_PREUN:          return "%preun";
+    case RPMTAG_POSTUN:         return "%postun";
+    case RPMTAG_POSTTRANS:      return "%posttrans";
+    case RPMTAG_TRIGGERPOSTUN:  return "%triggerpostun";
+    case RPMTAG_VERIFYSCRIPT:   return "%verify";
+    default: break;
+    }
+    return "%unknownscript";
+}
+
 /* Transaction callback handler, to display RPM progress */
 void *rpm_trans_callback(const void *arg,
                          const rpmCallbackType what,
@@ -452,20 +470,29 @@ void *rpm_trans_callback(const void *arg,
      */
     case RPMCALLBACK_SCRIPT_START:
         /* no exit value here, obviously */
+        nvr = headerGetAsString(hdr, RPMTAG_NVR);
+        g_debug("%s_start(\"%s\")", script_type(amount), nvr);
         /* NOTE: %posttrans usually takes a while - report progress! */
-        g_debug("script_start(\"%s\")", file);
+        if (amount == RPMTAG_POSTTRANS)
+            g_message("running %s script for %s", script_type(amount), nvr);
         break;
     case RPMCALLBACK_SCRIPT_STOP:
         /* RPMRC_OK:        scriptlet succeeded
          * RPMRC_NOTFOUND:  scriptlet failed non-fatally (warning)
          * other:           scriptlet failed, preventing install/erase
          *                  (this only happens for PREIN/PREUN/PRETRANS) */
-        g_debug("script_stop(\"%s\")", file);
+        nvr = headerGetAsString(hdr, RPMTAG_NVR);
+        g_debug("%s_stop(\"%s\")", script_type(amount), nvr);
         break;
     case RPMCALLBACK_SCRIPT_ERROR:
         /* RPMRC_OK:        scriptlet failed non-fatally (warning)
          * other:           scriptlet failed, preventing install/erase */
-        g_warning("script_error()");
+        nvr = headerGetAsString(hdr, RPMTAG_NVR);
+        g_debug("%s_error(\"%s\"): %u", script_type(amount), nvr, total);
+        g_warning("%s %s scriptlet failure in %s (exit code %u)",
+            total == RPMRC_OK ? "non-fatal" : "fatal",
+            script_type(amount), nvr, total);
+        /* TODO: show the script contents? */
         break;
 
     /* these are probably fatal, and there's not much we can do about it..
