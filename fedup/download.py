@@ -13,7 +13,7 @@ disabled_plugins = ['rpm-warm-cache', 'remove-with-leaves', 'presto',
 
 cachedir="/var/tmp/fedora-upgrade"
 
-from fedup import packagedir, packagelist, magic_symlink
+from fedup import packagedir, packagelist, magic_symlink, upgraderoot
 
 log = logging.getLogger("fedup.yum") # XXX kind of misleading?
 
@@ -176,6 +176,14 @@ def setup_magic_link():
         pass
     os.symlink(packagedir, magic_symlink)
 
+def setup_upgraderoot():
+    if os.path.isdir(upgraderoot):
+        log.info("upgrade root dir %s already exists", upgraderoot)
+        return
+    else:
+        log.info("creating upgraderoot dir: %s", upgraderoot)
+        os.makedirs(upgraderoot, 0755)
+
 def modify_bootloader():
     log.info("reading bootloader config")
     bootloader = Grubby()
@@ -201,8 +209,10 @@ def modify_bootloader():
 def prep_upgrade(pkgs, bootloader=True):
     # put packages in packagedir (also writes packagelist)
     link_pkgs(pkgs)
-    # make magic symlink and touch magic file
+    # make magic symlink
     setup_magic_link()
+    # make dir for upgraderoot
+    setup_upgraderoot()
     # mess with the bootloader, if requested
     if bootloader:
         modify_bootloader()
