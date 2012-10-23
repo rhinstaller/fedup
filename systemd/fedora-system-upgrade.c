@@ -467,7 +467,15 @@ void *rpm_trans_callback(const void *arg,
          * other:           scriptlet failed, preventing install/erase */
         g_warning("script_error()");
         break;
-    /* TODO: RPMCALLBACK_{UNPACK,CPIO}_ERROR */
+
+    /* these are probably fatal, and there's not much we can do about it..
+     * the RPM test transaction should catch nearly all of these well before
+     * we end up here, though. */
+    case RPMCALLBACK_UNPACK_ERROR:
+    case RPMCALLBACK_CPIO_ERROR:
+        g_warning("error unpacking %s! file may be corrupt!", file);
+        break;
+
     default:
         if (!(what & cb_seen)) {
             g_debug("unhandled callback number %u", what);
