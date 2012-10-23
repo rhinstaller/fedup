@@ -419,7 +419,7 @@ void *rpm_trans_callback(const void *arg,
         }
         break;
 
-    /* cleanup phase: (start, stop) for each cleanup */
+    /* cleanup phase: (start, progress..., stop) for each cleanup */
     /* NOTE: file is NULL */
     case RPMCALLBACK_UNINST_START:
         nvr = headerGetAsString(hdr, RPMTAG_NVR);
@@ -427,6 +427,8 @@ void *rpm_trans_callback(const void *arg,
         g_message("[%u/%u] (%u%%) cleaning %s...",
                   erased+1, erasecount, percent, nvr);
         rfree(nvr);
+        break;
+    case RPMCALLBACK_UNINST_PROGRESS:
         break;
     case RPMCALLBACK_UNINST_STOP:
         nvr = headerGetAsString(hdr, RPMTAG_NVR);
