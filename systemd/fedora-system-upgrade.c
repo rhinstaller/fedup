@@ -439,25 +439,34 @@ void *rpm_trans_callback(const void *arg,
             prevpercent = percent;
         }
         rfree(nvr);
-        /* TODO: if (erased == erasecount)
-         *          print message about %posttrans */
         break;
 
-    /* These only exist in rpm >= 4.10 */
+    /*
+     * SCRIPT CALLBACKS (rpm >= 4.10) - happen all throughout the transaction.
+     * hdr and file/key are both usable.
+     * amount is the script type (RPMTAG_PREIN, RPMTAG_POSTIN, ...)
+     * total is the script exit value (see comments below)
+     * Ordering is: START; STOP; ERROR if script retval != RPMRC_OK
+     */
 #ifdef RPMCALLBACK_SCRIPT_START
     case RPMCALLBACK_SCRIPT_START:
+        /* no exit value here, obviously */
+        /* NOTE: %posttrans usually takes a while - report progress! */
         g_debug("script_start(\"%s\")", file);
         break;
 #endif
 #ifdef RPMCALLBACK_SCRIPT_STOP
     case RPMCALLBACK_SCRIPT_STOP:
+        /* RPMRC_OK:        scriptlet succeeded
+         * RPMRC_NOTFOUND:  scriptlet failed non-fatally (warning)
+         * other:           scriptlet failed, preventing install/erase
+         *                  (this only happens for PREIN/PREUN/PRETRANS) */
         g_debug("script_stop(\"%s\")", file);
         break;
 #endif
-
-    /* errors! oh no! */
     case RPMCALLBACK_SCRIPT_ERROR:
-        /* NOTE: hdr is OK, file is NULL */
+        /* RPMRC_OK:        scriptlet failed non-fatally (warning)
+         * other:           scriptlet failed, preventing install/erase */
         g_warning("script_error()");
         break;
     /* TODO: RPMCALLBACK_{UNPACK,CPIO}_ERROR */
@@ -632,6 +641,8 @@ int main(int argc, char* argv[]) {
         g_message("upgrade finished.");
         retval = EXIT_SUCCESS;
     }
+
+    /* FIXME: plymouth_finish() (disconnect and/or force progress to 100%) */
 
     /* cleanup */
     g_debug("cleaning up...");
