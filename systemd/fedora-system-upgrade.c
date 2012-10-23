@@ -518,6 +518,10 @@ rpmps run_transaction(rpmts ts, gint tsflags) {
     gint rc;
     rpmps probs = NULL;
 
+    /* send scriptlet stderr somewhere useful. */
+    rpmtsSetScriptFd(ts, fdDup(STDOUT_FILENO));
+    /* rpmSetVerbosity(RPMLOG_INFO) would give us script stdout, if we cared */
+
     rpmtsSetNotifyCallback(ts, rpm_trans_callback, NULL);
     rpmtsSetFlags(ts, rpmtsFlags(ts)|tsflags);
     rc = rpmtsRun(ts, NULL, (rpmprobFilterFlags)probFilter);
@@ -544,6 +548,9 @@ void log_handler(const gchar *log_domain, GLogLevelFlags log_level,
             exit(1);
             break;
         case G_LOG_LEVEL_WARNING:
+            /* TODO: once the journal problems are fixed, send warnings and
+             *       scriptlet stderr to stderr.
+             * see https://bugzilla.redhat.com/show_bug.cgi?id=869061 */
             g_printf("Warning: %s\n", message);
             break;
         case G_LOG_LEVEL_MESSAGE:
