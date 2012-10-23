@@ -367,7 +367,7 @@ void *rpm_trans_callback(const void *arg,
      * The upgrade transaction goes through three phases:
      * prep: TRANS_START, TRANS_PROGRESS, TRANS_STOP
      *     duration: basically negligible
-     * install: INST_START, INST_OPEN_FILE, INST_CLOSE_FILE
+     * install: INST_START, INST_OPEN_FILE, INST_STOP, INST_CLOSE_FILE
      *     duration: very roughly 2/3 the transaction
      * cleanup:  UNINST_START, UNINST_STOP
      *     duration: the remainder
@@ -379,6 +379,7 @@ void *rpm_trans_callback(const void *arg,
     }
 
     switch (what) {
+
     /* prep phase: (start, progress..., stop), just once */
     case RPMCALLBACK_TRANS_START:
         g_debug("trans_start()");
@@ -390,7 +391,7 @@ void *rpm_trans_callback(const void *arg,
         g_debug("trans_stop()");
         break;
 
-    /* install phase: (open, start, progress..., close) for each package */
+    /* install phase: (open, start, progress..., stop, close) for each pkg */
     case RPMCALLBACK_INST_OPEN_FILE:
         /* NOTE: hdr is NULL (because we haven't opened the file yet) */
         g_debug("inst_open_file(\"%s\")", file);
@@ -407,9 +408,13 @@ void *rpm_trans_callback(const void *arg,
         break;
     case RPMCALLBACK_INST_PROGRESS:
         break;
-    case RPMCALLBACK_INST_CLOSE_FILE:   /* Finished installing */
+    case RPMCALLBACK_INST_STOP:
+        g_debug("inst_stop(\"%s\")", file);
+        break;
+    case RPMCALLBACK_INST_CLOSE_FILE:
         g_debug("inst_close_file(\"%s\")", file);
         rpmShowProgress(arg, what, amount, total, key, NULL);
+        /* NOTE: we do this here 'cuz test transactions don't do start/stop */
         installed++;
         percent = TRANS_PERCENT + \
                     ((INSTALL_PERCENT*installed) / installcount);
@@ -450,14 +455,11 @@ void *rpm_trans_callback(const void *arg,
      * total is the script exit value (see comments below)
      * Ordering is: START; STOP; ERROR if script retval != RPMRC_OK
      */
-#ifdef RPMCALLBACK_SCRIPT_START
     case RPMCALLBACK_SCRIPT_START:
         /* no exit value here, obviously */
         /* NOTE: %posttrans usually takes a while - report progress! */
         g_debug("script_start(\"%s\")", file);
         break;
-#endif
-#ifdef RPMCALLBACK_SCRIPT_STOP
     case RPMCALLBACK_SCRIPT_STOP:
         /* RPMRC_OK:        scriptlet succeeded
          * RPMRC_NOTFOUND:  scriptlet failed non-fatally (warning)
@@ -465,7 +467,6 @@ void *rpm_trans_callback(const void *arg,
          *                  (this only happens for PREIN/PREUN/PRETRANS) */
         g_debug("script_stop(\"%s\")", file);
         break;
-#endif
     case RPMCALLBACK_SCRIPT_ERROR:
         /* RPMRC_OK:        scriptlet failed non-fatally (warning)
          * other:           scriptlet failed, preventing install/erase */
