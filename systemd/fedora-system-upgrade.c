@@ -19,9 +19,8 @@
  *
  * TODO: PLYMOUTH_LIBS stuff is untested/unused
  *       Translation/i18n
- *       Handle RPMCALLBACK_{SCRIPT,CPIO,UNPACK}_ERROR
- *       Take btrfs/LVM snapshot before upgrade and revert on failure
  *       Clean out packagedir after upgrade
+ *       Take btrfs/LVM snapshot before upgrade and revert on failure
  */
 
 #include <stdlib.h>
@@ -678,7 +677,7 @@ int main(int argc, char* argv[]) {
         retval = EXIT_SUCCESS;
     }
 
-    /* FIXME: plymouth_finish() (disconnect and/or force progress to 100%) */
+    /* TODO: plymouth_finish() (disconnect and/or force progress to 100%) */
 
     /* cleanup */
     g_debug("cleaning up...");
