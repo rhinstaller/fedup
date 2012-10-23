@@ -373,11 +373,6 @@ void *rpm_trans_callback(const void *arg,
      *     duration: the remainder
      */
 
-    if (!(what & cb_seen)) {
-        g_debug("API note: rpm callback %u: hdr=%p, key=%s", what, hdr, file);
-        cb_seen |= what;
-    }
-
     switch (what) {
 
     /* prep phase: (start, progress..., stop), just once */
@@ -474,7 +469,10 @@ void *rpm_trans_callback(const void *arg,
         break;
     /* TODO: RPMCALLBACK_{UNPACK,CPIO}_ERROR */
     default:
-        g_debug("unhandled callback number %u", what);
+        if (!(what & cb_seen)) {
+            g_debug("unhandled callback number %u", what);
+            cb_seen |= what;
+        }
         break;
     }
     return retval;
