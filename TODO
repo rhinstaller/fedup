@@ -1,0 +1,35 @@
+TODO
+====
+
+== general ==
+* --no-bootloader arg
+* look for updates.img
+* handle offline upgrade (from DVD)
+* download kernel/initrd
+* state file for upgrade progress (handle interruptions)
+
+== packaging ==
+* automake/autotools
+* Split into 3 parts: preupgrade, upgrade-services, upgrade
+* specfile
+
+== cli ==
+* better location for fedup.log
+* control logging with commandline args
+* move commandline parsing to fedup library
+* get releases.txt from network
+
+== gui ==
+* use same commandline parsing as cli
+* actually finish the damn thing
+
+== fedora-system-upgrade ==
+* fix bootloader config
+* mark translatable strings
+
+== dracut ==
+* send 90system-upgrade upstream
+
+== systemd ==
+* figure out why fedup doesn't log to journal
+  (see https://bugzilla.redhat.com/show_bug.cgi?id=869061)
