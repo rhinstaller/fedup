@@ -11,5 +11,5 @@ _ = t.lgettext
 
 packagedir = '/var/lib/fedora-upgrade'
 packagelist = packagedir + '/package.list'
-magic_symlink = '/system-upgrade'
-upgraderoot = '/upgraderoot'
+upgradelink = '/system-upgrade'
+upgraderoot = '/system-upgrade-root'

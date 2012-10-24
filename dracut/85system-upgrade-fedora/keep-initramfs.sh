@@ -2,7 +2,7 @@
 
 die() { warn "$*"; exit 1; }
 
-upgradedir="$NEWROOT/$UPGRADEROOT"
+upgradedir="${NEWROOT}${UPGRADEROOT}"
 
 [ -n "$UPGRADEROOT" ] || die "UPGRADEROOT is unset, can't save initramfs"
 [ -d "$upgradedir" ] || die "'$upgradedir' doesn't exist"

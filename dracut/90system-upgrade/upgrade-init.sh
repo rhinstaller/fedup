@@ -1,3 +1,4 @@
 #!/bin/sh
 
-export UPGRADEROOT=/upgraderoot
+export UPGRADEROOT=/system-upgrade-root
+export UPGRADELINK=/system-upgrade

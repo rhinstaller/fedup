@@ -13,7 +13,7 @@ disabled_plugins = ['rpm-warm-cache', 'remove-with-leaves', 'presto',
 
 cachedir="/var/tmp/fedora-upgrade"
 
-from fedup import packagedir, packagelist, magic_symlink, upgraderoot
+from fedup import packagedir, packagelist, upgradelink, upgraderoot
 
 log = logging.getLogger("fedup.yum") # XXX kind of misleading?
 
@@ -168,13 +168,13 @@ def link_pkgs(pkgs):
     with open(packagelist, 'w') as outf:
         outf.writelines(p+'\n' for p in pkgbasenames)
 
-def setup_magic_link():
-    log.info("setting up magic symlink: %s->%s", magic_symlink, packagedir)
+def setup_upgradelink():
+    log.info("setting up upgrade symlink: %s->%s", upgradelink, packagedir)
     try:
-        os.remove(magic_symlink)
+        os.remove(upgradelink)
     except OSError:
         pass
-    os.symlink(packagedir, magic_symlink)
+    os.symlink(packagedir, upgradelink)
 
 def setup_upgraderoot():
     if os.path.isdir(upgraderoot):
@@ -210,7 +210,7 @@ def prep_upgrade(pkgs, bootloader=True):
     # put packages in packagedir (also writes packagelist)
     link_pkgs(pkgs)
     # make magic symlink
-    setup_magic_link()
+    setup_upgradelink()
     # make dir for upgraderoot
     setup_upgraderoot()
     # mess with the bootloader, if requested
