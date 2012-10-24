@@ -1,4 +1,4 @@
-/* fedora-system-upgrade.c: upgrade a Fedora system
+/* system-upgrade-fedora.c: upgrade a Fedora system
  *
  * Copyright © 2012 Red Hat Inc.
  *

@@ -1,7 +1,5 @@
 #!/bin/bash
-# actually perform the upgrade
-
-upgradepath=/usr/lib/systemd
+# actually perform the upgrade, using UPGRADEBIN (set in /etc/conf.d)
 
 do_upgrade() {
     local args=""
@@ -28,7 +26,7 @@ do_upgrade() {
     NEWROOT=''
 
     # and off we go...
-    $upgradepath/fedora-system-upgrade --root=/sysroot $args \
+    $UPGRADEBIN --root=/sysroot $args \
         >> /sysroot/var/log/upgrade.out
     # FIXME: we're only writing to that log file because our output isn't going
     # to journald - see https://bugzilla.redhat.com/show_bug.cgi?id=869061

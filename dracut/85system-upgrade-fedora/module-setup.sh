@@ -1,6 +1,6 @@
 #!/bin/bash
 
-UPGRADEBIN=/usr/lib/systemd/fedora-system-upgrade
+UPGRADEBIN=/usr/libexec/system-upgrade-fedora
 
 check() {
     [ -x $UPGRADEBIN ] || return 1
@@ -30,6 +30,9 @@ install() {
     # -------------------------------
     # upgrader binary
     inst_binary $UPGRADEBIN
+    # config file so we can find it
+    mkdir -p "${initdir}/etc/conf.d"
+    echo "UPGRADEBIN=$UPGRADEBIN" > "${initdir}/etc/conf.d/fedup.conf"
 
     # RPM hash/sig checks (via NSS) don't work without these
     inst_libdir_file "libfreebl*" "libsqlite*" "libsoftokn*"
