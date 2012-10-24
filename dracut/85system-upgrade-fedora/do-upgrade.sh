@@ -12,17 +12,18 @@ do_upgrade() {
     # enable plymouth output unless specifically disabled
     getargbool 1 plymouth.enable && args="$args --plymouth"
 
+    # Force selinux into permissive mode unless booted with 'enforcing=1'.
     # FIXME: THIS IS A BIG STUPID HAMMER AND WE SHOULD ACTUALLY SOLVE THE ROOT
     # PROBLEMS RATHER THAN JUST PAPERING OVER THE WHOLE THING. But this is what
     # Anaconda did, and upgrades don't seem to work otherwise, so...
     enforce=$(< /sys/fs/selinux/enforce)
-    echo 0 > /sys/fs/selinux/enforce
-    # example bugs this works around:
+    getargbool 0 enforcing || echo 0 > /sys/fs/selinux/enforce
+    # Some bugs this works around:
     # https://bugzilla.redhat.com/show_bug.cgi?id=841451
     # https://bugzilla.redhat.com/show_bug.cgi?id=844167
     # others to be filed (mysterious initramfs without kernel modules, etc.)
 
-    # FIXME another workaround for a dracut bug
+    # FIXME workaround for a dracut bug
     SAVED_NEWROOT="$NEWROOT"
     NEWROOT=''
 
