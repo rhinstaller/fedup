@@ -18,6 +18,8 @@
  * Author(s): Will Woods <wwoods@redhat.com>
  *
  * TODO: PLYMOUTH_LIBS stuff is untested/unused
+ *       Use RPMCALLBACK_*_PROGRESS to update progress before/between packages
+ *       Invoke callback for pre-transaction file scanning
  *       Translation/i18n
  *       Clean out packagedir after upgrade
  *       Take btrfs/LVM snapshot before upgrade and revert on failure
@@ -42,7 +44,7 @@
 #define UPGRADE_FILELIST "package.list"
 
 /* How much of the progress bar should each phase use? */
-#define TRANS_PERCENT 2
+#define TRANS_PERCENT 2    /* FIXME should be 5% so we see initial progress */
 #define INSTALL_PERCENT 70
 #define ERASE_PERCENT 28
 
@@ -398,6 +400,7 @@ void *rpm_trans_callback(const void *arg,
         g_message("preparing RPM transaction, one moment...");
         break;
     case RPMCALLBACK_TRANS_PROGRESS:
+        /* FIXME: track progress up to TRANS_PERCENT */
         break;
     case RPMCALLBACK_TRANS_STOP:
         g_debug("trans_stop()");
