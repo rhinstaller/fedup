@@ -12,7 +12,7 @@ do_upgrade() {
     # enable plymouth output unless specifically disabled
     getargbool 1 plymouth.enable && args="$args --plymouth"
 
-    # BLUH THIS IS A BIG STUPID HAMMER AND WE SHOULD ACTUALLY SOLVE THE ROOT
+    # FIXME: THIS IS A BIG STUPID HAMMER AND WE SHOULD ACTUALLY SOLVE THE ROOT
     # PROBLEMS RATHER THAN JUST PAPERING OVER THE WHOLE THING. But this is what
     # Anaconda did, and upgrades don't seem to work otherwise, so...
     enforce=$(< /sys/fs/selinux/enforce)
@@ -22,12 +22,18 @@ do_upgrade() {
     # https://bugzilla.redhat.com/show_bug.cgi?id=844167
     # others to be filed (mysterious initramfs without kernel modules, etc.)
 
+    # FIXME another workaround for a dracut bug
+    SAVED_NEWROOT="$NEWROOT"
+    NEWROOT=''
+
     # and off we go...
     $upgradepath/fedora-system-upgrade --root=/sysroot $args \
         >> /sysroot/var/log/upgrade.out
     # FIXME: we're only writing to that log file because our output isn't going
     # to journald - see https://bugzilla.redhat.com/show_bug.cgi?id=869061
 
+    # restore things twiddled by workarounds above. TODO: remove!
+    NEWROOT="$SAVED_NEWROOT"
     echo $enforce > /sys/fs/selinux/enforce
 }
 
