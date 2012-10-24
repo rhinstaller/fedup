@@ -1,5 +1,5 @@
 dracutdir = $(DESTDIR)/usr/lib/dracut/modules.d
-bindir = $(DESTDIR)/usr/libexec
+libexecdir = $(DESTDIR)/usr/libexec
 
 system_upgrade_DIR = 90system-upgrade
 system_upgrade_SCRIPTS = module-setup.sh \
@@ -34,7 +34,8 @@ clean:
 	rm -f system-upgrade-fedora
 
 install: install-scripts install-data
-	install system-upgrade-fedora $(bindir)
+	install -d $(libexecdir)
+	install system-upgrade-fedora $(libexecdir)
 
 install-dirs:
 	install -d $(dracutdir)/$(system_upgrade_DIR)
