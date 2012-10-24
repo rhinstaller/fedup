@@ -1,17 +1,31 @@
-# really simple makefile
+dracutdir = $(DESTDIR)/usr/lib/dracut/modules.d
+bindir = $(DESTDIR)/usr/libexec
 
-.PHONY: all clean install
+system_upgrade_DIR = 90system-upgrade
+system_upgrade_SCRIPTS = module-setup.sh \
+			 upgrade-init.sh \
+			 upgrade-pre-pivot.sh \
+			 upgrade-pre.sh \
+			 upgrade.sh \
+			 upgrade-post.sh
+system_upgrade_DATA = README.txt \
+		      upgrade.target \
+		      upgrade-pre.service \
+		      upgrade.service \
+		      upgrade-post.service
+
+system_upgrade_fedora_DIR = 85system-upgrade-fedora
+system_upgrade_fedora_SCRIPTS = module-setup.sh \
+				keep-initramfs.sh \
+				do-upgrade.sh \
+				save-journal.sh
+
+all: system-upgrade-fedora
 
 PACKAGES=glib-2.0 rpm
-
 # TODO: use ply-boot-client
 #PACKAGES+=ply-boot-client
 #CFLAGS+=-DUSE_PLYMOUTH_LIBS
-
-dracutdir=$(DESTDIR)/usr/lib/dracut/modules.d
-bindir=$(DESTDIR)/usr/libexec
-
-all: system-upgrade-fedora
 
 system-upgrade-fedora: system-upgrade-fedora.c
 	$(CC) $(shell pkg-config $(PACKAGES) --cflags --libs) $(CFLAGS) $< -o $@
@@ -19,12 +33,24 @@ system-upgrade-fedora: system-upgrade-fedora.c
 clean:
 	rm -f system-upgrade-fedora
 
-install:
+install: install-scripts install-data
 	install system-upgrade-fedora $(bindir)
-	install -d $(dracutdir)
-	for d in 90system-upgrade 85system-upgrade-fedora; do \
-	    install -d $(dracutdir)/$$d; \
-	    for f in $$d/*; do \
-	        install $$f $(dracutdir)/$$d; \
-	    done; \
-	done
+
+install-dirs:
+	install -d $(dracutdir)/$(system_upgrade_DIR)
+	install -d $(dracutdir)/$(system_upgrade_fedora_DIR)
+
+install-scripts: install-dirs
+	cd $(system_upgrade_DIR); \
+	  install $(system_upgrade_SCRIPTS) \
+		  $(dracutdir)/$(system_upgrade_DIR)
+	cd $(system_upgrade_fedora_DIR); \
+	  install $(system_upgrade_fedora_SCRIPTS) \
+	          $(dracutdir)/$(system_upgrade_fedora_DIR)
+
+install-data: install-dirs
+	cd $(system_upgrade_DIR); \
+	  install -m644 $(system_upgrade_DATA) \
+	                $(dracutdir)/$(system_upgrade_DIR)
+
+.PHONY: all install clean install-dirs install-scripts install-data
