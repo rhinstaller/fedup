@@ -7,7 +7,9 @@ UNITDIR=$(DESTDIR)$(shell pkg-config systemd --variable systemdsystemunitdir)
 all:
 
 install: $(SERVICES) $(TARGETS) $(SCRIPTS)
+	install -d $(UTILDIR)
 	install -m 0755 $(SCRIPTS) $(UTILDIR)
+	install -d $(UNITDIR)
 	install -m 0644 $(SERVICES) $(TARGETS) $(UNITDIR)
 
 clean:
