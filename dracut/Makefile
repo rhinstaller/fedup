@@ -12,7 +12,8 @@ system_upgrade_DATA = README.txt \
 		      upgrade.target \
 		      upgrade-pre.service \
 		      upgrade.service \
-		      upgrade-post.service
+		      upgrade-post.service \
+		      upgrade-debug-shell.service
 
 system_upgrade_fedora_DIR = 85system-upgrade-fedora
 system_upgrade_fedora_SCRIPTS = module-setup.sh \
