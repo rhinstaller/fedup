@@ -1,17 +1,18 @@
 TODO
 ====
 
+== URGENT ==
+* download kernel/initrd
+
 == general ==
-* --no-bootloader arg
 * look for updates.img
 * handle offline upgrade (from DVD)
-* download kernel/initrd
 * state file for upgrade progress (handle interruptions)
 
 == packaging ==
-* automake/autotools
-* Split into 3 parts: preupgrade, upgrade-services, upgrade
-* specfile
+* automake/autotools?
+* fix goofy split betweed fedup and fedup-dracut
+  * I mean: split them completely
 
 == cli ==
 * better location for fedup.log
@@ -23,12 +24,13 @@ TODO
 * use same commandline parsing as cli
 * actually finish the damn thing
 
-== fedora-system-upgrade ==
-* fix bootloader config
+== system-upgrade-fedora.c ==
 * mark translatable strings
 
 == dracut ==
 * send 90system-upgrade upstream
+* figure out why selinux needs to be permissive
+  (see https://bugzilla.redhat.com/show_bug.cgi?id=844167)
 
 == systemd ==
 * figure out why fedup doesn't log to journal
