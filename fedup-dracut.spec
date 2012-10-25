@@ -1,17 +1,19 @@
-%define dracutlibdir %{_prefix}/lib/dracut
+%global dracutlibdir %{_prefix}/lib/dracut
 
-Name:		fedup-dracut
-Version:	0.7
-Release:	1%{?dist}
-Summary:	the Fedora Upgrade tool
+Name:       fedup-dracut
+Version:    0.7
+Release:    1%{?dist}
+Summary:    the Fedora Upgrade tool
 
-License:	GPLv2+
-URL:		http://github.com/wgwoods/fedup
-Source0:	%{name}-%{version}.tar.xz
+License:    GPLv2+
+URL:        http://github.com/wgwoods/fedup
+Source0:    %{name}-%{version}.tar.xz
 
 Summary:        initramfs environment for system upgrades
-BuildRequires:	rpm-devel >= 4.10.0
-Requires:	rpm >= 4.10.0
+BuildRequires:  rpm-devel >= 4.10.0
+BuildRequires:  glib2-devel
+#BuildRequires: plymouth-devel >= 0.8.6
+Requires:       rpm >= 4.10.0
 Requires:       plymouth >= 0.8.6
 Requires:       dracut
 
@@ -24,7 +26,7 @@ actually runs the upgrade itself.
 
 
 %build
-make %{?_smp_mflags} dracut
+make %{?_smp_mflags} dracut CFLAGS="%{optflags}"
 
 
 %install

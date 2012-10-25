@@ -1,13 +1,11 @@
-%define dracutlibdir %{_prefix}/lib/dracut
+Name:           fedup
+Version:        0.7
+Release:        1%{?dist}
+Summary:        the Fedora Upgrade tool
 
-Name:		fedup
-Version:	0.7
-Release:	1%{?dist}
-Summary:	the Fedora Upgrade tool
-
-License:	GPLv2+
-URL:		http://github.com/wgwoods/fedup
-Source0:	%{name}-%{version}.tar.xz
+License:        GPLv2+
+URL:            http://github.com/wgwoods/fedup
+Source0:        %{name}-%{version}.tar.xz
 
 BuildRequires:  python2-devel
 Requires:       systemd
