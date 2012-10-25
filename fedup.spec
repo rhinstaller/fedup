@@ -14,6 +14,8 @@ Requires:       systemd
 BuildArch:      noarch
 
 %package plymouth
+BuildRequires:  plymouth-devel
+Requires:       plymouth
 Summary:        plymouth theme for system upgrade progress
 
 %description
