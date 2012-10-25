@@ -3,7 +3,7 @@ VERSION=0.7
 
 all: build
 
-SUBDIRS := plymouth systemd
+SUBDIRS := systemd
 $(SUBDIRS):
 	$(MAKE) -C $@
 

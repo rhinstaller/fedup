@@ -11,16 +11,8 @@ BuildRequires:  python2-devel
 Requires:       systemd
 BuildArch:      noarch
 
-%package plymouth
-BuildRequires:  plymouth-devel
-Requires:       plymouth
-Summary:        plymouth theme for system upgrade progress
-
 %description
 fedup is the Fedora Upgrade tool.
-
-%description plymouth
-The plymouth theme used during system upgrade.
 
 
 %prep
@@ -32,7 +24,7 @@ The plymouth theme used during system upgrade.
 %install
 rm -rf $RPM_BUILD_ROOT
 %{__python} setup.py install --skip-build --root $RPM_BUILD_ROOT
-make install-systemd install-plymouth DESTDIR=$RPM_BUILD_ROOT
+make install-systemd DESTDIR=$RPM_BUILD_ROOT
 
 
 %files
@@ -52,9 +44,6 @@ make install-systemd install-plymouth DESTDIR=$RPM_BUILD_ROOT
 #%files gtk
 #%{_bindir}/fedup-gtk
 #%{_datadir}/fedup/ui
-
-%files plymouth
-%{_datadir}/plymouth/themes/fedup
 
 %changelog
 * Wed Oct 24 2012 Will Woods <wwoods@redhat.com> 0.7-1
