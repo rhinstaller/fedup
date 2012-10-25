@@ -2,28 +2,23 @@ fedup - the Fedora Upgrader
 ===========================
 Will Woods <wwoods@redhat.com>
 
-This is 'fedup', the Fedora Upgrade tool. It has the following components:
+This is 'fedup', the Fedora Upgrade tool. This repo/package has the following
+contents:
 
 Frontend / pre-upgrade::
     This is the GUI/CLI frontend. It's responsible for setting up the system
     to be upgraded: downloading packages, modifying the bootloader, etc.
-    * Language: Python
-    * Files: `fedup/`, `fedup-cli.py`, `fedup-gtk.py` (and `ui/`)
+    * Files: `fedup/`, `fedup-cli`, `fedup-gtk` (and `ui/`)
 
 Upgrade services::
-    This is a distro-neutral framework for performing major system upgrades,
+    Part of a distro-neutral framework for performing major system upgrades
     using 'systemd' and 'dracut', with a 'plymouth' progress screen.
-    It's repsonsible for populating a special initramfs with upgrade scripts
-    and tools, bringing up the system to be upgraded, and then switching back
-    into the initramfs to perform the upgrade.
-    * Languages: systemd unit files, bash
-    * Files: `systemd/`, `dracut/90system-upgrade/`
+    This part lets your system switch back to the upgrade initramfs after
+    setting up your disks.
+    * Files: `systemd/`
 
-`system-upgrade-fedora`::
-    This is the stuff that actually upgrades a Fedora system, using the
-    upgrade services above.
-    * Languages: bash, C
-    * Files: `dracut/85system-upgrade-fedora/`, `dracut/system-upgrade-fedora.c`
+The actual upgrade is handled inside the initramfs by `fedup-dracut`, which
+can be found at this URL: https://github.com/wgwoods/fedup-dracut
 
 How to test
 -----------
@@ -32,25 +27,18 @@ You'll need two build environments - one for the _new_ system and one for the
 _old_ system.
 
 New System::
-    . Install build requirements
-        * rpm-devel >= 4.10.0, plymouth-devel >= 0.8.6, python-devel
-    . Install dracut modules and plymouth theme
-        * `make install-dracut install-plymouth`
-    . Build upgrade initramfs
-        * `plymouth-set-default-theme fedup`
-        * `dracut --add system-upgrade upgrade.img`
-        * `plymouth-set-default-theme [your old theme]`
+    Install `fedup-dracut` and build upgrade initramfs (`upgrade.img`)
+    (See README in fedup-dracut for details)
 
 Old System::
     . Install build requirements
-        * python-devel
+        * `python-devel`
     . Install frontend(s) and systemd support files
-        * `python setup.py install`
-        * `make install-systemd`
+        * `make install`
     . Run fedup to prepare system
         * ex: `fedup-cli --network 18`
             * This will take a while. _Be patient._
-        * *NOTE:* doesn't yet fetch kernel/initrd!
+        * *NOTE:* doesn't yet fetch kernel/initrd, so...
     . Copy kernel/initramfs into place
         * `mkdir /boot/upgrade`
         * Copy kernel from _new_ system to `/boot/upgrade/vmlinuz`
