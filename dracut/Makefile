@@ -1,3 +1,4 @@
+INSTALL=install -p
 dracutdir = $(DESTDIR)/usr/lib/dracut/modules.d
 libexecdir = $(DESTDIR)/usr/libexec
 
@@ -35,24 +36,24 @@ clean:
 	rm -f system-upgrade-fedora
 
 install: install-scripts install-data
-	install -d $(libexecdir)
-	install system-upgrade-fedora $(libexecdir)
+	$(INSTALL) -d $(libexecdir)
+	$(INSTALL) system-upgrade-fedora $(libexecdir)
 
 install-dirs:
-	install -d $(dracutdir)/$(system_upgrade_DIR)
-	install -d $(dracutdir)/$(system_upgrade_fedora_DIR)
+	$(INSTALL) -d $(dracutdir)/$(system_upgrade_DIR)
+	$(INSTALL) -d $(dracutdir)/$(system_upgrade_fedora_DIR)
 
 install-scripts: install-dirs
 	cd $(system_upgrade_DIR); \
-	  install $(system_upgrade_SCRIPTS) \
+	  $(INSTALL) $(system_upgrade_SCRIPTS) \
 		  $(dracutdir)/$(system_upgrade_DIR)
 	cd $(system_upgrade_fedora_DIR); \
-	  install $(system_upgrade_fedora_SCRIPTS) \
+	  $(INSTALL) $(system_upgrade_fedora_SCRIPTS) \
 	          $(dracutdir)/$(system_upgrade_fedora_DIR)
 
 install-data: install-dirs
 	cd $(system_upgrade_DIR); \
-	  install -m644 $(system_upgrade_DATA) \
+	  $(INSTALL) -m644 $(system_upgrade_DATA) \
 	                $(dracutdir)/$(system_upgrade_DIR)
 
 .PHONY: all install clean install-dirs install-scripts install-data
