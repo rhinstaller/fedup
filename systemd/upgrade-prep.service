@@ -2,6 +2,8 @@
 Description=Prepare Upgrade Image
 Documentation=man:upgrade-prep.service(8)
 After=sysinit.target
+OnFailure=reboot.target
+OnFailureIsolate=true
 
 # logging
 After=syslog.socket
