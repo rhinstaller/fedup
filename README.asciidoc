@@ -17,12 +17,47 @@ Upgrade services::
     and tools, bringing up the system to be upgraded, and then switching back
     into the initramfs to perform the upgrade.
     * Languages: systemd unit files, bash
-    * Files: `systemd/compat/`, `dracut/90system-upgrade/`
+    * Files: `systemd/`, `dracut/90system-upgrade/`
 
 `system-upgrade-fedora`::
     This is the stuff that actually upgrades a Fedora system, using the
     upgrade services above.
     * Languages: bash, C
-    * Files: `dracut/85system-upgrade-fedora/`, `systemd/fedora-system-upgrade*`
+    * Files: `dracut/85system-upgrade-fedora/`, `dracut/system-upgrade-fedora.c`
+
+How to test
+-----------
+
+You'll need two build environments - one for the _new_ system and one for the
+_old_ system.
+
+New System::
+    . Install build requirements
+        * rpm-devel >= 4.10.0, plymouth-devel >= 0.8.6, python-devel
+    . Install dracut modules and plymouth theme
+        * `make install-dracut install-plymouth`
+    . Build upgrade initramfs
+        * `plymouth-set-default-theme fedup`
+        * `dracut --add system-upgrade upgrade.img`
+        * `plymouth-set-default-theme [your old theme]`
+
+Old System::
+    . Install build requirements
+        * python-devel
+    . Install frontend(s) and systemd support files
+        * `python setup.py install`
+        * `make install-systemd`
+    . Run fedup to prepare system
+        * ex: `fedup-cli --network 18`
+            * This will take a while. _Be patient._
+        * *NOTE:* doesn't yet fetch kernel/initrd!
+    . Copy kernel/initramfs into place
+        * `mkdir /boot/upgrade`
+        * Copy kernel from _new_ system to `/boot/upgrade/vmlinuz`
+        * Copy `upgrade.img` to `/boot/upgrade/upgrade.img`
+    . Reboot into *System Upgrade* boot menu item
+        * *NOTE:* this has to be chosen manually right now
+    . Wait 60-90 minutes for the upgrade to complete
+
 
 // vim: syntax=asciidoc tw=78:
