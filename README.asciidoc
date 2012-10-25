@@ -1,6 +1,7 @@
 fedup - the Fedora Upgrader
 ===========================
 Will Woods <wwoods@redhat.com>
+:fedup_dracut: https://github.com/wgwoods/fedup-dracut/
 
 This is 'fedup', the Fedora Upgrade tool. This repo/package has the following
 contents:
@@ -17,8 +18,8 @@ Upgrade services::
     setting up your disks.
     * Files: `systemd/`
 
-The actual upgrade is handled inside the initramfs by `fedup-dracut`, which
-can be found at this URL: https://github.com/wgwoods/fedup-dracut
+The actual upgrade is handled inside the initramfs by 'fedup-dracut', which
+can be found here: {fedup_dracut}
 
 How to test
 -----------
@@ -27,12 +28,12 @@ You'll need two build environments - one for the _new_ system and one for the
 _old_ system.
 
 New System::
-    Install `fedup-dracut` and build upgrade initramfs (`upgrade.img`)
-    (See README in fedup-dracut for details)
+    Install 'fedup-dracut' and build upgrade initramfs (`upgrade.img`).
+    See {fedup_dracut}[the fedup-dracut README] for details.
 
 Old System::
     . Install build requirements
-        * `python-devel`
+        * 'python-devel'
     . Install frontend(s) and systemd support files
         * `make install`
     . Run fedup to prepare system
