@@ -35,4 +35,6 @@ def consolelog(level=logging.WARNING, loggername="fedup", tty=None):
     formatter = logging.Formatter('%(name)s %(levelname)s: %(message)s')
     h.setFormatter(formatter)
     logger = logging.getLogger(loggername)
+    if level < logger.getEffectiveLevel():
+        logger.setLevel(level)
     logger.addHandler(h)
