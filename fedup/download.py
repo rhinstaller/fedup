@@ -118,9 +118,7 @@ class FedupDownloader(yum.YumBase):
 
     def clean_cache(self, keepfiles):
         log.info("checking for unneeded rpms in cache")
-        # Only clean stuff that's not on media
-        repos = [r for r in self.repos.repos.values() if r.mediaid is None]
-        # Find all the packages in the caches
+        # Find all the packages in the caches (not on media though)
         localpkgs = set(f for r in self.repos.listEnabled() if not r.mediaid
                           for f in listdir(r.pkgdir) if f.endswith(".rpm"))
         for f in localpkgs.difference(keepfiles):
