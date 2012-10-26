@@ -19,9 +19,8 @@ log = logging.getLogger("fedup")
 
 from fedup import _
 
-def download_pkgs(version, repos=[]):
-    log.debug("download_pkgs(version=%s, repos=%s)", version, repos)
-    print _("setting up repos...")
+def setup_downloader(version, repos=[]):
+    log.debug("setup_downloader(version=%s, repos=%s)", version, repos)
     f = FedupDownloader(version=version)
     repo_cb = output.RepoCallback()
     repo_prog = output.RepoProgress(fo=sys.stderr)
@@ -31,8 +30,9 @@ def download_pkgs(version, repos=[]):
     if disabled_repos:
         print _("No upgrade available for the following repos") + ": " + \
                 " ".join(disabled_repos)
+    return f
 
-    print _("setting up update...")
+def download_packages(f):
     updates = f.build_update_transaction(callback=output.DepsolveCallback(f))
     # clean out any unneeded packages from the cache
     f.clean_cache(keepfiles=(p.localPkg() for p in updates))
@@ -154,7 +154,10 @@ def main(args):
         if args.network == 'latest':
             # FIXME: fetch releases.txt to determine this
             args.network = '18'
-        pkgs = download_pkgs(version=args.network, repos=args.repos)
+        print _("setting up repos...")
+        f = setup_downloader(version=args.network, repos=args.repos)
+        print _("setting up update...")
+        pkgs = download_packages(f)
         # FIXME: fetch kernel & initrd
     else:
         if args.iso:
