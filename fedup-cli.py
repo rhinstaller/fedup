@@ -16,8 +16,6 @@ from fedup import textoutput as output
 
 import logging, fedup.logutils, fedup.media
 log = logging.getLogger("fedup")
-fedup.logutils.debuglog("fedup.log") # FIXME: better dir for this
-fedup.logutils.consolelog()          # TODO: control output with cli args
 
 from fedup import _
 
@@ -107,6 +105,16 @@ def parse_args():
         usage=_('%(prog)s SOURCE [options]'),
     )
 
+    p.add_argument('-v', '--verbose', action='store_const', dest='loglevel',
+        const=logging.INFO, help=_('print more info'))
+    p.add_argument('-d', '--debug', action='store_const', dest='loglevel',
+        const=logging.DEBUG, help=_('print lots of debugging info'))
+    p.set_defaults(loglevel=logging.WARNING)
+
+    p.add_argument('--debuglog', type=str,
+        help=_('write lots of debugging output to the given file'))
+
+
     p.add_argument('--reboot', action='store_true', default=False,
         help=_('automatically reboot to start the upgrade when ready'))
     p.add_argument('--no-bootloader', action='store_false', default=True,
@@ -174,7 +182,13 @@ def main(args):
 
 if __name__ == '__main__':
     args = parse_args()
+
+    # set up logging
+    if args.debuglog:
+        fedup.logutils.debuglog(args.debuglog)
+    fedup.logutils.consolelog(level=args.loglevel)
     log.info("%s starting at %s", sys.argv[0], time.asctime())
+
     try:
         main(args)
     except KeyboardInterrupt:
