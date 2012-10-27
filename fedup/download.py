@@ -166,7 +166,6 @@ class FedupDownloader(yum.YumBase):
     def download_boot_images(self, repoid, arch=None):
         try:
             return self._download_boot_images(repoid, arch)
-        #except ConfigParser.Error as e:
         except TreeinfoError as e:
             raise YumBaseError(_("invalid data in .treeinfo: %s") % str(e))
         except yum.URLGrabError as e:
