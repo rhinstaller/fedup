@@ -15,7 +15,7 @@ mount --rbind / $UPGRADEROOT/sysroot || die "couldn't bind / into upgrade dir"
 # XXX: we can drop this once there's a way to pass args to new init
 echo "switching upgraderoot default target to upgrade.target"
 # switch the upgrade chroot target to upgrade.target
-unitdir=$UPGRADEROOT/lib/systemd/system
+unitdir=$UPGRADEROOT/etc/systemd/system
 ln -sf upgrade.target $unitdir/default.target
 
 echo "upgrade prep complete"
