@@ -5,6 +5,7 @@ import yum
 import logging
 from fedup.callback import BaseTsCallback
 from fedup.grubby import Grubby
+from fedup.treeinfo import Treeinfo, TreeinfoError
 from yum.Errors import YumBaseError
 
 enabled_plugins = ['blacklist', 'whiteout']
@@ -13,7 +14,7 @@ disabled_plugins = ['rpm-warm-cache', 'remove-with-leaves', 'presto',
 
 cachedir="/var/tmp/fedora-upgrade"
 
-from fedup import packagedir, packagelist, upgradelink, upgraderoot
+from fedup import _, packagedir, packagelist, upgradelink, upgraderoot
 
 log = logging.getLogger("fedup.yum") # XXX kind of misleading?
 
@@ -128,6 +129,52 @@ class FedupDownloader(yum.YumBase):
             except IOError as e:
                 log.info("failed to remove %s", f)
         # TODO remove dirs that don't belong to any repo
+
+    def _download_boot_images(self, repoid, arch=None):
+        # FIXME: PROGRESS CALLBACKS!
+        # grab and check .treeinfo
+        log.info("looking for boot images")
+        repo = self.repos.getRepo(repoid)
+        log.debug("opening .treeinfo")
+        fp = repo.grab.urlopen('.treeinfo')
+
+        treeinfo = Treeinfo(fp=fp)
+        treeinfo.checkvalues()
+
+        # set up a function to grab and checksum files in .treeinfo
+        def grab_and_check(relpath, outpath):
+            log.info("downloading %s", relpath)
+            def checkfile(cb):
+                log.debug("checking %s", relpath)
+                if not treeinfo.checkfile(cb.filename, relpath):
+                    log.info("checksum doesn't match - retrying")
+                    raise yum.URLGrabError(-1)
+            return repo.grab.urlgrab(relpath,
+                                     os.path.join(packagedir, outpath),
+                                     checkfunc=checkfile)
+
+        # grab and check the kernel and initrd
+        if not arch:
+            arch = treeinfo.get('general', 'arch')
+        kernelpath = treeinfo.get_image(arch, 'kernel')
+        initrdpath = treeinfo.get_image(arch, 'initrd')
+        kernel = grab_and_check(kernelpath, 'vmlinuz')
+        initrd = grab_and_check(initrdpath, 'initrd.img')
+
+        return kernel, initrd
+
+    def download_boot_images(self, repoid, arch=None):
+        try:
+            return self._download_boot_images(repoid, arch)
+        #except ConfigParser.Error as e:
+        except TreeinfoError as e:
+            raise YumBaseError(_("invalid data in .treeinfo: %s") % str(e))
+        except yum.URLGrabError as e:
+            if e.errno >= 256:
+                raise YumBaseError(_("couldn't get file from repo"))
+            else:
+                raise YumBaseError(_("failed to download file: %s") % str(e))
+
 
 def link_pkgs(pkgs):
     '''link the named pkgs into packagedir, overwriting existing files.

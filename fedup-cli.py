@@ -114,6 +114,11 @@ def parse_args():
     p.add_argument('--debuglog', type=str,
         help=_('write lots of debugging output to the given file'))
 
+    # FOR DEBUGGING ONLY
+    p.add_argument('--skippkgs', action='store_true', default=False,
+        help=argparse.SUPPRESS)
+    p.add_argument('--skipkernel', action='store_true', default=False,
+        help=argparse.SUPPRESS)
 
     p.add_argument('--reboot', action='store_true', default=False,
         help=_('automatically reboot to start the upgrade when ready'))
@@ -131,13 +136,15 @@ def parse_args():
     req.add_argument('--network', metavar=_('VERSION'), type=VERSION,
         help=_('online repos matching VERSION (a number or "rawhide")'))
 
-    net = p.add_argument_group(_('optional arguments for --network'))
+    net = p.add_argument_group(_('additional arguments for --network'))
     net.add_argument('--enablerepo', metavar='REPO', action=RepoAction,
         dest='repos', help=_('enable one or more repos (wildcards allowed)'))
     net.add_argument('--disablerepo', metavar='REPO', action=RepoAction,
         dest='repos', help=_('disable one or more repos (wildcards allowed)'))
     net.add_argument('--repourl', metavar='REPO=URL', action=RepoAction,
         dest='repos', help=_('add a repo named REPO at the given URL'))
+    net.add_argument('--instrepo', metavar='REPO', type=str,
+        help=_('Grab kernel/initrd from REPO'))
     p.set_defaults(repos=[])
 
     args = p.parse_args()
@@ -152,13 +159,25 @@ def main(args):
     # TODO: FedupMedia setup for DVD/USB/ISO
     if args.network:
         if args.network == 'latest':
-            # FIXME: fetch releases.txt to determine this
+            # FIXME: get this from releases.txt
             args.network = '18'
         print _("setting up repos...")
         f = setup_downloader(version=args.network, repos=args.repos)
-        print _("setting up update...")
-        pkgs = download_packages(f)
-        # FIXME: fetch kernel & initrd
+
+        if args.skippkgs:
+            log.info("skipping package download")
+        else:
+            print _("setting up update...")
+            pkgs = download_packages(f)
+
+        if args.skipkernel:
+            log.info("skipping kernel/initrd download")
+        else:
+            print _("getting boot images...")
+            # FIXME: get args.instrepo from releases.txt if unset
+            if not args.instrepo:
+                raise NotImplementedError("use --instrepo or --skipkernel")
+            kernel, initrd = f.download_boot_images(args.instrepo)
     else:
         if args.iso:
             # FIXME: mount iso so we can use files etc.
@@ -168,6 +187,10 @@ def main(args):
         # FIXME: prep update transaction, get pkglist for repo
         # FIXME: copy kernel & initrd into place
         raise NotImplementedError("--device isn't implemented yet")
+
+    if args.skippkgs:
+        log.info("exiting due to --skippkgs")
+        return
 
     # Run a test transaction
     transaction_test(pkgs)
