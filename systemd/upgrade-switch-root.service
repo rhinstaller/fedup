@@ -3,7 +3,8 @@ Description=Prepare Upgrade Image
 Documentation=man:upgrade-switch-root.service(8)
 DefaultDependencies=no
 ConditionPathExists=/run/initramfs/upgrade.conf
-OnFailure=emergency.service
+OnFailure=emergency.target
+OnFailureIsolate=yes
 After=upgrade-switch-root.target
 
 [Service]
