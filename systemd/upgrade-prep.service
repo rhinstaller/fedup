@@ -12,7 +12,6 @@ Wants=syslog.socket
 [Service]
 Type=oneshot
 ExecStart=/usr/lib/systemd/upgrade-prep.sh
-ExecStopPost=-/usr/bin/echo "about to switch root"
 ExecStopPost=-/usr/bin/systemctl --no-block isolate upgrade-switch-root.target
 
 [Install]
