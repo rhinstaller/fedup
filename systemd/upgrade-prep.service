@@ -4,10 +4,7 @@ Documentation=man:upgrade-prep.service(8)
 After=sysinit.target
 OnFailure=reboot.target
 OnFailureIsolate=true
-
-# logging
-After=syslog.socket
-Wants=syslog.socket
+DefaultDependencies=no
 
 [Service]
 Type=oneshot
