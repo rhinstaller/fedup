@@ -38,7 +38,7 @@ class Treeinfo(ConfigParser.RawConfigParser):
         missing = [f for f in req_fields if not items.get(f, None)]
         if missing:
             raise ConfigParser.ParsingError(
-                     "[general] missing value(s) for %s" % ', '.join(missing))
+                     "[general] missing value for %s" % ', '.join(missing))
 
     def checkfile(self, filename, relpath):
         val = self.get('checksums', relpath)
