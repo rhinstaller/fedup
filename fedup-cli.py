@@ -19,9 +19,9 @@ log = logging.getLogger("fedup")
 
 from fedup import _
 
-def setup_downloader(version, repos=[]):
+def setup_downloader(version, cacheonly=False, repos=[]):
     log.debug("setup_downloader(version=%s, repos=%s)", version, repos)
-    f = FedupDownloader(version=version)
+    f = FedupDownloader(version=version, cacheonly=cacheonly)
     repo_cb = output.RepoCallback()
     repo_prog = output.RepoProgress(fo=sys.stderr)
     disabled_repos = f.setup_repos(callback=repo_cb,
@@ -119,6 +119,10 @@ def parse_args():
         help=argparse.SUPPRESS)
     p.add_argument('--skipkernel', action='store_true', default=False,
         help=argparse.SUPPRESS)
+    p.add_argument('-C', '--cacheonly', action='store_true', default=False,
+        help=argparse.SUPPRESS)
+    p.add_argument('--expire-cache', action='store_true', default=False,
+        help=argparse.SUPPRESS)
 
     p.add_argument('--reboot', action='store_true', default=False,
         help=_('automatically reboot to start the upgrade when ready'))
@@ -162,7 +166,14 @@ def main(args):
             # FIXME: get this from releases.txt
             args.network = '18'
         print _("setting up repos...")
-        f = setup_downloader(version=args.network, repos=args.repos)
+        f = setup_downloader(version=args.network,
+                             cacheonly=args.cacheonly,
+                             repos=args.repos)
+
+        if args.expire_cache:
+            print "expiring cache files"
+            f.cleanExpireCache()
+            return
 
         if args.skippkgs:
             log.info("skipping package download")

@@ -24,7 +24,7 @@ def listdir(d):
 
 class FedupDownloader(yum.YumBase):
     '''Yum-based downloader class for fedup. Based roughly on AnacondaYum.'''
-    def __init__(self, version=None, cachedir=cachedir):
+    def __init__(self, version=None, cachedir=cachedir, cacheonly=False):
         # TODO: special handling for version='test' where we just synthesize
         #       a bunch of fake RPMs with interesting properties
         log.info("FedupDownloader(version=%s, cachedir=%s)", version, cachedir)
@@ -35,13 +35,17 @@ class FedupDownloader(yum.YumBase):
         self.preconf.disabled_plugins = disabled_plugins
         if version:
             self.preconf.releasever = version
+        self.cacheonly = cacheonly
         self.prerepoconf.cachedir = cachedir
+        self.prerepoconf.cache = cacheonly
         # TODO: locking to prevent multiple instances
         # TODO: override logging objects so we get yum logging
 
     def _getConfig(self):
         conf = yum.YumBase._getConfig(self)
+        # override some of yum's defaults
         conf.disable_excludes = ['all']
+        conf.cache = self.cacheonly
         return conf
 
     def setup_repos(self, callback=None, progressbar=None, repos=[]):
