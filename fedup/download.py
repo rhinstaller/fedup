@@ -38,14 +38,18 @@ class FedupDownloader(yum.YumBase):
         self.cacheonly = cacheonly
         self.prerepoconf.cachedir = cachedir
         self.prerepoconf.cache = cacheonly
+        log.debug("prerepoconf.cache=%i", self.prerepoconf.cache)
         # TODO: locking to prevent multiple instances
         # TODO: override logging objects so we get yum logging
 
     def _getConfig(self):
+        firstrun = hasattr(self, 'preconf')
         conf = yum.YumBase._getConfig(self)
-        # override some of yum's defaults
-        conf.disable_excludes = ['all']
-        conf.cache = self.cacheonly
+        if firstrun:
+            # override some of yum's defaults
+            conf.disable_excludes = ['all']
+            conf.cache = self.cacheonly
+            log.debug("conf.cache=%i", conf.cache)
         return conf
 
     def setup_repos(self, callback=None, progressbar=None, repos=[]):
@@ -80,6 +84,8 @@ class FedupDownloader(yum.YumBase):
                 disabled_repos.append(repo.id)
             else:
                 log.info("repo %s seems OK" % repo.id)
+
+        log.debug("repos.cache=%i", self.repos.cache)
 
         return disabled_repos
 
