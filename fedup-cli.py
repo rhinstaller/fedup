@@ -123,6 +123,8 @@ def parse_args():
         help=argparse.SUPPRESS)
     p.add_argument('--expire-cache', action='store_true', default=False,
         help=argparse.SUPPRESS)
+    p.add_argument('--clean-metadata', action='store_true', default=False,
+        help=argparse.SUPPRESS)
 
     p.add_argument('--reboot', action='store_true', default=False,
         help=_('automatically reboot to start the upgrade when ready'))
@@ -173,6 +175,10 @@ def main(args):
         if args.expire_cache:
             print "expiring cache files"
             f.cleanExpireCache()
+            return
+        if args.clean_metadata:
+            print "cleaning metadata"
+            f.cleanMetadata()
             return
 
         if args.skippkgs:
