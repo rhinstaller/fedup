@@ -10,7 +10,8 @@ import os, sys, time
 import argparse, platform
 from subprocess import call
 
-from fedup.download import FedupDownloader, YumBaseError, prep_upgrade
+from fedup.download import FedupDownloader, YumBaseError
+from fedup.download import prep_upgrade, prep_boot
 from fedup.upgrade import FedupUpgrade, TransactionError
 from fedup import textoutput as output
 
@@ -22,9 +23,10 @@ def message(m):
 
 from fedup import _
 
-def setup_downloader(version, cacheonly=False, repos=[]):
+def setup_downloader(version, instrepo=None, cacheonly=False, repos=[]):
     log.debug("setup_downloader(version=%s, repos=%s)", version, repos)
     f = FedupDownloader(version=version, cacheonly=cacheonly)
+    f.instrepoid = instrepo
     repo_cb = output.RepoCallback()
     repo_prog = output.RepoProgress(fo=sys.stderr)
     disabled_repos = f.setup_repos(callback=repo_cb,
@@ -161,6 +163,10 @@ def parse_args():
     if not (args.network or args.device or args.iso):
         p.error(_('SOURCE is required (--network, --device, --iso)'))
 
+    if '://' in args.instrepo:
+        args.repo.append(('instrepo', args.instrepo))
+        args.instrepo = 'instrepo'
+
     return args
 
 def main(args):
@@ -173,6 +179,7 @@ def main(args):
         print _("setting up repos...")
         f = setup_downloader(version=args.network,
                              cacheonly=args.cacheonly,
+                             instrepo=args.instrepo,
                              repos=args.repos)
 
         if args.expire_cache:
@@ -197,7 +204,7 @@ def main(args):
             # FIXME: get args.instrepo from releases.txt if unset
             if not args.instrepo:
                 raise NotImplementedError("use --instrepo or --skipkernel")
-            kernel, initrd = f.download_boot_images(args.instrepo)
+            kernel, initrd = f.download_boot_images() # TODO: arch
     else:
         if args.iso:
             # FIXME: mount iso so we can use files etc.
@@ -218,7 +225,10 @@ def main(args):
     # And prepare for upgrade
     # TODO: use polkit to get root privs for these things
     print _("setting up system for upgrade")
-    prep_upgrade(pkgs, bootloader=args.bootloader)
+    if not args.skippkgs:
+        prep_upgrade(pkgs)
+    if not args.skipkernel:
+        prep_boot(kernel, initrd, bootloader=args.bootloader)
     # FIXME: if args.device: add ${dev}.mount to system-update.target.wants
 
     if args.reboot:

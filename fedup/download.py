@@ -14,13 +14,20 @@ disabled_plugins = ['rpm-warm-cache', 'remove-with-leaves', 'presto',
 
 cachedir="/var/tmp/fedora-upgrade"
 
-from fedup import _, packagedir, packagelist, upgradelink, upgraderoot
+from fedup import _, packagedir, packagelist, upgradelink, upgraderoot, bootdir
 
 log = logging.getLogger("fedup.yum") # XXX kind of misleading?
 
 def listdir(d):
     for f in os.listdir(d):
         yield os.path.join(d, f)
+
+def mkdir_p(d):
+    try:
+        os.makedirs(d)
+    except OSError as e:
+        if e.errno != 17:
+            raise
 
 class FedupDownloader(yum.YumBase):
     '''Yum-based downloader class for fedup. Based roughly on AnacondaYum.'''
@@ -39,6 +46,8 @@ class FedupDownloader(yum.YumBase):
         self.prerepoconf.cachedir = cachedir
         self.prerepoconf.cache = cacheonly
         log.debug("prerepoconf.cache=%i", self.prerepoconf.cache)
+        self.instrepoid = None
+        self._treeinfo = None
         # TODO: locking to prevent multiple instances
         # TODO: override logging objects so we get yum logging
 
@@ -69,6 +78,9 @@ class FedupDownloader(yum.YumBase):
                 (repoid, url) = repo.split('=',1)
                 self.add_enable_repo(repoid, [url], variable_convert=True)
 
+        # FIXME: if self.instrepoid is None we should fetch releases.txt and
+        #        set up a repo for the instrepo listed there
+
         # set up callbacks etc.
         self.repos.setProgressBar(progressbar)
         self.repos.callback = callback
@@ -88,6 +100,18 @@ class FedupDownloader(yum.YumBase):
         log.debug("repos.cache=%i", self.repos.cache)
 
         return disabled_repos
+
+    # XXX currently unused
+    def save_repo_configs():
+        '''save repo configuration files for later use'''
+        repodir = os.path.join(cachedir, 'yum.repos.d')
+        mkdir_p(repodir)
+        for repo in self.repos.listEnabled():
+            repofile = os.path.join(repodir, "%s.repo" % repo.id)
+            try:
+                repo.write(open(repofile), 'w')
+            except IOError as e:
+                log.warn("couldn't write repofile for %s: %s", repo.id, str(e))
 
     # NOTE: could raise RepoError if metadata is missing/busted
     def build_update_transaction(self, callback=None):
@@ -140,49 +164,64 @@ class FedupDownloader(yum.YumBase):
                 log.info("failed to remove %s", f)
         # TODO remove dirs that don't belong to any repo
 
-    def _download_boot_images(self, repoid, arch=None):
-        # FIXME: PROGRESS CALLBACKS!
-        # grab and check .treeinfo
-        log.info("looking for boot images")
-        repo = self.repos.getRepo(repoid)
-        log.debug("opening .treeinfo")
-        fp = repo.grab.urlopen('.treeinfo')
+    @property
+    def instrepo(self):
+        return self.repos.getRepo(self.instrepoid)
 
-        treeinfo = Treeinfo(fp=fp)
-        treeinfo.checkvalues()
+    @property
+    def treeinfo(self):
+        if self._treeinfo is None:
+            outfile = os.path.join(cachedir, '.treeinfo')
+            if self.cacheonly:
+                log.debug("using cached .treeinfo %s", outfile)
+                self._treeinfo = Treeinfo(outfile)
+            else:
+                log.debug("fetching .treeinfo from repo '%s'", self.instrepoid)
+                if os.path.exists(outfile):
+                    os.remove(outfile)
+                fn = self.instrepo.grab.urlgrab('.treeinfo', outfile)
+                self._treeinfo = Treeinfo(fn)
+                log.debug(".treeinfo saved at %s", fn)
+            self._treeinfo.checkvalues()
+        return self._treeinfo
 
-        # set up a function to grab and checksum files in .treeinfo
-        def grab_and_check(relpath, outpath):
-            log.info("downloading %s", relpath)
+    def download_boot_images(self, arch=None):
+        # helper function to grab and checksum image files listed in .treeinfo
+        def grab_and_check(imgarch, imgtype):
+            relpath = self.treeinfo.get_image(imgarch, imgtype)
+            log.debug("grabbing %s %s", imgarch, imgtype)
+            outpath = os.path.join(bootdir, os.path.basename(relpath))
+            log.info("downloading %s to %s", relpath, outpath)
+            if self.treeinfo.checkfile(outpath, relpath):
+                log.debug("file already exists and checksum OK")
+                return outpath
             def checkfile(cb):
                 log.debug("checking %s", relpath)
-                if not treeinfo.checkfile(cb.filename, relpath):
+                if not self.treeinfo.checkfile(cb.filename, relpath):
                     log.info("checksum doesn't match - retrying")
                     raise yum.URLGrabError(-1)
-            return repo.grab.urlgrab(relpath,
-                                     os.path.join(packagedir, outpath),
-                                     checkfunc=checkfile)
+            mkdir_p(bootdir)
+            # TODO: use failure callback to log failure reason(s)
+            return self.instrepo.grab.urlgrab(relpath, outpath,
+                                              checkfunc=checkfile,
+                                              copy_local=True)
 
-        # grab and check the kernel and initrd
-        if not arch:
-            arch = treeinfo.get('general', 'arch')
-        kernelpath = treeinfo.get_image(arch, 'kernel')
-        initrdpath = treeinfo.get_image(arch, 'initrd')
-        kernel = grab_and_check(kernelpath, 'vmlinuz')
-        initrd = grab_and_check(initrdpath, 'initrd.img')
-
-        return kernel, initrd
-
-    def download_boot_images(self, repoid, arch=None):
+        # download the images
         try:
-            return self._download_boot_images(repoid, arch)
+            if not arch:
+                arch = self.treeinfo.get('general', 'arch')
+            imgs = {'kernel': None, 'initrd': None}
+            for img in imgs:
+                imgs[img] = grab_and_check(arch, img)
         except TreeinfoError as e:
             raise YumBaseError(_("invalid data in .treeinfo: %s") % str(e))
         except yum.URLGrabError as e:
             if e.errno >= 256:
-                raise YumBaseError(_("couldn't get file from repo"))
+                raise YumBaseError(_("couldn't get %s from repo") % img)
             else:
-                raise YumBaseError(_("failed to download file: %s") % str(e))
+                raise YumBaseError(_("failed to download %s: %s") % (img, str(e)))
+
+        return imgs['kernel'], imgs['initrd']
 
 
 def link_pkgs(pkgs):
@@ -238,7 +277,7 @@ def setup_upgraderoot():
         log.info("creating upgraderoot dir: %s", upgraderoot)
         os.makedirs(upgraderoot, 0755)
 
-def modify_bootloader():
+def modify_bootloader(kernel, initrd):
     log.info("reading bootloader config")
     bootloader = Grubby()
     default = bootloader.default_entry()
@@ -251,22 +290,24 @@ def modify_bootloader():
             bootloader.remove_entry(e.index)
 
     log.info("adding new boot entry")
-    bootloader.add_entry(kernel="/boot/upgrade/vmlinuz",
-                         initrd="/boot/upgrade/upgrade.img",
+    bootloader.add_entry(kernel=kernel,
+                         initrd=initrd,
                          title=_("System Upgrade"),
                          args="systemd.unit=system-upgrade.target")
-    # FIXME: systemd.unit isn't necessary if we're running F18 or later -
-    #        check the system version to see if we actually need that.
+    # NOTE: systemd.unit might not be necessary in F18 or later.
+    #       if not, check the system version to see if we actually need this.
 
     # FIXME: use grub2-reboot to change to new bootloader config
 
-def prep_upgrade(pkgs, bootloader=True):
+def prep_upgrade(pkgs):
     # put packages in packagedir (also writes packagelist)
     link_pkgs(pkgs)
     # make magic symlink
     setup_upgradelink()
     # make dir for upgraderoot
     setup_upgraderoot()
+
+def prep_boot(kernel, initrd, bootloader=True):
     # mess with the bootloader, if requested
     if bootloader:
-        modify_bootloader()
+        modify_bootloader(kernel, initrd)
