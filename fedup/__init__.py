@@ -9,6 +9,7 @@ import gettext
 t = gettext.translation("fedup", "/usr/share/locale", fallback=True)
 _ = t.lgettext
 
+bootdir = '/boot/upgrade'
 packagedir = '/var/lib/fedora-upgrade'
 packagelist = packagedir + '/package.list'
 upgradelink = '/system-upgrade'
