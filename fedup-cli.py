@@ -16,6 +16,9 @@ from fedup import textoutput as output
 
 import logging, fedup.logutils, fedup.media
 log = logging.getLogger("fedup")
+def message(m):
+    print m
+    log.info(m)
 
 from fedup import _
 
@@ -182,13 +185,13 @@ def main(args):
             return
 
         if args.skippkgs:
-            log.info("skipping package download")
+            message("skipping package download")
         else:
             print _("setting up update...")
             pkgs = download_packages(f)
 
         if args.skipkernel:
-            log.info("skipping kernel/initrd download")
+            message("skipping kernel/initrd download")
         else:
             print _("getting boot images...")
             # FIXME: get args.instrepo from releases.txt if unset
@@ -202,18 +205,18 @@ def main(args):
             raise NotImplementedError("--iso isn't implemented yet")
         # FIXME: set up repo for args.device.mntpoint
         # FIXME: prep update transaction, get pkglist for repo
-        # FIXME: copy kernel & initrd into place
+        # FIXME: write package.list
         raise NotImplementedError("--device isn't implemented yet")
 
-    if args.skippkgs:
-        log.info("exiting due to --skippkgs")
-        return
 
-    # Run a test transaction
-    transaction_test(pkgs)
+    if args.skippkgs:
+        message("skipping transaction test")
+    else:
+        # Run a test transaction
+        transaction_test(pkgs)
 
     # And prepare for upgrade
-    # TODO: we need root privs here... use polkit to get 'em?
+    # TODO: use polkit to get root privs for these things
     print _("setting up system for upgrade")
     prep_upgrade(pkgs, bootloader=args.bootloader)
     # FIXME: if args.device: add ${dev}.mount to system-update.target.wants
@@ -252,13 +255,17 @@ if __name__ == '__main__':
                 print "  %s" % p
         else:
             print _("Downloading failed: %s") % e
+        log.info("Downloading failed. Exception:", exc_info=True)
         raise SystemExit(2)
     except TransactionError as e:
         print
         print _("Transaction test failed with the following problems")
         for p in e.problems:
             print p
+        log.info("Transaction test failed. Exception:", exc_info=True)
         raise SystemExit(3)
+    except Exception as e:
+        log.info("Exception:", exc_info=True)
+        raise
     finally:
-        # TODO: log exception
         log.info("%s exiting at %s", sys.argv[0], time.asctime())
