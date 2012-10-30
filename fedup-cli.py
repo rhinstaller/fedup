@@ -223,7 +223,7 @@ if __name__ == '__main__':
     # TODO: use polkit to get privs for modifying bootloader stuff instead
     if os.getuid() != 0:
         print _("you must be root to run this program.")
-        raise SystemExit(1);
+        raise SystemExit(1)
 
     # set up logging
     if args.debuglog:
