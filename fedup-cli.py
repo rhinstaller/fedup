@@ -177,7 +177,7 @@ def parse_args():
         p.error(_('SOURCE is required (--network, --device, --iso)'))
 
     if '://' in args.instrepo:
-        args.repos.append(('instrepo', args.instrepo))
+        args.repos.append(('add', 'instrepo=%s' % args.instrepo))
         args.instrepo = 'instrepo'
 
     return args
