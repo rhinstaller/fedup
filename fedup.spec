@@ -1,7 +1,7 @@
 Name:           fedup
 Version:        0.7
 Release:        1%{?dist}
-Summary:        the Fedora Upgrade tool
+Summary:        The Fedora Upgrade tool
 
 License:        GPLv2+
 URL:            http://github.com/wgwoods/fedup
@@ -41,9 +41,9 @@ make install-systemd DESTDIR=$RPM_BUILD_ROOT
 %{_bindir}/fedup-cli
 
 #TODO - finish and package gtk-based GUI
-#%files gtk
-#%{_bindir}/fedup-gtk
-#%{_datadir}/fedup/ui
+#files gtk
+#{_bindir}/fedup-gtk
+#{_datadir}/fedup/ui
 
 %changelog
 * Wed Oct 24 2012 Will Woods <wwoods@redhat.com> 0.7-1
