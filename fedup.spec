@@ -4,8 +4,8 @@ Release:        1%{?dist}
 Summary:        The Fedora Upgrade tool
 
 License:        GPLv2+
-URL:            http://github.com/wgwoods/fedup
-Source0:        %{name}-%{version}.tar.xz
+URL:            https://github.com/wgwoods/fedup
+Source0:        https://github.com/downloads/wgwoods/fedup/%{name}-%{version}.tar.xz
 
 BuildRequires:  python2-devel
 Requires:       systemd
