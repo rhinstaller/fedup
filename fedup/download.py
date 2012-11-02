@@ -31,7 +31,9 @@ disabled_plugins = ['rpm-warm-cache', 'remove-with-leaves', 'presto',
 
 cachedir="/var/tmp/fedora-upgrade"
 
-from fedup import _, packagedir, packagelist, upgradelink, upgraderoot, bootdir
+from fedup import _
+from fedup import packagedir, packagelist, cleanuplist
+from fedup import upgradelink, upgraderoot, bootdir
 
 log = logging.getLogger("fedup.yum") # XXX kind of misleading?
 
@@ -243,7 +245,9 @@ class FedupDownloader(yum.YumBase):
 
 def link_pkgs(pkgs):
     '''link the named pkgs into packagedir, overwriting existing files.
-       also removes any .rpm files in packagedir that aren't in pkgs.'''
+       also removes any .rpm files in packagedir that aren't in pkgs.
+       finally, write a list of packages to upgrade and a list of dirs
+       to clean up after successful upgrade.'''
 
     log.info("linking required packages into packagedir")
     log.info("packagedir = %s", packagedir)
@@ -277,6 +281,11 @@ def link_pkgs(pkgs):
     # write packagelist
     with open(packagelist, 'w') as outf:
         outf.writelines(p+'\n' for p in pkgbasenames)
+
+    # write cleanuplist
+    with open(cleanuplist, 'w') as outf:
+        outf.write(cachedir+'\n')
+        outf.write(packagedir+'\n') # packagedir should be last
 
 def setup_upgradelink():
     log.info("setting up upgrade symlink: %s->%s", upgradelink, packagedir)

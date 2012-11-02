@@ -28,5 +28,6 @@ _ = t.lgettext
 bootdir = '/boot/upgrade'
 packagedir = '/var/lib/fedora-upgrade'
 packagelist = packagedir + '/package.list'
+cleanuplist = packagedir + '/cleanup.list'
 upgradelink = '/system-upgrade'
 upgraderoot = '/system-upgrade-root'
