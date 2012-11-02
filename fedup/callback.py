@@ -120,7 +120,7 @@ class DepsolveCallbackBase(object):
     def tscheck(self):
         self.log.debug('running transaction check')
     def restartLoop(self):
-        eelf.log.debug('restarting depsolve')
+        self.log.debug('restarting depsolve')
     def end(self):
         self.log.debug('finished depsolve')
         self.log.debug('%u updates for %u packages',
