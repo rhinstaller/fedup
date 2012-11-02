@@ -45,8 +45,12 @@ class Grubby(object):
         return check_output(cmd + [str(a) for a in args], stderr=PIPE)
 
     def get_entry(self, index):
-        '''Returns a GrubbyEntry for the entry at the given index.'''
+        '''Returns a GrubbyEntry for the entry at the given index,
+        or None if index < 0.'''
         index = int(index) # make sure index is int
+        # NOTE: current grubby (8.12-1) doesn't accept --info {-2,-3}, so..
+        if index < 0:
+            return None
         out = self._grubby("--info", index)
         info = dict()
         for line in out.split("\n"):
@@ -68,6 +72,8 @@ class Grubby(object):
         return ents
 
     def default_index(self):
+        '''Return the index of the default boot item.
+        NOTE: May return -1 (no default), -2 or -3 (saved default, grub1/2)'''
         return int(self._grubby("--default-index"))
 
     def default_entry(self):
