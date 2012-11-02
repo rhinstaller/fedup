@@ -297,8 +297,6 @@ def setup_upgraderoot():
 def modify_bootloader(kernel, initrd):
     log.info("reading bootloader config")
     bootloader = Grubby()
-    default = bootloader.default_entry()
-    log.info("default boot entry: \"%s\", %s", default.title, default.root)
 
     # avoid duplicate boot entries
     for e in bootloader.get_entries():
