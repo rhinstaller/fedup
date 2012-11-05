@@ -37,13 +37,14 @@ Old System::
     . Install frontend(s) and systemd support files
         * `make install`
     . Run fedup to prepare system
-        * ex: `fedup-cli --network 18`
-            * This will take a while. _Be patient._
-        * *NOTE:* doesn't yet fetch kernel/initrd, so...
-    . Copy kernel/initramfs into place
-        * `mkdir /boot/upgrade`
-        * Copy kernel from _new_ system to `/boot/upgrade/vmlinuz`
-        * Copy `upgrade.img` to `/boot/upgrade/upgrade.img`
+        * This will take a while. _Be patient._
+        * If you have a test repo with `.treeinfo`, kernel, and initrd:
+            ** `fedup-cli --network 18 --repo my-tree=http://... --instrepo my-tree`
+        * Otherwise:
+            ** `fedup-cli --network 18 --skipkernel`
+            ** `mkdir /boot/upgrade`
+            ** Copy kernel from _new_ system to `/boot/upgrade/vmlinuz`
+            ** Copy `upgrade.img` to `/boot/upgrade/upgrade.img`
     . Reboot into *System Upgrade* boot menu item
         * *NOTE:* this has to be chosen manually right now
     . Wait 60-90 minutes for the upgrade to complete
