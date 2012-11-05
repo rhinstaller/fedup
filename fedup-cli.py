@@ -241,7 +241,10 @@ def main(args):
     if not args.skippkgs:
         prep_upgrade(pkgs)
     if not args.skipkernel:
-        prep_boot(kernel, initrd, bootloader=args.bootloader)
+        # use default kernel/initrd locations to set up bootloader
+        kernel = '/boot/upgrade/vmlinuz'
+        initrd = '/boot/upgrade/upgrade.img'
+    prep_boot(kernel, initrd, bootloader=args.bootloader)
     # FIXME: if args.device: add ${dev}.mount to system-update.target.wants
 
     if args.reboot:
