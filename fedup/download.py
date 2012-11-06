@@ -227,18 +227,19 @@ class FedupDownloader(yum.YumBase):
 
         # download the images
         try:
+            key = 'treeinfo'
             if not arch:
                 arch = self.treeinfo.get('general', 'arch')
             imgs = {'kernel': None, 'initrd': None}
-            for img in imgs:
-                imgs[img] = grab_and_check(arch, img)
+            for key in imgs:
+                imgs[key] = grab_and_check(arch, key)
         except TreeinfoError as e:
             raise YumBaseError(_("invalid data in .treeinfo: %s") % str(e))
         except yum.URLGrabError as e:
             if e.errno >= 256:
-                raise YumBaseError(_("couldn't get %s from repo") % img)
+                raise YumBaseError(_("couldn't get %s from repo") % key)
             else:
-                raise YumBaseError(_("failed to download %s: %s") % (img, str(e)))
+                raise YumBaseError(_("failed to download %s: %s") % (key, str(e)))
 
         return imgs['kernel'], imgs['initrd']
 
