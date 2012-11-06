@@ -208,6 +208,7 @@ class Treeinfo(RawConfigParser):
 
         If topdir is None, the Treeinfo.topdir value is used.
         '''
+        log.debug("adding %s %s: %s", arch, imgtype, relpath)
         section = 'images-%s' % arch
         self.setopt(section, imgtype, relpath)
         if algo:
@@ -222,7 +223,9 @@ class Treeinfo(RawConfigParser):
         algo is the checksum algorithm.
         '''
         fullpath = self._path(relpath, topdir)
+        log.debug("add_checksum(%s)", fullpath)
         self.setopt('checksums', relpath, algo+':'+hexdigest(fullpath, algo))
+        log.debug("%s = %s" % (relpath, self.get('checksums',relpath)))
 
     def add_timestamp(self, timestamp=None):
         '''
