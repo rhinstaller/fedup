@@ -1,0 +1,156 @@
+#!/usr/bin/python
+#
+# maketreeinfo - a script to generate .treeinfo files
+#
+# Copyright (C) 2012 Red Hat Inc.
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along
+# with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+# Author: Will Woods <wwoods@redhat.com>
+
+import os, sys, time, platform
+import hashlib
+import argparse
+from rpmUtils.arch import getBaseArch
+
+# haha gross.
+if os.path.exists("../fedup.spec"):
+    sys.path.append("../")
+
+from fedup.treeinfo import Treeinfo
+
+import logging
+log = logging.getLogger("fedup.maketreeinfo")
+from fedup.logutils import consolelog
+
+def parse_args():
+    p = argparse.ArgumentParser(
+        description='write .treeinfo files',
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+
+    p.add_argument('-v', '--verbose', action='store_const', dest='level',
+        const=logging.INFO, default=logging.WARNING,
+        help="print more info about what's going on")
+    p.add_argument('-d', '--debug', action='store_const', dest='level',
+        const=logging.DEBUG,
+        help="print logs of debugging info")
+    p.add_argument('-o', '--outfile', type=argparse.FileType('w'),
+        help='output file (default: stdout)', default=sys.stdout)
+    p.add_argument('-t', '--topdir',
+        help='toplevel directory of tree (default: directory containing '
+             'OUTFILE if set, otherwise ".")')
+
+    gen = p.add_argument_group('[general] section')
+    (family, version, name) = platform.linux_distribution()
+    basearch = getBaseArch()
+    gen.add_argument('-s', '--timestamp', type=float, default=time.time(),
+        help='timestamp (default: current time)')
+    gen.add_argument('--family', default=family,
+        help='family (ex: Fedora, default: %(default)s)')
+    gen.add_argument('--version', default=version,
+        help='version (ex: 17, 18-Beta, default: %(default)s)')
+    gen.add_argument('--name', default=name,
+        help='name (ex: Beefy Miracle, default: %(default)s)')
+    gen.add_argument('--arch', default=basearch,
+        help='primary arch (default: %(default)s)')
+
+    img = p.add_argument_group('[images-$ARCH] section')
+    class add_image(argparse.Action):
+        def __init__(self, *args, **kwargs):
+            kwargs['default'] = []
+            argparse.Action.__init__(self, *args, **kwargs)
+        def __call__(self, parser, namespace, values, option_string=None):
+            arch = namespace.imagearch or namespace.arch or basearch
+            items = getattr(namespace, self.dest) or []
+            items.append((arch, values))
+            setattr(namespace, self.dest, items)
+    img.add_argument('--imagearch',
+        help='ARCH to use for subsequent images')
+    img.add_argument('--kernel', action=add_image,
+        help='add a kernel image (relative to TOPDIR)')
+    img.add_argument('--initrd', action=add_image,
+        help='add an initrd image (relative to TOPDIR)')
+    img.add_argument('--upgrade', action=add_image,
+        help='add an upgrade image (relative to TOPDIR)')
+
+    checksum = p.add_argument_group('[checksums] section')
+    algorithms = hashlib.algorithms + ('none',)
+    checksum.add_argument('--checksum', choices=algorithms, default='sha256',
+        help='checksum to use for images')
+
+    p.epilog = '''\
+example: maketreeinfo --topdir ~/test/boot --kernel img/vmlinuz \\
+                       --imagearch=xen --kernel img/vmlinuz-PAE'''
+
+    args = p.parse_args()
+
+    consolelog(level=args.level, tty=sys.stderr)
+
+    if args.checksum == 'none':
+        args.checksum = None
+
+    log.debug("args: %s", args)
+
+    if not args.topdir:
+        if not args.outfile.name:
+            args.topdir = '.'
+        else:
+            topdir = args.outfile.name
+            if topdir == '.treeinfo':
+                topdir = './.treeinfo'
+            if topdir.endswith('.treeinfo'):
+                args.topdir = os.path.dirname(topdir)
+            log.info("set topdir to %s", args.topdir)
+
+    return args
+
+def main():
+    args = parse_args()
+    log.info("starting up...")
+
+    t = Treeinfo()
+
+    # Set stuff in [general]
+    for field in ('timestamp', 'family', 'version', 'name', 'arch'):
+        value = getattr(args, field)
+        if value is not None:
+            log.info("setting [general] %s to %s", field, value)
+            t.setopt('general', field, value)
+
+    for imgtype in ('kernel', 'initrd', 'upgrade'):
+        for arch, img in getattr(args, imgtype):
+            # if arch wasn't set above, set it now
+            if not t.has_option('general', 'arch'):
+                t.setopt('general', 'arch', arch)
+                log.warn("arch missing, using %s", arch)
+                args.arch = arch
+            log.info("adding %s %s: %s", args.arch, imgtype, img)
+            t.add_image(args.arch, imgtype, img,
+                        topdir=args.topdir, algo=args.checksum)
+
+
+    log.info("checking data for validity...")
+    t.checkvalues()
+
+    log.info("writing to %s", args.outfile.name)
+    t.write(args.outfile)
+
+    log.info("finished.")
+
+if __name__ == '__main__':
+    try:
+        main()
+    except KeyboardInterrupt:
+        pass
