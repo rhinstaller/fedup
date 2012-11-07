@@ -28,7 +28,7 @@ make install-systemd DESTDIR=$RPM_BUILD_ROOT
 
 
 %files
-%doc README.asciidoc TODO COPYING
+%doc README.asciidoc TODO.asciidoc COPYING
 # systemd stuff
 %{_unitdir}/system-upgrade.target
 %{_unitdir}/upgrade-prep.service
