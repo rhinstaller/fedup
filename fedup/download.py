@@ -190,6 +190,7 @@ class FedupDownloader(yum.YumBase):
     @property
     def treeinfo(self):
         if self._treeinfo is None:
+            mkdir_p(cachedir)
             outfile = os.path.join(cachedir, '.treeinfo')
             if self.cacheonly:
                 log.debug("using cached .treeinfo %s", outfile)
