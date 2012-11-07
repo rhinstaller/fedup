@@ -1,0 +1,47 @@
+TODO
+====
+
+_(ordered by priority, roughly)_
+
+Build upgrade.img::
+  * Build upgrade.img in Lorax, add it to treeinfo
+  * Modify treeinfo code to fetch upgrade image
+
+ISO/Device/"Offline" upgrades::
+  * Set up $PATH.mount unit file
+  * Add `$PATH/filename.rpm` items to package list
+
+Release Info::
+  * Get releases.txt from network
+  ** Use this to fill in instrepo and network version
+
+Cleanup::
+  * Write a list of package/caches to clean from fedup-cli
+  ** Actually remove them after upgrade
+  * Write the location of the kernel image from fedup-cli
+  ** Actually remove it after upgrade
+  *** Hey, that plan sounds familiar..
+
+GUI::
+  * Move commandline parsing to fedup library, use it
+  * Wire up the UI bits
+  * Wire up progress meter
+
+Updates::
+  * Figure out updates.img format
+  * Look for updates.img
+  * Apply it before switch-root
+
+Docs::
+  * man pages for services
+  * man pages for targets
+  * document boot args
+
+Upstreaming::
+  * Get system-upgrade.target upstream
+  ** Pass `switch-root` flags to new `systemd`
+  ** Generator to switch to system-upgrade.target
+  *** read `/run/initramfs/upgrade.conf`
+  *** check UPGRADEROOT and UPGRADELINK
+  *** switch target for this boot
+  * Also get `90system-upgrade` into upstream dracut
