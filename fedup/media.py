@@ -28,7 +28,7 @@ def mounts(fstab="/proc/mounts"):
         yield FstabEntry(*line.split())
 
 def ismedia(mountpoint):
-    return exists(join(mountpoint, ".buildstamp"))
+    return exists(join(mountpoint, ".treeinfo"))
 
 def isblock(dev):
     return exists(dev) and stat.S_ISBLK(os.stat(dev).st_mode)
