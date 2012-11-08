@@ -40,3 +40,49 @@ def isblock(dev):
 
 def find():
     return [m for m in mounts() if isblock(m.dev) and ismedia(m.mnt)]
+
+# see systemd/src/shared/unit-name.c:do_escape()
+validchars='0123456789'\
+           'abcdefghijklmnopqrstuvwxyz'\
+           'ABCDEFGHIJKLMNOPQRSTUVWXYZ'\
+           ':-_.\\'
+
+def systemd_escape_char(ch):
+    if ch == '/':
+        return '-'
+    elif ch == '-' or ch == '\\' or ch not in validchars:
+        return '\\x%x' % ord(ch)
+    else:
+        return ch
+
+def systemd_escape(path):
+    if path == '/':
+        return '-'
+    newpath = ''
+    path = path.strip('/')
+    if path[0] == '.':
+        newpath += '\\x2e'
+        path = path[1:]
+    for ch in path:
+        newpath += systemd_escape_char(ch)
+    return newpath
+
+unit_tmpl = """\
+[Unit]
+Description={desc}
+{unitopts}
+
+[Mount]
+What={mount.dev}
+Where={mount.mnt}
+Type={mount.type}
+Options={mount.opts}
+"""
+
+def write_systemd_unit(mount, unitdir, desc=None, unitopts=""):
+    if desc is None:
+        desc = "Upgrade Media"
+    unit = join(unitdir, systemd_escape(mount.mnt)+'.mount')
+    with open(unit, 'w') as u:
+        u.write(unit_tmpl.format(desc=desc, unitopts=unitopts, mount=mount))
+    return unit
