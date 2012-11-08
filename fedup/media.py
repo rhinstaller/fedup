@@ -21,7 +21,12 @@ import os, stat
 from collections import namedtuple
 from os.path import exists, join
 
-FstabEntry = namedtuple('FstabEntry', 'dev mntpoint type opts freq passno')
+class FstabEntry(namedtuple('FstabEntry','dev rawmnt type opts freq passno')):
+    __slots__ = ()
+    @property
+    def mnt(self):
+        '''unescaped mountpoint'''
+        return self.rawmnt.decode('string_escape')
 
 def mounts(fstab="/proc/mounts"):
     for line in open(fstab):
@@ -34,4 +39,4 @@ def isblock(dev):
     return exists(dev) and stat.S_ISBLK(os.stat(dev).st_mode)
 
 def find():
-    return [m for m in mounts() if isblock(m.dev) and ismedia(m.mntpoint)]
+    return [m for m in mounts() if isblock(m.dev) and ismedia(m.mnt)]
