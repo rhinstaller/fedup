@@ -234,7 +234,7 @@ class FedupDownloader(yum.YumBase):
             key = 'treeinfo'
             if not arch:
                 arch = self.treeinfo.get('general', 'arch')
-            imgs = {'kernel': None, 'initrd': None}
+            imgs = {'kernel': None, 'upgrade': None}
             for key in imgs:
                 imgs[key] = grab_and_check(arch, key)
         except TreeinfoError as e:
@@ -245,7 +245,7 @@ class FedupDownloader(yum.YumBase):
             else:
                 raise YumBaseError(_("failed to download %s: %s") % (key, str(e)))
 
-        return imgs['kernel'], imgs['initrd']
+        return imgs['kernel'], imgs['upgrade']
 
 
 def link_pkgs(pkgs):
