@@ -240,6 +240,11 @@ def main(args):
         prep_upgrade(pkgs)
 
     if not args.skipbootloader:
+        if args.skipkernel:
+            print "warning: --skipkernel without --skipbootloader"
+            print "using default paths (/boot/upgrade/{upgrade.img,vmlinuz}"
+            kernel = "/boot/upgrade/vmlinuz"
+            initrd = "/boot/upgrade/upgrade.img"
         prep_boot(kernel, initrd)
 
     if args.device:
