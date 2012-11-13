@@ -34,6 +34,7 @@ cachedir="/var/tmp/fedora-upgrade"
 from fedup import _
 from fedup import packagedir, packagelist, cleanuplist
 from fedup import upgradelink, upgraderoot, bootdir
+from fedup.media import write_systemd_unit
 
 log = logging.getLogger("fedup.yum") # XXX kind of misleading?
 
@@ -299,6 +300,20 @@ def setup_upgradelink():
     except OSError:
         pass
     os.symlink(packagedir, upgradelink)
+
+def setup_media_mount(mnt):
+    # make a "media" subdir where all the packages are
+    mountpath = os.path.join(upgradelink, "media")
+    log.info("setting up mount for %s at %s", mnt.dev, mountpath)
+    mkdir_p(mountpath)
+    # make a directory to place a unit
+    unitdir = "/lib/systemd/system/system-upgrade.target.wants"
+    mkdir_p(unitdir)
+    # make a modified mnt entry that puts it at mountpath
+    mediamnt = mnt._replace(rawmnt=mountpath)
+    # finally, write out a systemd unit to mount media there
+    unit = write_systemd_unit(mediamnt, unitdir)
+    log.info("wrote %s", unit)
 
 def setup_upgraderoot():
     if os.path.isdir(upgraderoot):
