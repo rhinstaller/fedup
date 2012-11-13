@@ -41,6 +41,20 @@ def isblock(dev):
 def find():
     return [m for m in mounts() if isblock(m.dev) and ismedia(m.mnt)]
 
+def loopmount(filename):
+    mntpoint = '/media/fedup-iso' # TODO: tempfile, etc.
+    check_call(['mount', '-oloop', filename, mntpoint])
+    for m in mounts():
+        if m.mnt == mntpoint:
+            return m
+
+def umount(mntpoint):
+    try:
+        check_call(['umount', '-d', mntpoint])
+    except CalledProcessError:
+        log.warn('umount %s failed, trying lazy umount', mntpoint)
+        call(['umount', '-l', mntpoint])
+
 # see systemd/src/shared/unit-name.c:do_escape()
 validchars='0123456789'\
            'abcdefghijklmnopqrstuvwxyz'\
