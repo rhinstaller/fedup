@@ -96,7 +96,7 @@ def device_or_mnt(arg):
         return media.pop()
 
     if not media:
-        msg = _("no install media found")
+        msg = _("no install media found - please mount install media first")
         if arg != 'auto':
             msg = "%s: %s" % (arg, msg)
     else:
