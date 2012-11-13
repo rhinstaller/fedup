@@ -67,6 +67,8 @@ class FedupDownloader(yum.YumBase):
         log.debug("prerepoconf.cache=%i", self.prerepoconf.cache)
         self.instrepoid = None
         self._treeinfo = None
+        if version is None: # i.e. no --network arg
+            self.repos.disableRepo('*')
         # TODO: locking to prevent multiple instances
         # TODO: override logging objects so we get yum logging
 
