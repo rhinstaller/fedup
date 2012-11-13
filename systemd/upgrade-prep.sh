@@ -24,9 +24,18 @@ die() { echo "$@"; exit 1; }
 [ -n "$UPGRADEROOT" ] || die "UPGRADEROOT is not set"
 [ -d "$UPGRADEROOT" ] || die "$UPGRADEROOT does not exist"
 
-echo "binding / into $UPGRADEROOT"
-# bind-mount / into the upgrade chroot so we can upgrade it
+echo "moving mounts into $UPGRADEROOT"
+# bind everything into the upgrade chroot
 mount --rbind / $UPGRADEROOT/sysroot || die "couldn't bind / into upgrade dir"
+# make the bind mounts separate from the original mounts
+mount --make-rprivate /
+# unmount the original mounts, i.e.:
+#   anything that's a block device, not root, and not under UPGRADEROOT
+tac /proc/mounts | while read dev mnt type opts x y; do
+    if [ -b "$dev" -a "$mnt" != "/" -a "${mnt#$UPGRADEROOT}" == "$mnt" ]; then
+        umount $mnt && echo "moved $mnt" || echo "failed to move $mnt"
+    fi
+done
 
 # XXX: we can drop this once there's a way to pass args to new init
 echo "switching upgraderoot default target to upgrade.target"
