@@ -146,8 +146,8 @@ def parse_args():
 
     p.add_argument('--reboot', action='store_true', default=False,
         help=_('automatically reboot to start the upgrade when ready'))
-    p.add_argument('--no-bootloader', action='store_false', default=True,
-        dest='bootloader', help=_('do not modify bootloader configuration'))
+    p.add_argument('--skipbootloader', action='store_true', default=False,
+        dest='skipbootloader', help=_('do not modify bootloader configuration'))
 
     req = p.add_argument_group('SOURCE',
                                _('Location to search for upgrade data.'))
@@ -244,8 +244,10 @@ def main(args):
         # use default kernel/initrd locations to set up bootloader
         kernel = '/boot/upgrade/vmlinuz'
         initrd = '/boot/upgrade/upgrade.img'
-    prep_boot(kernel, initrd, bootloader=args.bootloader)
     # FIXME: if args.device: add ${dev}.mount to system-update.target.wants
+
+    if not args.skipbootloader:
+        prep_boot(kernel, initrd)
 
     if args.reboot:
         reboot()

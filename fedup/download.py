@@ -334,7 +334,6 @@ def prep_upgrade(pkgs):
     # make dir for upgraderoot
     setup_upgraderoot()
 
-def prep_boot(kernel, initrd, bootloader=True):
-    # mess with the bootloader, if requested
-    if bootloader:
-        modify_bootloader(kernel, initrd)
+def prep_boot(kernel, initrd):
+    # all we need to do currently is set up the boot args
+    modify_bootloader(kernel, initrd)
