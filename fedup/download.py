@@ -224,6 +224,7 @@ class FedupDownloader(yum.YumBase):
             # TODO: use failure callback to log failure reason(s)
             return self.instrepo.grab.urlgrab(relpath, outpath,
                                               checkfunc=checkfile,
+                                              reget=None,
                                               copy_local=True)
 
         # download the images
