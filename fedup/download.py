@@ -261,7 +261,12 @@ def link_pkgs(pkgs):
         os.mkdir(packagedir, 0755)
 
     pkgbasenames = set()
-    for pkgpath in pkgs:
+    for pkg in pkgs:
+        pkgpath = pkg.localPkg()
+        if pkg.remote_url.startswith("file://"):
+            pkgbasename = "media/%s" % pkg.relativepath
+            pkgbasenames.add(pkgbasename)
+            continue
         if not os.path.exists(pkgpath):
             log.warning("%s missing", pkgpath)
             continue

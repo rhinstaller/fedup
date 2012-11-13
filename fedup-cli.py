@@ -24,7 +24,7 @@ import argparse, platform
 from subprocess import call
 
 from fedup.download import FedupDownloader, YumBaseError
-from fedup.download import prep_upgrade, prep_boot
+from fedup.download import prep_upgrade, prep_boot, setup_media_mount
 from fedup.upgrade import FedupUpgrade, TransactionError
 from fedup import textoutput as output
 
@@ -57,13 +57,14 @@ def download_packages(f):
     # download packages
     f.download_packages(updates, callback=output.DownloadCallback())
 
-    return set(po.localPkg() for po in updates)
+    return updates
 
 def transaction_test(pkgs):
     print _("testing upgrade transaction")
+    pkgfiles = set(po.localPkg() for po in pkgs)
     fu = FedupUpgrade()
-    fu.setup_transaction(pkgfiles=pkgs)
-    fu.test_transaction(callback=output.TransactionCallback(numpkgs=len(pkgs)))
+    fu.setup_transaction(pkgfiles=pkgfiles)
+    fu.test_transaction(callback=output.TransactionCallback(numpkgs=len(pkgfiles)))
 
 def reboot():
     call(['systemctl', 'reboot'])
@@ -184,50 +185,47 @@ def parse_args():
 
 def main(args):
     # Get our packages set up where we can use 'em
-    # TODO: FedupMedia setup for DVD/USB/ISO
-    if args.network:
-        if args.network == 'latest':
-            # FIXME: get this from releases.txt
-            args.network = '18'
-        print _("setting up repos...")
-        f = setup_downloader(version=args.network,
-                             cacheonly=args.cacheonly,
-                             instrepo=args.instrepo,
-                             repos=args.repos)
+    if args.device:
+        args.repos.append(('add', 'fedupdevice=file://%s' % args.device.mnt))
+        args.instrepo = 'fedupdevice'
+    elif args.iso:
+        args.device = fedup.media.loopmount(args.iso)
+        args.repos.append(('add', 'fedupiso=file://%s' % args.device.mnt))
+        args.instrepo = 'fedupiso'
 
-        if args.expire_cache:
-            print "expiring cache files"
-            f.cleanExpireCache()
-            return
-        if args.clean_metadata:
-            print "cleaning metadata"
-            f.cleanMetadata()
-            return
+    if args.network == 'latest':
+        # FIXME: get this from releases.txt
+        args.network = '18'
 
-        if args.skippkgs:
-            message("skipping package download")
-        else:
-            print _("setting up update...")
-            pkgs = download_packages(f)
+    print _("setting up repos...")
+    f = setup_downloader(version=args.network,
+                         cacheonly=args.cacheonly,
+                         instrepo=args.instrepo,
+                         repos=args.repos)
 
-        if args.skipkernel:
-            message("skipping kernel/initrd download")
-        else:
-            print _("getting boot images...")
-            # FIXME: get args.instrepo from releases.txt if unset
-            if not args.instrepo:
-                raise NotImplementedError("use --instrepo or --skipkernel")
-            kernel, initrd = f.download_boot_images() # TODO: arch
+    if args.expire_cache:
+        print "expiring cache files"
+        f.cleanExpireCache()
+        return
+    if args.clean_metadata:
+        print "cleaning metadata"
+        f.cleanMetadata()
+        return
+
+    if args.skippkgs:
+        message("skipping package download")
     else:
-        if args.iso:
-            # FIXME: mount iso so we can use files etc.
-            # FIXME: set args.device = FstabEntry for mounted iso
-            raise NotImplementedError("--iso isn't implemented yet")
-        # FIXME: set up repo for args.device.mntpoint
-        # FIXME: prep update transaction, get pkglist for repo
-        # FIXME: write package.list
-        raise NotImplementedError("--device isn't implemented yet")
+        print _("setting up update...")
+        pkgs = download_packages(f)
 
+    if args.skipkernel:
+        message("skipping kernel/initrd download")
+    else:
+        print _("getting boot images...")
+        # FIXME: get args.instrepo from releases.txt if unset
+        if not args.instrepo:
+            raise NotImplementedError("use --instrepo or --skipkernel")
+        kernel, initrd = f.download_boot_images() # TODO: arch
 
     if args.skippkgs:
         message("skipping transaction test")
@@ -240,14 +238,15 @@ def main(args):
     print _("setting up system for upgrade")
     if not args.skippkgs:
         prep_upgrade(pkgs)
-    if not args.skipkernel:
-        # use default kernel/initrd locations to set up bootloader
-        kernel = '/boot/upgrade/vmlinuz'
-        initrd = '/boot/upgrade/upgrade.img'
-    # FIXME: if args.device: add ${dev}.mount to system-update.target.wants
 
     if not args.skipbootloader:
         prep_boot(kernel, initrd)
+
+    if args.device:
+        setup_media_mount(args.device)
+
+    if args.iso:
+        fedup.media.umount(args.device)
 
     if args.reboot:
         reboot()
