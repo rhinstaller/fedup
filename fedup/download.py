@@ -328,14 +328,22 @@ def setup_upgraderoot():
         log.info("creating upgraderoot dir: %s", upgraderoot)
         os.makedirs(upgraderoot, 0755)
 
+def prep_upgrade(pkgs):
+    # put packages in packagedir (also writes packagelist)
+    link_pkgs(pkgs)
+    # make magic symlink
+    setup_upgradelink()
+    # make dir for upgraderoot
+    setup_upgraderoot()
+
 def modify_bootloader(kernel, initrd):
     log.info("reading bootloader config")
     bootloader = Grubby()
 
     # avoid duplicate boot entries
     for e in bootloader.get_entries():
-        if e.kernel == "/boot/upgrade/vmlinuz":
-            log.info("removing existing boot entry for %s", e.kernel)
+        if e.kernel == kernel:
+            log.info("removing existing boot entry for %s", kernel)
             bootloader.remove_entry(e.index)
 
     log.info("adding new boot entry")
@@ -347,14 +355,6 @@ def modify_bootloader(kernel, initrd):
     #       if not, check the system version to see if we actually need this.
 
     # FIXME: use grub2-reboot to change to new bootloader config
-
-def prep_upgrade(pkgs):
-    # put packages in packagedir (also writes packagelist)
-    link_pkgs(pkgs)
-    # make magic symlink
-    setup_upgradelink()
-    # make dir for upgraderoot
-    setup_upgraderoot()
 
 def prep_boot(kernel, initrd):
     # all we need to do currently is set up the boot args
