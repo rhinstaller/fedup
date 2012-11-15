@@ -25,6 +25,7 @@ from subprocess import call
 
 from fedup.download import FedupDownloader, YumBaseError
 from fedup.download import prep_upgrade, prep_boot, setup_media_mount
+from fedup.download import full_cleanup
 from fedup.upgrade import FedupUpgrade, TransactionError
 from fedup import textoutput as output
 
@@ -149,6 +150,8 @@ def parse_args():
         help=_('automatically reboot to start the upgrade when ready'))
     p.add_argument('--skipbootloader', action='store_true', default=False,
         dest='skipbootloader', help=_('do not modify bootloader configuration'))
+    p.add_argument('--clean', action='store_true', default=False,
+        help=_('clean up everything written by fedup'))
 
     req = p.add_argument_group('SOURCE',
                                _('Location to search for upgrade data.'))
@@ -174,17 +177,15 @@ def parse_args():
 
     args = p.parse_args()
 
-    if not (args.network or args.device or args.iso):
+    if not (args.network or args.device or args.iso or args.clean):
         p.error(_('SOURCE is required (--network, --device, --iso)'))
 
+    # allow --instrepo URL as shorthand for --repourl REPO=URL --instrepo REPO
     if args.instrepo and '://' in args.instrepo:
         args.repos.append(('add', 'instrepo=%s' % args.instrepo))
         args.instrepo = 'instrepo'
 
-    return args
-
-def main(args):
-    # Get our packages set up where we can use 'em
+    # treat --device like --repo REPO=file://$MOUNTPOINT
     if args.device:
         args.repos.append(('add', 'fedupdevice=file://%s' % args.device.mnt))
         args.instrepo = 'fedupdevice'
@@ -197,6 +198,14 @@ def main(args):
         # FIXME: get this from releases.txt
         args.network = '18'
 
+    return args
+
+def main(args):
+    if args.clean:
+        full_cleanup()
+        return
+
+    # Get our packages set up where we can use 'em
     print _("setting up repos...")
     f = setup_downloader(version=args.network,
                          cacheonly=args.cacheonly,
