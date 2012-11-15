@@ -1,5 +1,5 @@
 Name:           fedup
-Version:        0.7
+Version:        0.7.1
 Release:        1%{?dist}
 Summary:        The Fedora Upgrade tool
 
@@ -46,5 +46,11 @@ make install-systemd DESTDIR=$RPM_BUILD_ROOT
 #{_datadir}/fedup/ui
 
 %changelog
+* Thu Nov 15 2012 Will Woods <wwoods@redhat.com> 0.7.1-1
+- Fix grubby traceback (#872088)
+- Fetch kernel/initrd and set up bootloader
+- Work around data-corrupting umount bug (#873459)
+- Add support for upgrades from media (--device)
+
 * Wed Oct 24 2012 Will Woods <wwoods@redhat.com> 0.7-1
 - Initial packaging
