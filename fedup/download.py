@@ -20,6 +20,7 @@
 import os
 import yum
 import logging
+from shutil import rmtree
 from fedup.callback import BaseTsCallback
 from fedup.grubby import Grubby
 from fedup.treeinfo import Treeinfo, TreeinfoError
@@ -30,6 +31,7 @@ disabled_plugins = ['rpm-warm-cache', 'remove-with-leaves', 'presto',
                     'auto-update-debuginfo', 'refresh-packagekit']
 
 cachedir="/var/tmp/fedora-upgrade"
+upgrade_target_wants = "/lib/systemd/system/system-upgrade.target.wants"
 
 from fedup import _
 from fedup import packagedir, packagelist, cleanuplist
@@ -48,6 +50,17 @@ def mkdir_p(d):
     except OSError as e:
         if e.errno != 17:
             raise
+
+def rm_f(f, rm=os.remove):
+    if not os.path.lexists(f):
+        return
+    try:
+        rm(f)
+    except (IOError, OSError) as e:
+        log.warn("failed to remove %s: %s", f, str(e))
+
+def rm_rf(d):
+    rm_f(d, rm=rmtree)
 
 class FedupDownloader(yum.YumBase):
     '''Yum-based downloader class for fedup. Based roughly on AnacondaYum.'''
@@ -248,7 +261,6 @@ class FedupDownloader(yum.YumBase):
 
         return imgs['kernel'], imgs['upgrade']
 
-
 def link_pkgs(pkgs):
     '''link the named pkgs into packagedir, overwriting existing files.
        also removes any .rpm files in packagedir that aren't in pkgs.
@@ -312,12 +324,11 @@ def setup_media_mount(mnt):
     log.info("setting up mount for %s at %s", mnt.dev, mountpath)
     mkdir_p(mountpath)
     # make a directory to place a unit
-    unitdir = "/lib/systemd/system/system-upgrade.target.wants"
-    mkdir_p(unitdir)
+    mkdir_p(upgrade_target_wants)
     # make a modified mnt entry that puts it at mountpath
     mediamnt = mnt._replace(rawmnt=mountpath)
     # finally, write out a systemd unit to mount media there
-    unit = write_systemd_unit(mediamnt, unitdir)
+    unit = write_systemd_unit(mediamnt, upgrade_target_wants)
     log.info("wrote %s", unit)
 
 def setup_upgraderoot():
@@ -359,3 +370,35 @@ def modify_bootloader(kernel, initrd):
 def prep_boot(kernel, initrd):
     # all we need to do currently is set up the boot args
     modify_bootloader(kernel, initrd)
+
+def remove_boot():
+    '''find and remove our boot entry'''
+    bootloader = Grubby()
+    for idx, entry in enumerate(bootloader.get_entries()):
+        log.debug("checking boot entry %i, \"%s\"", idx, entry.title)
+        if entry.kernel.startswith(bootdir):
+            log.info("removing boot entry %i, \"%s\"", idx, entry.title)
+            try:
+                bootloader.remove_entry(idx)
+            except Exception as e:
+                log.warn("failed to remove boot entry \"%s\": %s",
+                         entry.title, str(e))
+
+    log.info("removing %s", bootdir)
+    rm_rf(bootdir)
+
+def remove_cache():
+    '''remove our cache dirs'''
+    for d in (cachedir, packagedir):
+        log.info("removing %s", d)
+        rm_rf(d)
+
+def full_cleanup():
+    '''remove all the files we create and undo any other changes'''
+    remove_boot()
+    remove_cache()
+    log.info("removing symlink %s", upgradelink)
+    rm_f(upgradelink)
+    for d in (upgraderoot, upgrade_target_wants):
+        log.info("removing %s", d)
+        rm_rf(d)
