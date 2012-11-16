@@ -25,6 +25,7 @@ die() { echo "$@"; exit 1; }
 [ -d "$UPGRADEROOT" ] || die "$UPGRADEROOT does not exist"
 
 echo "moving mounts into $UPGRADEROOT"
+mount --make-unbindable $UPGRADEROOT
 # bind everything into the upgrade chroot
 mount --rbind / $UPGRADEROOT/sysroot || die "couldn't bind / into upgrade dir"
 # make the bind mounts separate from the original mounts
