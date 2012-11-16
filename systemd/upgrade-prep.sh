@@ -24,6 +24,9 @@ die() { echo "$@"; exit 1; }
 [ -n "$UPGRADEROOT" ] || die "UPGRADEROOT is not set"
 [ -d "$UPGRADEROOT" ] || die "$UPGRADEROOT does not exist"
 
+# make target dir for systemd's pivot_root
+mkdir -p $UPGRADEROOT/mnt
+
 echo "moving mounts into $UPGRADEROOT"
 mount --make-unbindable $UPGRADEROOT
 # bind everything into the upgrade chroot
