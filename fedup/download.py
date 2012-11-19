@@ -215,7 +215,8 @@ class FedupDownloader(yum.YumBase):
                 log.debug("fetching .treeinfo from repo '%s'", self.instrepoid)
                 if os.path.exists(outfile):
                     os.remove(outfile)
-                fn = self.instrepo.grab.urlgrab('.treeinfo', outfile)
+                fn = self.instrepo.grab.urlgrab('.treeinfo', outfile,
+                                                reget=None)
                 self._treeinfo = Treeinfo(fn)
                 log.debug(".treeinfo saved at %s", fn)
             self._treeinfo.checkvalues()
