@@ -46,7 +46,8 @@ make install-systemd DESTDIR=$RPM_BUILD_ROOT
 #{_datadir}/fedup/ui
 
 %changelog
-* Thu Nov 15 2012 Will Woods <wwoods@redhat.com> 0.7.1-1
+* Mon Nov 19 2012 Will Woods <wwoods@redhat.com> 0.7.1-1
+- Add --clean commandline argument
 - Fix grubby traceback (#872088)
 - Fetch kernel/initrd and set up bootloader
 - Work around data-corrupting umount bug (#873459)
