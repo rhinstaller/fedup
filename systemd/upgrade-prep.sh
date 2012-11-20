@@ -27,6 +27,10 @@ die() { echo "$@"; exit 1; }
 # make target dir for systemd's pivot_root
 mkdir -p $UPGRADEROOT/mnt
 
+# if /lib/modules/$(uname -r) is a mount, umount it
+moddir=$(readlink -eq /lib/modules/$(uname -r))
+grep -qw $moddir /proc/mounts && umount -l $moddir
+
 echo "moving mounts into $UPGRADEROOT"
 mount --make-unbindable $UPGRADEROOT
 # bind everything into the upgrade chroot
