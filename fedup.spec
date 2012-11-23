@@ -8,6 +8,7 @@ URL:            https://github.com/wgwoods/fedup
 Source0:        https://github.com/downloads/wgwoods/fedup/%{name}-%{version}.tar.xz
 
 BuildRequires:  python2-devel
+BuildRequires:  systemd-devel
 Requires:       systemd
 BuildArch:      noarch
 
