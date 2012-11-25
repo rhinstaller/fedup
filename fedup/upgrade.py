@@ -53,11 +53,13 @@ class TransactionSet(TransactionSetCore):
         log.debug('add_install(%s, %s, upgrade=%s)', path, key, upgrade)
         if key is None:
             key = path
-        retval, header = self.hdrFromFdno(open(path))
+        fileobj = open(path)
+        retval, header = self.hdrFromFdno(fileobj)
         if retval != rpm.RPMRC_OK:
             raise rpm.error("error reading package header")
         if not self.addInstall(header, key, upgrade):
             raise rpm.error("adding package to transaction failed")
+        fileobj.close()
 
     def __del__(self):
         self.closeDB()
