@@ -25,6 +25,7 @@ from selinux import is_selinux_enabled
 from fedup.callback import BaseTsCallback
 from fedup.grubby import Grubby
 from fedup.treeinfo import Treeinfo, TreeinfoError
+from fedup.conf import Config
 from yum.Errors import YumBaseError
 
 enabled_plugins = ['blacklist', 'whiteout']
@@ -35,7 +36,7 @@ cachedir="/var/tmp/fedora-upgrade"
 upgrade_target_wants = "/lib/systemd/system/system-upgrade.target.wants"
 
 from fedup import _
-from fedup import packagedir, packagelist, cleanuplist
+from fedup import packagedir, packagelist, upgradeconf
 from fedup import upgradelink, upgraderoot, bootdir
 from fedup.media import write_systemd_unit
 from fedup.util import listdir, mkdir_p, rm_f, rm_rf
@@ -292,10 +293,11 @@ def link_pkgs(pkgs):
     with open(packagelist, 'w') as outf:
         outf.writelines(p+'\n' for p in pkgbasenames)
 
-    # write cleanuplist
-    with open(cleanuplist, 'w') as outf:
-        outf.write(cachedir+'\n')
-        outf.write(packagedir+'\n') # packagedir should be last
+    # write cleanup data
+    with Config(upgradeconf) as conf:
+        # packagedir should probably be last, since it contains upgradeconf
+        cleanupdirs = [cachedir, bootdir, packagedir]
+        conf.set("cleanup", "dirs", ';'.join(cleanupdirs))
 
 def setup_upgradelink():
     log.info("setting up upgrade symlink: %s->%s", upgradelink, packagedir)
@@ -356,6 +358,10 @@ def modify_bootloader(kernel, initrd):
                          args=" ".join(args))
 
     # FIXME: use grub2-reboot to change to new bootloader config
+    # Save kernel/initrd info so we can clean it up later
+    with Config(upgradeconf) as conf:
+        conf.set("boot", "kernel", kernel)
+        conf.set("boot", "initrd", initrd)
 
 def prep_boot(kernel, initrd):
     # all we need to do currently is set up the boot args
