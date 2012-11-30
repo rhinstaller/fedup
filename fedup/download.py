@@ -37,30 +37,9 @@ from fedup import _
 from fedup import packagedir, packagelist, cleanuplist
 from fedup import upgradelink, upgraderoot, bootdir
 from fedup.media import write_systemd_unit
+from fedup.util import listdir, mkdir_p, rm_f, rm_rf
 
 log = logging.getLogger("fedup.yum") # XXX kind of misleading?
-
-def listdir(d):
-    for f in os.listdir(d):
-        yield os.path.join(d, f)
-
-def mkdir_p(d):
-    try:
-        os.makedirs(d)
-    except OSError as e:
-        if e.errno != 17:
-            raise
-
-def rm_f(f, rm=os.remove):
-    if not os.path.lexists(f):
-        return
-    try:
-        rm(f)
-    except (IOError, OSError) as e:
-        log.warn("failed to remove %s: %s", f, str(e))
-
-def rm_rf(d):
-    rm_f(d, rm=rmtree)
 
 class FedupDownloader(yum.YumBase):
     '''Yum-based downloader class for fedup. Based roughly on AnacondaYum.'''
