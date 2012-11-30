@@ -20,6 +20,7 @@
 import os, stat
 from collections import namedtuple
 from os.path import exists, join
+from subprocess import check_call, call
 
 class FstabEntry(namedtuple('FstabEntry','dev rawmnt type opts freq passno')):
     __slots__ = ()
