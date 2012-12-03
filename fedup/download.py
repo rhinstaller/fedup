@@ -38,6 +38,7 @@ upgrade_target_wants = "/lib/systemd/system/system-upgrade.target.wants"
 from fedup import _
 from fedup import packagedir, packagelist, upgradeconf
 from fedup import upgradelink, upgraderoot, bootdir
+from fedup import kernelpath, initrdpath
 from fedup.media import write_systemd_unit
 from fedup.util import listdir, mkdir_p, rm_f, rm_rf
 
@@ -205,10 +206,9 @@ class FedupDownloader(yum.YumBase):
 
     def download_boot_images(self, arch=None):
         # helper function to grab and checksum image files listed in .treeinfo
-        def grab_and_check(imgarch, imgtype):
+        def grab_and_check(imgarch, imgtype, outpath):
             relpath = self.treeinfo.get_image(imgarch, imgtype)
             log.debug("grabbing %s %s", imgarch, imgtype)
-            outpath = os.path.join(bootdir, os.path.basename(relpath))
             log.info("downloading %s to %s", relpath, outpath)
             if self.treeinfo.checkfile(outpath, relpath):
                 log.debug("file already exists and checksum OK")
@@ -229,9 +229,8 @@ class FedupDownloader(yum.YumBase):
         try:
             if not arch:
                 arch = self.treeinfo.get('general', 'arch')
-            imgs = {'kernel': None, 'upgrade': None}
-            for key in imgs:
-                imgs[key] = grab_and_check(arch, key)
+            kernel = grab_and_check(arch, 'kernel', kernelpath)
+            initrd = grab_and_check(arch, 'upgrade', initrdpath)
         except TreeinfoError as e:
             raise YumBaseError(_("invalid data in .treeinfo: %s") % str(e))
         except yum.URLGrabError as e:
@@ -240,7 +239,7 @@ class FedupDownloader(yum.YumBase):
             else:
                 raise YumBaseError(_("failed to download %s: %s") % (key, str(e)))
 
-        return imgs['kernel'], imgs['upgrade']
+        return kernel, initrd
 
 def link_pkgs(pkgs):
     '''link the named pkgs into packagedir, overwriting existing files.

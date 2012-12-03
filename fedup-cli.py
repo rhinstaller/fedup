@@ -35,7 +35,7 @@ def message(m):
     print m
     log.info(m)
 
-from fedup import _
+from fedup import _, kernelpath, initrdpath
 
 def setup_downloader(version, instrepo=None, cacheonly=False, repos=[]):
     log.debug("setup_downloader(version=%s, repos=%s)", version, repos)
@@ -251,9 +251,9 @@ def main(args):
     if not args.skipbootloader:
         if args.skipkernel:
             print "warning: --skipkernel without --skipbootloader"
-            print "using default paths (/boot/upgrade/{upgrade.img,vmlinuz}"
-            kernel = "/boot/upgrade/vmlinuz"
-            initrd = "/boot/upgrade/upgrade.img"
+            print "using default paths: %s %s" % (kernelpath, initrdpath)
+            kernel = kernelpath
+            initrd = initrdpath
         prep_boot(kernel, initrd)
 
     if args.device:
