@@ -21,6 +21,7 @@ import os
 import yum
 import logging
 from shutil import rmtree, copy2
+from selinux import is_selinux_enabled
 from fedup.callback import BaseTsCallback
 from fedup.grubby import Grubby
 from fedup.treeinfo import Treeinfo, TreeinfoError
@@ -344,12 +345,15 @@ def modify_bootloader(kernel, initrd):
             bootloader.remove_entry(e.index)
 
     log.info("adding new boot entry")
+
+    args = ["upgrade", "systemd.unit=system-upgrade.target"]
+    if not is_selinux_enabled():
+        args.append("selinux=0")
+
     bootloader.add_entry(kernel=kernel,
                          initrd=initrd,
                          title=_("System Upgrade"),
-                         args="systemd.unit=system-upgrade.target")
-    # NOTE: systemd.unit might not be necessary in F18 or later.
-    #       if not, check the system version to see if we actually need this.
+                         args=" ".join(args))
 
     # FIXME: use grub2-reboot to change to new bootloader config
 
