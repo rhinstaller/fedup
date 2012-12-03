@@ -20,7 +20,7 @@
 import os
 import yum
 import logging
-from shutil import rmtree
+from shutil import rmtree, copy2
 from fedup.callback import BaseTsCallback
 from fedup.grubby import Grubby
 from fedup.treeinfo import Treeinfo, TreeinfoError
@@ -274,7 +274,13 @@ def link_pkgs(pkgs):
                 shutil.rmtree(target)
             elif os.path.exists(target):
                 os.remove(target)
-            os.link(pkgpath, target)
+            try:
+                os.link(pkgpath, target)
+            except OSError as e:
+                if e.errno == 18:
+                    copy2(pkgpath, target)
+                else:
+                    raise
 
     # remove spurious / leftover RPMs
     for f in os.listdir(packagedir):
