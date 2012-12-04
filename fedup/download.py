@@ -388,7 +388,11 @@ def remove_boot():
 
 def remove_cache():
     '''remove our cache dirs'''
-    for d in (cachedir, packagedir):
+    conf = Config(upgradeconf)
+    cleanup = conf.get("cleanup", "dirs") or ''
+    cleanup = cleanup.split(';')
+    cleanup += [cachedir, packagedir] # just to be sure
+    for d in cleanup:
         log.info("removing %s", d)
         rm_rf(d)
 
