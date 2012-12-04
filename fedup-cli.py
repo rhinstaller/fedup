@@ -183,8 +183,8 @@ def parse_args():
 
     # allow --instrepo URL as shorthand for --repourl REPO=URL --instrepo REPO
     if args.instrepo and '://' in args.instrepo:
-        args.repos.append(('add', 'instrepo=%s' % args.instrepo))
-        args.instrepo = 'instrepo'
+        args.repos.append(('add', 'cmdline-instrepo=%s' % args.instrepo))
+        args.instrepo = 'cmdline-instrepo'
 
     # treat --device like --repo REPO=file://$MOUNTPOINT
     if args.device:
