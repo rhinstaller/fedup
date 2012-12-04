@@ -62,6 +62,7 @@ class FedupDownloader(yum.YumBase):
         self.prerepoconf.cache = cacheonly
         log.debug("prerepoconf.cache=%i", self.prerepoconf.cache)
         self.instrepoid = None
+        self.disabled_repos = []
         self._treeinfo = None
         if version is None: # i.e. no --network arg
             self.repos.disableRepo('*')
@@ -82,7 +83,6 @@ class FedupDownloader(yum.YumBase):
         '''Return a list of repos that had problems setting up.'''
         # FIXME invalidate cache if the version doesn't match previous version
         log.info("checking repos")
-        disabled_repos = []
 
         # commandline overrides for the enabled/disabled repos
         # NOTE: will raise YumBaseError if there are problems
@@ -110,13 +110,13 @@ class FedupDownloader(yum.YumBase):
             except yum.Errors.RepoError:
                 log.info("can't find valid repo metadata for %s", repo.id)
                 repo.disable()
-                disabled_repos.append(repo.id)
+                self.disabled_repos.append(repo.id)
             else:
                 log.info("repo %s seems OK" % repo.id)
 
         log.debug("repos.cache=%i", self.repos.cache)
 
-        return disabled_repos
+        return self.disabled_repos
 
     # XXX currently unused
     def save_repo_configs():

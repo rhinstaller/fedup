@@ -46,6 +46,7 @@ def setup_downloader(version, instrepo=None, cacheonly=False, repos=[]):
     disabled_repos = f.setup_repos(callback=repo_cb,
                                    progressbar=repo_prog,
                                    repos=repos)
+    disabled_repos = filter(lambda id: id != f.instrepoid, disabled_repos)
     if disabled_repos:
         print _("No upgrade available for the following repos") + ": " + \
                 " ".join(disabled_repos)
@@ -229,12 +230,17 @@ def main(args):
 
     if args.skipkernel:
         message("skipping kernel/initrd download")
+    elif f.instrepoid is None or f.instrepoid in f.disabled_repos:
+        print _("Error: can't get boot images.")
+        if args.instrepo:
+            print _("The '%s' repo was rejected by yum as invalid.") % args.instrepo
+        else:
+            print _("The installation repo isn't available.")
+            print "You need to specify one with --instrepo." # XXX temporary
+        raise SystemExit(1)
     else:
         print _("getting boot images...")
-        # FIXME: get args.instrepo from releases.txt if unset
-        if not args.instrepo:
-            raise NotImplementedError("use --instrepo or --skipkernel")
-        kernel, initrd = f.download_boot_images() # TODO: arch
+        kernel, initrd = f.download_boot_images() # TODO: force arch?
 
     if args.skippkgs:
         message("skipping transaction test")
