@@ -243,12 +243,6 @@ def main(args):
         f.cleanMetadata()
         return
 
-    if args.skippkgs:
-        message("skipping package download")
-    else:
-        print _("setting up update...")
-        pkgs = download_packages(f)
-
     if args.skipkernel:
         message("skipping kernel/initrd download")
     elif f.instrepoid is None or f.instrepoid in f.disabled_repos:
@@ -264,8 +258,10 @@ def main(args):
         kernel, initrd = f.download_boot_images() # TODO: force arch?
 
     if args.skippkgs:
-        message("skipping transaction test")
+        message("skipping package download")
     else:
+        print _("setting up update...")
+        pkgs = download_packages(f)
         # Run a test transaction
         transaction_test(pkgs)
 
