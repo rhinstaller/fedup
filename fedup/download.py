@@ -20,7 +20,7 @@
 import os
 import yum
 import logging
-from shutil import rmtree, copy2
+from shutil import copy2
 from selinux import is_selinux_enabled
 from fedup.callback import BaseTsCallback
 from fedup.grubby import Grubby
@@ -272,7 +272,7 @@ def link_pkgs(pkgs):
         else:
             if os.path.isdir(target):
                 log.info("deleting weirdo directory named %s", pkgbasename)
-                shutil.rmtree(target)
+                rm_rf(target)
             elif os.path.exists(target):
                 os.remove(target)
             try:

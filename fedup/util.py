@@ -18,6 +18,7 @@
 # Author: Will Woods <wwoods@redhat.com>
 
 import os
+from shutil import rmtree
 
 def listdir(d):
     for f in os.listdir(d):
