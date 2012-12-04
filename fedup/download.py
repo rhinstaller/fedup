@@ -358,19 +358,25 @@ def prep_boot(kernel, initrd):
     # and make it the default
     boot.set_default(kernel)
 
+def reset_boot():
+    '''reset bootloader to previous default and remove our boot entry'''
+    conf = Config(upgradeconf)
+    kernel = conf.get("boot", "kernel")
+    prevkernel = conf.get("boot", "prevkernel")
+    if kernel:
+        boot.remove_entry(kernel)
+    if prevkernel:
+        boot.set_default(prevkernel)
+
 def remove_boot():
-    '''find and remove our boot entry'''
+    '''remove boot images'''
     conf = Config(upgradeconf)
     kernel = conf.get("boot", "kernel")
     initrd = conf.get("boot", "initrd")
-    prevkernel = conf.get("boot", "prevkernel")
     if kernel:
         rm_f(kernel)
-        boot.remove_entry(kernel)
     if initrd:
         rm_f(initrd)
-    if prevkernel:
-        boot.set_default(prevkernel)
 
 def remove_cache():
     '''remove our cache dirs'''
@@ -382,10 +388,7 @@ def remove_cache():
         log.info("removing %s", d)
         rm_rf(d)
 
-def full_cleanup():
-    '''remove all the files we create and undo any other changes'''
-    remove_boot()
-    remove_cache()
+def misc_cleanup():
     log.info("removing symlink %s", upgradelink)
     rm_f(upgradelink)
     for d in (upgraderoot, upgrade_target_wants):

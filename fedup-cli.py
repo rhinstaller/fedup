@@ -25,7 +25,7 @@ from subprocess import call
 
 from fedup.download import FedupDownloader, YumBaseError
 from fedup.download import prep_upgrade, prep_boot, setup_media_mount
-from fedup.download import full_cleanup
+from fedup.download import reset_boot, remove_boot, remove_cache, misc_cleanup
 from fedup.upgrade import FedupUpgrade, TransactionError
 from fedup import textoutput as output
 
@@ -146,13 +146,11 @@ def parse_args():
         help=argparse.SUPPRESS)
     p.add_argument('--clean-metadata', action='store_true', default=False,
         help=argparse.SUPPRESS)
+    p.add_argument('--skipbootloader', action='store_true', default=False,
+        help=argparse.SUPPRESS)
 
     p.add_argument('--reboot', action='store_true', default=False,
         help=_('automatically reboot to start the upgrade when ready'))
-    p.add_argument('--skipbootloader', action='store_true', default=False,
-        dest='skipbootloader', help=_('do not modify bootloader configuration'))
-    p.add_argument('--clean', action='store_true', default=False,
-        help=_('clean up everything written by fedup'))
 
     req = p.add_argument_group('SOURCE',
                                _('Location to search for upgrade data.'))
@@ -175,6 +173,14 @@ def parse_args():
     net.add_argument('--instrepo', metavar='REPO', type=str,
         help=_('Grab kernel/initrd from REPO'))
     p.set_defaults(repos=[])
+
+    clean = p.add_argument_group(_('cleanup commands'))
+
+    clean.add_argument('--resetbootloader', action='store_const',
+        dest='clean', const='bootloader', default=None,
+        help=_('remove any modifications made to bootloader'))
+    clean.add_argument('--clean', action='store_const', const='all',
+        help=_('clean up everything written by fedup'))
 
     args = p.parse_args()
 
@@ -199,11 +205,26 @@ def parse_args():
         # FIXME: get this from releases.txt
         args.network = '18'
 
+    if args.clean:
+        args.resetbootloader = True
+
     return args
 
 def main(args):
     if args.clean:
-        full_cleanup()
+        if not args.skipbootloader:
+            print "resetting bootloader config"
+            reset_boot()
+        if args.clean == 'bootloader':
+            return
+        if not args.skipkernel:
+            print "removing boot images"
+            remove_boot()
+        if not args.skippkgs:
+            print "removing downloaded packages"
+            remove_cache()
+        print "removing miscellaneous files"
+        misc_cleanup()
         return
 
     # Get our packages set up where we can use 'em
