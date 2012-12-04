@@ -227,7 +227,6 @@ class FedupDownloader(yum.YumBase):
 
         # download the images
         try:
-            key = 'treeinfo'
             if not arch:
                 arch = self.treeinfo.get('general', 'arch')
             imgs = {'kernel': None, 'upgrade': None}
