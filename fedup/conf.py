@@ -19,7 +19,7 @@
 
 import os
 from tempfile import mkstemp
-from ConfigParser import RawConfigParser, DuplicateSectionError
+from ConfigParser import *
 
 class Config(RawConfigParser):
     def __init__(self, filename, defaults=None):
@@ -54,3 +54,12 @@ class Config(RawConfigParser):
         '''Set an option, creating the section if needed.'''
         self.add_section(section)
         RawConfigParser.set(self, section, option, value)
+
+    def get(self, section, option):
+        '''Get an option, returning None if missing'''
+        value = None
+        try:
+            value = RawConfigParser.get(self, section, option)
+        except (NoSectionError, NoOptionError):
+            pass
+        return value
