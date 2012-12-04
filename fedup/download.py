@@ -20,10 +20,10 @@
 import os
 import yum
 import logging
+import fedup.boot as boot
 from shutil import copy2
 from selinux import is_selinux_enabled
 from fedup.callback import BaseTsCallback
-from fedup.grubby import Grubby
 from fedup.treeinfo import Treeinfo, TreeinfoError
 from fedup.conf import Config
 from yum.Errors import YumBaseError
@@ -340,49 +340,39 @@ def prep_upgrade(pkgs):
     setup_upgraderoot()
 
 def modify_bootloader(kernel, initrd):
-    log.info("reading bootloader config")
-    bootloader = Grubby()
-
-    # avoid duplicate boot entries
-    for e in bootloader.get_entries():
-        if e.kernel == kernel:
-            log.info("removing existing boot entry for %s", kernel)
-            bootloader.remove_entry(e.index)
-
     log.info("adding new boot entry")
 
     args = ["upgrade", "systemd.unit=system-upgrade.target"]
     if not is_selinux_enabled():
         args.append("selinux=0")
 
-    bootloader.add_entry(kernel=kernel,
-                         initrd=initrd,
-                         title=_("System Upgrade"),
-                         args=" ".join(args))
+    boot.add_entry(kernel, initrd, banner=_("System Upgrade"), kargs=args)
 
-    # FIXME: use grub2-reboot to change to new bootloader config
     # Save kernel/initrd info so we can clean it up later
     with Config(upgradeconf) as conf:
         conf.set("boot", "kernel", kernel)
         conf.set("boot", "initrd", initrd)
+        conf.set("boot", "prevkernel", boot.get_default())
 
 def prep_boot(kernel, initrd):
-    # all we need to do currently is set up the boot args
+    # set up the boot args
     modify_bootloader(kernel, initrd)
+    # and make it the default
+    boot.set_default(kernel)
 
 def remove_boot():
     '''find and remove our boot entry'''
-    bootloader = Grubby()
-    for idx, entry in enumerate(bootloader.get_entries()):
-        log.debug("checking boot entry %i, \"%s\"", idx, entry.title)
-        if entry.kernel.startswith(bootdir):
-            log.info("removing boot entry %i, \"%s\"", idx, entry.title)
-            try:
-                bootloader.remove_entry(idx)
-            except Exception as e:
-                log.warn("failed to remove boot entry \"%s\": %s",
-                         entry.title, str(e))
-
+    conf = Config(upgradeconf)
+    kernel = conf.get("boot", "kernel")
+    initrd = conf.get("boot", "initrd")
+    prevkernel = conf.get("boot", "prevkernel")
+    if kernel:
+        rm_f(kernel)
+        boot.remove_entry(kernel)
+    if initrd:
+        rm_f(initrd)
+    if prevkernel:
+        boot.set_default(prevkernel)
     log.info("removing %s", bootdir)
     rm_rf(bootdir)
 
