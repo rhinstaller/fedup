@@ -35,3 +35,5 @@ packagelist = packagedir + '/package.list'
 upgradeconf = packagedir + '/upgrade.conf'
 upgradelink = '/system-upgrade'
 upgraderoot = '/system-upgrade-root'
+
+default_install_mirrorlist = 'https://mirrors.fedoraproject.org/metalink?repo=fedora-install-$releasever&arch=$basearch'

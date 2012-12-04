@@ -39,6 +39,7 @@ from fedup import _
 from fedup import packagedir, packagelist, upgradeconf
 from fedup import upgradelink, upgraderoot, bootdir
 from fedup import kernelpath, initrdpath
+from fedup import default_install_mirrorlist
 from fedup.media import write_systemd_unit
 from fedup.util import listdir, mkdir_p, rm_f, rm_rf
 
@@ -84,6 +85,14 @@ class FedupDownloader(yum.YumBase):
         # FIXME invalidate cache if the version doesn't match previous version
         log.info("checking repos")
 
+        if self.instrepoid is None:
+            # network install, no instrepo provided, try the default mirrorlist
+            self.instrepoid = 'default-installrepo'
+            self.add_enable_repo(self.instrepoid, variable_convert=True,
+                                 mirrorlist=default_install_mirrorlist)
+            # XXX NOTE this doesn't work yet because the Fedora Infrastructure
+            # guys haven't set up default_install_mirrorlist yet.
+
         # commandline overrides for the enabled/disabled repos
         # NOTE: will raise YumBaseError if there are problems
         for action, repo in repos:
@@ -95,13 +104,9 @@ class FedupDownloader(yum.YumBase):
                 (repoid, url) = repo.split('=',1)
                 self.add_enable_repo(repoid, [url], variable_convert=True)
 
-        # FIXME: if self.instrepoid is None we should fetch releases.txt and
-        #        set up a repo for the instrepo listed there
-
         # set up callbacks etc.
         self.repos.setProgressBar(progressbar)
         self.repos.callback = callback
-
 
         # check repos
         for repo in self.repos.listEnabled():
