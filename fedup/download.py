@@ -37,8 +37,7 @@ upgrade_target_wants = "/lib/systemd/system/system-upgrade.target.wants"
 
 from fedup import _
 from fedup import packagedir, packagelist, upgradeconf
-from fedup import upgradelink, upgraderoot, bootdir
-from fedup import kernelpath, initrdpath
+from fedup import upgradelink, upgraderoot, kernelpath, initrdpath
 from fedup import default_install_mirrorlist
 from fedup.media import write_systemd_unit
 from fedup.util import listdir, mkdir_p, rm_f, rm_rf
@@ -223,7 +222,6 @@ class FedupDownloader(yum.YumBase):
                 if not self.treeinfo.checkfile(cb.filename, relpath):
                     log.info("checksum doesn't match - retrying")
                     raise yum.URLGrabError(-1)
-            mkdir_p(bootdir)
             # TODO: use failure callback to log failure reason(s)
             return self.instrepo.grab.urlgrab(relpath, outpath,
                                               checkfunc=checkfile,
@@ -299,7 +297,7 @@ def link_pkgs(pkgs):
     # write cleanup data
     with Config(upgradeconf) as conf:
         # packagedir should probably be last, since it contains upgradeconf
-        cleanupdirs = [cachedir, bootdir, packagedir]
+        cleanupdirs = [cachedir, packagedir]
         conf.set("cleanup", "dirs", ';'.join(cleanupdirs))
 
 def setup_upgradelink():
@@ -373,8 +371,6 @@ def remove_boot():
         rm_f(initrd)
     if prevkernel:
         boot.set_default(prevkernel)
-    log.info("removing %s", bootdir)
-    rm_rf(bootdir)
 
 def remove_cache():
     '''remove our cache dirs'''

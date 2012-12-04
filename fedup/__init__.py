@@ -29,7 +29,6 @@ kernel_id = 'fedup'
 # NOTE: new-kernel-pkg requires this kernel name/path
 kernelpath = '/boot/vmlinuz-%s' % kernel_id
 initrdpath = '/boot/initramfs-%s.img' % kernel_id
-bootdir = '/boot/upgrade'
 packagedir = '/var/lib/fedora-upgrade'
 packagelist = packagedir + '/package.list'
 upgradeconf = packagedir + '/upgrade.conf'
