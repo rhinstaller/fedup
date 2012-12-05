@@ -38,11 +38,14 @@ upgrade_target_wants = "/lib/systemd/system/system-upgrade.target.wants"
 from fedup import _
 from fedup import packagedir, packagelist, upgradeconf
 from fedup import upgradelink, upgraderoot, kernelpath, initrdpath
-from fedup import default_install_mirrorlist
+from fedup import mirrormanager
 from fedup.media import write_systemd_unit
 from fedup.util import listdir, mkdir_p, rm_f, rm_rf
 
 log = logging.getLogger("fedup.yum") # XXX kind of misleading?
+
+def mirrorlist(repo, arch='$basearch'):
+    return mirrormanager + '?repo=%s&arch=%s' % (repo, arch)
 
 class FedupDownloader(yum.YumBase):
     '''Yum-based downloader class for fedup. Based roughly on AnacondaYum.'''
@@ -81,16 +84,16 @@ class FedupDownloader(yum.YumBase):
 
     def setup_repos(self, callback=None, progressbar=None, repos=[]):
         '''Return a list of repos that had problems setting up.'''
-        # FIXME invalidate cache if the version doesn't match previous version
+        # TODO invalidate cache if the version doesn't match previous version
         log.info("checking repos")
 
         if self.instrepoid is None:
             # network install, no instrepo provided, try the default mirrorlist
             self.instrepoid = 'default-installrepo'
+            # NOTE 20121205: this doesn't exist yet, should be coming soon
+            mirrorurl = mirrorlist('fedora-install-$releasever')
             self.add_enable_repo(self.instrepoid, variable_convert=True,
-                                 mirrorlist=default_install_mirrorlist)
-            # XXX NOTE this doesn't work yet because the Fedora Infrastructure
-            # guys haven't set up default_install_mirrorlist yet.
+                                 mirrorlist=mirrorurl)
 
         # commandline overrides for the enabled/disabled repos
         # NOTE: will raise YumBaseError if there are problems
