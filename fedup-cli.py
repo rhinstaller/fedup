@@ -201,10 +201,6 @@ def parse_args():
         args.repos.append(('add', 'fedupiso=file://%s' % args.device.mnt))
         args.instrepo = 'fedupiso'
 
-    if args.network == 'latest':
-        # FIXME: get this from releases.txt
-        args.network = '18'
-
     if args.clean:
         args.resetbootloader = True
 
