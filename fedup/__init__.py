@@ -29,10 +29,11 @@ kernel_id = 'fedup'
 # NOTE: new-kernel-pkg requires this kernel name/path
 kernelpath = '/boot/vmlinuz-%s' % kernel_id
 initrdpath = '/boot/initramfs-%s.img' % kernel_id
+
 packagedir = '/var/lib/fedora-upgrade'
 packagelist = packagedir + '/package.list'
 upgradeconf = packagedir + '/upgrade.conf'
 upgradelink = '/system-upgrade'
 upgraderoot = '/system-upgrade-root'
 
-default_install_mirrorlist = 'https://mirrors.fedoraproject.org/metalink?repo=fedora-install-$releasever&arch=$basearch'
+mirrormanager = 'https://mirrors.fedoraproject.org/metalink'
