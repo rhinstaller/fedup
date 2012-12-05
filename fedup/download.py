@@ -47,6 +47,18 @@ log = logging.getLogger("fedup.yum") # XXX kind of misleading?
 def mirrorlist(repo, arch='$basearch'):
     return mirrormanager + '?repo=%s&arch=%s' % (repo, arch)
 
+class URLGrabFailureState(object):
+    '''urlgrabber raises "No more mirros to try", with no reference to the
+    original URL or HTTP/FTP error. So we save that information here.'''
+    def __init__(self):
+        self.lasturl = None
+        self.lastexc = None
+
+    def callback(self, fail):
+        self.lasturl = fail.url
+        self.lastexc = fail.exception
+        log.info(fail.exception)
+
 class FedupDownloader(yum.YumBase):
     '''Yum-based downloader class for fedup. Based roughly on AnacondaYum.'''
     def __init__(self, version=None, cachedir=cachedir, cacheonly=False):
@@ -69,6 +81,7 @@ class FedupDownloader(yum.YumBase):
         self._treeinfo = None
         if version is None: # i.e. no --network arg
             self.repos.disableRepo('*')
+        self.failstate = URLGrabFailureState()
         # TODO: locking to prevent multiple instances
         # TODO: override logging objects so we get yum logging
 
@@ -108,6 +121,7 @@ class FedupDownloader(yum.YumBase):
 
         # set up callbacks etc.
         self.repos.setProgressBar(progressbar)
+        self.repos.setFailureCallback(self.failstate.callback)
         self.repos.callback = callback
 
         # check repos
@@ -225,7 +239,6 @@ class FedupDownloader(yum.YumBase):
                 if not self.treeinfo.checkfile(cb.filename, relpath):
                     log.info("checksum doesn't match - retrying")
                     raise yum.URLGrabError(-1)
-            # TODO: use failure callback to log failure reason(s)
             return self.instrepo.grab.urlgrab(relpath, outpath,
                                               checkfunc=checkfile,
                                               reget=None,
@@ -240,10 +253,12 @@ class FedupDownloader(yum.YumBase):
         except TreeinfoError as e:
             raise YumBaseError(_("invalid data in .treeinfo: %s") % str(e))
         except yum.URLGrabError as e:
+            f = os.path.basename(self.failstate.lasturl)
             if e.errno >= 256:
-                raise YumBaseError(_("couldn't get %s from repo") % key)
+                err = str(self.failstate.lastexc)
             else:
-                raise YumBaseError(_("failed to download %s: %s") % (key, str(e)))
+                err = str(e)
+            raise YumBaseError(_("couldn't get %s:\n  %s") % (f, err))
 
         return kernel, initrd
 
