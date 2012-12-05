@@ -1,6 +1,6 @@
 Name:           fedup
-Version:        0.7.1
-Release:        1%{?dist}
+Version:        0.7.2
+Release:        0.git20121205%{?dist}
 Summary:        The Fedora Upgrade tool
 
 License:        GPLv2+
@@ -47,6 +47,13 @@ make install-systemd DESTDIR=$RPM_BUILD_ROOT
 #{_datadir}/fedup/ui
 
 %changelog
+* Wed Dec 05 2012 Will Woods <wwoods@redhat.com> 0.7.2-1
+- Fix traceback if /var/tmp is a different filesystem from /var/lib (#883107)
+- Disable SELinux during upgrade if system has SELinux disabled (#882549)
+- Use new-kernel-pkg to set up bootloader (#872088, #879290, #881338)
+- Remove boot option after upgrade (#873065)
+- Get instrepo automatically if available
+
 * Mon Nov 19 2012 Will Woods <wwoods@redhat.com> 0.7.1-1
 - Add --clean commandline argument
 - Fix grubby traceback (#872088)
