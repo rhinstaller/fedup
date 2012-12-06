@@ -271,6 +271,12 @@ class FedupDownloader(yum.YumBase):
                 err = str(e)
             raise YumBaseError(_("couldn't get %s:\n  %s") % (f, err))
 
+        # Save kernel/initrd info so we can clean it up later
+        mkdir_p(os.path.dirname(upgradeconf))
+        with Config(upgradeconf) as conf:
+            conf.set("boot", "kernel", kernel)
+            conf.set("boot", "initrd", initrd)
+
         return kernel, initrd
 
 def link_pkgs(pkgs):
@@ -281,8 +287,7 @@ def link_pkgs(pkgs):
 
     log.info("linking required packages into packagedir")
     log.info("packagedir = %s", packagedir)
-    if not os.path.isdir(packagedir):
-        os.mkdir(packagedir, 0755)
+    mkdir_p(packagedir)
 
     pkgbasenames = set()
     for pkg in pkgs:
@@ -374,11 +379,6 @@ def modify_bootloader(kernel, initrd):
         args.append("selinux=0")
 
     boot.add_entry(kernel, initrd, banner=_("System Upgrade"), kargs=args)
-
-    # Save kernel/initrd info so we can clean it up later
-    with Config(upgradeconf) as conf:
-        conf.set("boot", "kernel", kernel)
-        conf.set("boot", "initrd", initrd)
 
 def prep_boot(kernel, initrd):
     # set up the boot args
