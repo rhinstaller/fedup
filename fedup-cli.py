@@ -310,19 +310,19 @@ if __name__ == '__main__':
         print
         if isinstance(e.value, list):
             err = e.value.pop(0)
-            print _("Downloading failed: %s") % err
+            message(_("Downloading failed: %s") % err)
             for p in e.value:
-                print "  %s" % p
+                message("  %s" % p)
         else:
-            print _("Downloading failed: %s") % e
-        log.info("Downloading failed. Exception:", exc_info=True)
+            message(_("Downloading failed: %s") % e)
+        log.debug("Exception:", exc_info=True)
         raise SystemExit(2)
     except TransactionError as e:
         print
-        print _("Transaction test failed with the following problems")
+        message(_("Transaction test failed with the following problems"))
         for p in e.problems:
-            print p
-        log.info("Transaction test failed. Exception:", exc_info=True)
+            message(p)
+        log.debug("Exception:", exc_info=True)
         raise SystemExit(3)
     except Exception as e:
         log.info("Exception:", exc_info=True)
