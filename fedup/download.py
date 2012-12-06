@@ -27,6 +27,7 @@ from fedup.callback import BaseTsCallback
 from fedup.treeinfo import Treeinfo, TreeinfoError
 from fedup.conf import Config
 from yum.Errors import YumBaseError
+from yum.parser import varReplace
 
 enabled_plugins = ['blacklist', 'whiteout']
 disabled_plugins = ['rpm-warm-cache', 'remove-with-leaves', 'presto',
@@ -82,6 +83,7 @@ class FedupDownloader(yum.YumBase):
         if version is None: # i.e. no --network arg
             self.repos.disableRepo('*')
         self.failstate = URLGrabFailureState()
+        self.prerepoconf.failure_callback = self.failstate.callback
         # TODO: locking to prevent multiple instances
         # TODO: override logging objects so we get yum logging
 
@@ -95,8 +97,23 @@ class FedupDownloader(yum.YumBase):
             log.debug("conf.cache=%i", conf.cache)
         return conf
 
+    def add_repo(self, repoid, baseurls=[], mirrorlist=None, **kwargs):
+        '''like add_enable_repo, but doesn't do initial repo setup'''
+        r = yum.yumRepo.YumRepository(repoid)
+        r.name = repoid
+        r.base_persistdir = cachedir
+        r.baseurl = [varReplace(u, self.conf.yumvar) for u in baseurls if u]
+        if mirrorlist:
+            r.mirrorlist = varReplace(mirrorlist, self.conf.yumvar)
+        self._repos.add(r)
+        self._repos.enableRepo(repoid)
+
     def setup_repos(self, callback=None, progressbar=None, repos=[]):
         '''Return a list of repos that had problems setting up.'''
+        # These will set up progressbar and callback when we actually do setup
+        self.prerepoconf.progressbar = progressbar
+        self.prerepoconf.callback = callback
+
         # TODO invalidate cache if the version doesn't match previous version
         log.info("checking repos")
 
@@ -105,26 +122,20 @@ class FedupDownloader(yum.YumBase):
             self.instrepoid = 'default-installrepo'
             # NOTE 20121205: this doesn't exist yet, should be coming soon
             mirrorurl = mirrorlist('fedora-install-$releasever')
-            self.add_enable_repo(self.instrepoid, variable_convert=True,
-                                 mirrorlist=mirrorurl)
+            self.add_repo(self.instrepoid, mirrorlist=mirrorurl)
 
         # commandline overrides for the enabled/disabled repos
         # NOTE: will raise YumBaseError if there are problems
         for action, repo in repos:
             if action == 'enable':
-                self.repos.enableRepo(repo)
+                self._repos.enableRepo(repo)
             elif action == 'disable':
-                self.repos.disableRepo(repo)
+                self._repos.disableRepo(repo)
             elif action == 'add':
                 (repoid, url) = repo.split('=',1)
-                self.add_enable_repo(repoid, [url], variable_convert=True)
+                self.add_repo(repoid, baseurls=[url])
 
-        # set up callbacks etc.
-        self.repos.setProgressBar(progressbar)
-        self.repos.setFailureCallback(self.failstate.callback)
-        self.repos.callback = callback
-
-        # check repos
+        # check repos - note that using 'self.repos' does repo setup
         for repo in self.repos.listEnabled():
             try:
                 md_types = repo.repoXML.fileTypes()
