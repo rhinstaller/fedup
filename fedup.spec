@@ -1,6 +1,6 @@
 Name:           fedup
 Version:        0.7.2
-Release:        0.git20121205%{?dist}
+Release:        0.git20121206%{?dist}
 Summary:        The Fedora Upgrade tool
 
 License:        GPLv2+
@@ -47,7 +47,8 @@ make install-systemd DESTDIR=$RPM_BUILD_ROOT
 #{_datadir}/fedup/ui
 
 %changelog
-* Wed Dec 05 2012 Will Woods <wwoods@redhat.com> 0.7.2-1
+* Thu Dec 06 2012 Will Woods <wwoods@redhat.com> 0.7.2-1
+- Fix grubby traceback on EFI systems (#884696)
 - Fix traceback if /var/tmp is a different filesystem from /var/lib (#883107)
 - Disable SELinux during upgrade if system has SELinux disabled (#882549)
 - Use new-kernel-pkg to set up bootloader (#872088, #879290, #881338)
