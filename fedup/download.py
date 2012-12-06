@@ -368,23 +368,17 @@ def modify_bootloader(kernel, initrd):
     with Config(upgradeconf) as conf:
         conf.set("boot", "kernel", kernel)
         conf.set("boot", "initrd", initrd)
-        conf.set("boot", "prevkernel", boot.get_default())
 
 def prep_boot(kernel, initrd):
     # set up the boot args
     modify_bootloader(kernel, initrd)
-    # and make it the default
-    boot.set_default(kernel)
 
 def reset_boot():
     '''reset bootloader to previous default and remove our boot entry'''
     conf = Config(upgradeconf)
     kernel = conf.get("boot", "kernel")
-    prevkernel = conf.get("boot", "prevkernel")
     if kernel:
         boot.remove_entry(kernel)
-    if prevkernel:
-        boot.set_default(prevkernel)
 
 def remove_boot():
     '''remove boot images'''
