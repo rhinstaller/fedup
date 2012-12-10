@@ -136,8 +136,6 @@ class DepsolveCallbackBase(object):
         self.mode_counter[mode] += 1
         if mode in ('e', 'i', 'od', 'o'):
             self.log.debug("%s %s", self.modedict[mode], pkg)
-    def procReq(self, name, formatted_req):
-        self.log.debug('req name: %s → %s', formatted_req, name)
     def procReqPo(self, po, formatted_req):
         self.log.debug('req po:   %s → %s', formatted_req, po)
     def unresolved(self, msg):
