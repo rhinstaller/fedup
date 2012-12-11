@@ -22,7 +22,6 @@ import yum
 import logging
 import fedup.boot as boot
 from shutil import copy2
-from selinux import is_selinux_enabled
 from fedup.callback import BaseTsCallback
 from fedup.treeinfo import Treeinfo, TreeinfoError
 from fedup.conf import Config
@@ -41,7 +40,7 @@ from fedup import packagedir, packagelist, upgradeconf
 from fedup import upgradelink, upgraderoot, kernelpath, initrdpath
 from fedup import mirrormanager
 from fedup.media import write_systemd_unit
-from fedup.util import listdir, mkdir_p, rm_f, rm_rf
+from fedup.util import listdir, mkdir_p, rm_f, rm_rf, is_selinux_enabled
 
 log = logging.getLogger("fedup.yum") # XXX kind of misleading?
 

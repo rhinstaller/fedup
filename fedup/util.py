@@ -19,6 +19,7 @@
 
 import os
 from shutil import rmtree
+from subprocess import call
 
 def listdir(d):
     for f in os.listdir(d):
@@ -41,3 +42,6 @@ def rm_f(f, rm=os.remove):
 
 def rm_rf(d):
     rm_f(d, rm=rmtree)
+
+def is_selinux_enabled():
+    return call(["selinuxenabled"]) == 0
