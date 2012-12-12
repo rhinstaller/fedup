@@ -75,14 +75,15 @@ def reboot():
 # TODO: move to fedup/parse_args.py so it can be shared with GUI?
 
 class RepoAction(argparse.Action):
-    def __call__(self, parser, namespace, value, option_string=None):
+    '''Hold a list of repo actions so we can apply them in the order given.'''
+    def __call__(self, parser, namespace, value, opt=None):
         curval = getattr(namespace, self.dest, [])
         action = ''
-        if option_string.startswith('--enable'):
+        if opt.startswith('--enable'):
             action = 'enable'
-        elif option_string.startswith('--disable'):
+        elif opt.startswith('--disable'):
             action = 'disable'
-        elif option_string.startswith('--repourl'):
+        elif opt.startswith('--repo'):
             action = 'add'
         curval.append((action, value))
         setattr(namespace, self.dest, curval)
