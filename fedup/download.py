@@ -123,6 +123,7 @@ class FedupDownloader(yum.YumBase):
         # TODO invalidate cache if the version doesn't match previous version
         log.info("checking repos")
 
+        # Add default instrepo if needed
         if self.instrepoid is None:
             # network install, no instrepo provided, try the default mirrorlist
             self.instrepoid = 'default-installrepo'
@@ -130,18 +131,21 @@ class FedupDownloader(yum.YumBase):
             mirrorurl = mirrorlist('fedora-install-$releasever')
             self.add_repo(self.instrepoid, mirrorlist=mirrorurl)
 
-        # commandline overrides for the enabled/disabled repos
+        # We need to read .repo files before we can enable/disable them, so:
+        self.repos # implicit repo setup! ha ha! what fun!
+
+        # user overrides to enable/disable repos.
         # NOTE: will raise YumBaseError if there are problems
         for action, repo in repos:
             if action == 'enable':
-                self._repos.enableRepo(repo)
+                self.repos.enableRepo(repo)
             elif action == 'disable':
-                self._repos.disableRepo(repo)
+                self.repos.disableRepo(repo)
             elif action == 'add':
                 (repoid, url) = repo.split('=',1)
                 self.add_repo(repoid, baseurls=[url])
 
-        # check repos - note that using 'self.repos' does repo setup
+        # check enabled repos
         for repo in self.repos.listEnabled():
             try:
                 md_types = repo.repoXML.fileTypes()
