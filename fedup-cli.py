@@ -164,15 +164,15 @@ def parse_args():
     req.add_argument('--network', metavar=_('VERSION'), type=VERSION,
         help=_('online repos matching VERSION (a number or "rawhide")'))
 
-    net = p.add_argument_group(_('additional arguments for --network'))
-    net.add_argument('--enablerepo', metavar='REPO', action=RepoAction,
+    net = p.add_argument_group(_('additional options for --network'))
+    net.add_argument('--enablerepo', metavar='REPOID', action=RepoAction,
         dest='repos', help=_('enable one or more repos (wildcards allowed)'))
-    net.add_argument('--disablerepo', metavar='REPO', action=RepoAction,
+    net.add_argument('--disablerepo', metavar='REPOID', action=RepoAction,
         dest='repos', help=_('disable one or more repos (wildcards allowed)'))
-    net.add_argument('--repourl', metavar='REPO=URL', action=RepoAction,
-        dest='repos', help=_('add a repo named REPO at the given URL'))
-    net.add_argument('--instrepo', metavar='REPO', type=str,
-        help=_('Grab kernel/initrd from REPO'))
+    net.add_argument('--repourl', metavar='REPOID=URL', action=RepoAction,
+        dest='repos', help=_('add a repo named REPOID at the given URL'))
+    net.add_argument('--instrepo', metavar='REPOID', type=str,
+        help=_('get upgrader boot images from REPOID (default: auto)'))
     p.set_defaults(repos=[])
 
     clean = p.add_argument_group(_('cleanup commands'))
