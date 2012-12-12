@@ -83,6 +83,7 @@ class FedupDownloader(yum.YumBase):
             self.repos.disableRepo('*')
         self.failstate = URLGrabFailureState()
         self.prerepoconf.failure_callback = self.failstate.callback
+        self._repoprogressbar = None
         # TODO: locking to prevent multiple instances
         # TODO: override logging objects so we get yum logging
 
@@ -97,10 +98,15 @@ class FedupDownloader(yum.YumBase):
         return conf
 
     def add_repo(self, repoid, baseurls=[], mirrorlist=None, **kwargs):
-        '''like add_enable_repo, but doesn't do initial repo setup'''
+        '''like add_enable_repo, but doesn't do initial repo setup and doesn't
+        make unnecessary changes'''
         r = yum.yumRepo.YumRepository(repoid)
         r.name = repoid
         r.base_persistdir = cachedir
+        r.basecachedir = cachedir
+        r.cache = self.cacheonly
+        r.callback = kwargs.get('callback') or self._repoprogressbar
+        r.failure_obj = self.failstate.callback
         r.baseurl = [varReplace(u, self.conf.yumvar) for u in baseurls if u]
         if mirrorlist:
             r.mirrorlist = varReplace(mirrorlist, self.conf.yumvar)
@@ -112,6 +118,7 @@ class FedupDownloader(yum.YumBase):
         # These will set up progressbar and callback when we actually do setup
         self.prerepoconf.progressbar = progressbar
         self.prerepoconf.callback = callback
+        self._repoprogressbar = progressbar
 
         # TODO invalidate cache if the version doesn't match previous version
         log.info("checking repos")
