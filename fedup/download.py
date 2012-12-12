@@ -143,7 +143,10 @@ class FedupDownloader(yum.YumBase):
                 self.repos.disableRepo(repo)
             elif action == 'add':
                 (repoid, url) = repo.split('=',1)
-                self.add_repo(repoid, baseurls=[url])
+                if url[0] == '@':
+                    self.add_repo(repoid, mirrorlist=url[1:])
+                else:
+                    self.add_repo(repoid, baseurls=[url])
 
         # check enabled repos
         for repo in self.repos.listEnabled():

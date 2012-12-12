@@ -83,7 +83,7 @@ class RepoAction(argparse.Action):
             action = 'enable'
         elif opt.startswith('--disable'):
             action = 'disable'
-        elif opt.startswith('--repo'):
+        elif opt.startswith('--repo') or opt.startswith('--addrepo'):
             action = 'add'
         curval.append((action, value))
         setattr(namespace, self.dest, curval)
@@ -170,7 +170,10 @@ def parse_args():
     net.add_argument('--disablerepo', metavar='REPOID', action=RepoAction,
         dest='repos', help=_('disable one or more repos (wildcards allowed)'))
     net.add_argument('--repourl', metavar='REPOID=URL', action=RepoAction,
-        dest='repos', help=_('add a repo named REPOID at the given URL'))
+        dest='repos', help=argparse.SUPPRESS)
+    net.add_argument('--addrepo', metavar='REPOID=[@]URL',
+        action=RepoAction, dest='repos',
+        help=_('add the repo at URL (@URL for mirrorlist)'))
     net.add_argument('--instrepo', metavar='REPOID', type=str,
         help=_('get upgrader boot images from REPOID (default: auto)'))
     p.set_defaults(repos=[])
