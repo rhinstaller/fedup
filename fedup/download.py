@@ -387,7 +387,8 @@ def prep_upgrade(pkgs):
 def modify_bootloader(kernel, initrd):
     log.info("adding new boot entry")
 
-    args = ["upgrade", "systemd.unit=system-upgrade.target"]
+    args = ["upgrade", "systemd.unit=system-upgrade.target",
+            "plymouth.splash=fedup"] # FIXME: remove when plymouth fix is built
     if not is_selinux_enabled():
         args.append("selinux=0")
 
