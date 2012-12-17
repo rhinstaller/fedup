@@ -2,6 +2,7 @@ fedup - the Fedora Upgrader
 ===========================
 Will Woods <wwoods@redhat.com>
 :fedup_dracut: https://github.com/wgwoods/fedup-dracut/
+:fedup_fedora: http://fedoraproject.org/wiki/FedUp
 
 This is 'fedup', the Fedora Upgrade tool. This repo/package has the following
 contents:
@@ -9,7 +10,7 @@ contents:
 Frontend / pre-upgrade::
     This is the GUI/CLI frontend. It's responsible for setting up the system
     to be upgraded: downloading packages, modifying the bootloader, etc.
-    * Files: `fedup/`, `fedup-cli`, `fedup-gtk` (and `ui/`)
+    * Files: `fedup/`, `fedup.py`, `fedup-gtk.py` (and `ui/`)
 
 Upgrade services::
     Part of a distro-neutral framework for performing major system upgrades
@@ -21,33 +22,64 @@ Upgrade services::
 The actual upgrade is handled inside the initramfs by 'fedup-dracut', which
 can be found here: {fedup_dracut}
 
-How to test
------------
+How to test (for Fedora users)
+------------------------------
 
-You'll need two build environments - one for the _new_ system and one for the
-_old_ system.
+`fedup` is packaged in Fedora 17 and later; to upgrade to the most recent
+*released* version of Fedora 18 over the network, do:
 
-New System::
-    Install 'fedup-dracut' and build upgrade initramfs (`upgrade.img`).
-    See {fedup_dracut}[the fedup-dracut README] for details.
+  fedup --network 18
 
-Old System::
-    . Install build requirements
-        * 'python-devel'
-    . Install frontend(s) and systemd support files
-        * `make install`
-    . Run fedup to prepare system
-        * This will take a while. _Be patient._
-        * If you have a test repo with `.treeinfo`, kernel, and initrd:
-            ** `fedup-cli --network 18 --repo my-tree=http://... --instrepo my-tree`
-        * Otherwise:
-            ** `fedup-cli --network 18 --skipkernel`
-            ** `mkdir /boot/upgrade`
-            ** Copy kernel from _new_ system to `/boot/upgrade/vmlinuz`
-            ** Copy `upgrade.img` to `/boot/upgrade/upgrade.img`
-    . Reboot into *System Upgrade* boot menu item
-        * *NOTE:* this has to be chosen manually right now
-    . Wait 60-90 minutes for the upgrade to complete
+If you want to use upgrade images from a test tree that's not in the Fedora
+mirror system, do:
+
+  fedup --network 18 --instrepo TEST-TREE-URL
+
+The URL should be the directory that contains `.treeinfo` (usually the `/os/`
+dir.)
+
+If you want to install from media, make sure it's mounted and then run
+
+  fedup --device
+
+More information for Fedora users and testers can be found on the
+{fedup_fedora}[Fedora wiki].
+
+Building it yourself
+--------------------
+
+For you brave pioneers who want to do it all yourselves, you will need at
+least two systems: one with the _new_ release (to build upgrade images), and
+then any _old_ systems you want to upgrade.
+
+Building upgrade images
+~~~~~~~~~~~~~~~~~~~~~~~
+You'll need a system running the _new_ release for this.
+
+See {fedup_dracut}[the fedup-dracut README] for details, but roughly:
+
+. Install 'fedup-dracut' and its dependencies
+    * deps: 'dracut', 'rpm-devel', 'plymouth-devel', 'glib2-devel'
+. `make install`
+. `./makefeduprepo REPODIR`
+    * this requires 'createrepo'
+. Copy REPODIR somewhere HTTP-accessible
+
+Upgrading old system using `fedup`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+. Install build requirements
+    * 'python-devel', 'systemd-devel'
+. Install frontend(s) and systemd support files
+    * `make install`
+. Run fedup to prepare system
+    * `fedup --network 18 --instrepo http://your-repo.host/REPODIR`
+    ** This will take a while. _Be patient._
+    ** You can cancel it and it'll resume downloading where it left off.
+. Reboot
+    * *System Upgrade* boot menu item will be chosen automatically
+. Wait 60-90 minutes for the upgrade to complete
+. Enjoy your newly-upgraded system
+    * upgrade logs are in `/var/log/upgrade.log`
 
 
 // vim: syntax=asciidoc tw=78:
