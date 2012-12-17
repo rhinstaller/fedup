@@ -21,6 +21,7 @@ import os, stat
 from collections import namedtuple
 from os.path import exists, join
 from subprocess import check_call, call
+from tempfile import mkdtemp
 
 class FstabEntry(namedtuple('FstabEntry','dev rawmnt type opts freq passno')):
     __slots__ = ()
@@ -39,15 +40,27 @@ def ismedia(mountpoint):
 def isblock(dev):
     return exists(dev) and stat.S_ISBLK(os.stat(dev).st_mode)
 
+def isloop(dev):
+    return exists(dev) and os.major(os.stat(dev).st_rdev) == 7
+
 def find():
     return [m for m in mounts() if isblock(m.dev) and ismedia(m.mnt)]
 
-def loopmount(filename):
-    mntpoint = '/media/fedup-iso' # TODO: tempfile, etc.
+def loopmount(filename, mntpoint=None):
+    if mntpoint is None:
+        mntpoint = mkdtemp(prefix='fedup.mnt.')
     check_call(['mount', '-oloop', filename, mntpoint])
     for m in mounts():
         if m.mnt == mntpoint:
             return m
+
+def fix_loop_entry(mnt):
+    '''return new FstabEntry with dev=backing_file and "loop" added to opts'''
+    loopdev = os.path.basename(mnt.dev)
+    sysfile = "/sys/class/block/%s/loop/backing_file" % loopdev
+    backing_file = open(sysfile).read().strip()
+    opts = ','.join([mnt.opts, "loop"])
+    return mnt._replace(dev=backing_file, opts=opts)
 
 def umount(mntpoint):
     try:
@@ -97,6 +110,8 @@ Options={mount.opts}
 def write_systemd_unit(mount, unitdir, desc=None, unitopts=""):
     if desc is None:
         desc = "Upgrade Media"
+    if isloop(mount.dev):
+        mount = fix_loop_entry(mount)
     unit = join(unitdir, systemd_escape(mount.mnt)+'.mount')
     with open(unit, 'w') as u:
         u.write(unit_tmpl.format(desc=desc, unitopts=unitopts, mount=mount))
