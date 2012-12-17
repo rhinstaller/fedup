@@ -1,6 +1,6 @@
 #!/usr/bin/python
 #
-# fedup-cli - commandline frontend for fedup, the Fedora Upgrader.
+# fedup.py - commandline frontend for fedup, the Fedora Upgrader.
 #
 # Copyright (C) 2012 Red Hat Inc.
 #

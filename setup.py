@@ -73,7 +73,7 @@ setup(name="fedup",
       download_url="https://github.com/wgwoods/fedup/downloads",
       license="GPLv2+",
       packages=["fedup"],
-      scripts=["fedup-cli.py"],
+      scripts=["fedup.py"],
       cmdclass={
         'gettext': Gettext,
         'msgfmt': Msgfmt,

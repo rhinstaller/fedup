@@ -26,6 +26,8 @@ fedup is the Fedora Upgrade tool.
 rm -rf $RPM_BUILD_ROOT
 %{__python} setup.py install --skip-build --root $RPM_BUILD_ROOT
 make install-systemd DESTDIR=$RPM_BUILD_ROOT
+ln -sf fedup $RPM_BUILD_ROOT/%{_bindir}/fedup-cli
+
 
 
 %files
@@ -39,6 +41,7 @@ make install-systemd DESTDIR=$RPM_BUILD_ROOT
 # python library
 %{python_sitelib}/fedup*
 # binaries
+%{_bindir}/fedup
 %{_bindir}/fedup-cli
 
 #TODO - finish and package gtk-based GUI
@@ -54,6 +57,7 @@ make install-systemd DESTDIR=$RPM_BUILD_ROOT
 - Use new-kernel-pkg to set up bootloader (#872088, #879290, #881338)
 - Remove boot option after upgrade (#873065)
 - Get instrepo automatically if available
+- Rename 'fedup-cli' to 'fedup'
 
 * Mon Nov 19 2012 Will Woods <wwoods@redhat.com> 0.7.1-1
 - Add --clean commandline argument
