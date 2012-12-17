@@ -56,8 +56,13 @@ ln -sf fedup $RPM_BUILD_ROOT/%{_bindir}/fedup-cli
 - Disable SELinux during upgrade if system has SELinux disabled (#882549)
 - Use new-kernel-pkg to set up bootloader (#872088, #879290, #881338)
 - Remove boot option after upgrade (#873065)
+- Fix running on minimal systems (#885990)
+- Work around wrong/missing plymouth theme (#879295)
 - Get instrepo automatically if available
 - Rename 'fedup-cli' to 'fedup'
+- Rename '--repourl' to '--addrepo'
+- Add mirrorlist support for --addrepo/--instrepo
+- Clearer messages for most errors
 
 * Mon Nov 19 2012 Will Woods <wwoods@redhat.com> 0.7.1-1
 - Add --clean commandline argument
