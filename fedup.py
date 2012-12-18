@@ -283,7 +283,7 @@ def main(args):
         setup_media_mount(args.device)
 
     if args.iso:
-        fedup.media.umount(args.device)
+        fedup.media.umount(args.device.mnt)
 
     if args.reboot:
         reboot()
