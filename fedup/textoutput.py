@@ -67,7 +67,7 @@ class SimpleProgress(object):
         now = time.time()
         if now - self.widthupdate > self.width_interval:
             self.widthupdate = now
-            self._width = self.getwidth()
+            self._width = self.getwidth() or 80 # assume 80 cols on stupid term
         return self._width
 
     @property
