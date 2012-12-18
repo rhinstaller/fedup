@@ -58,7 +58,7 @@ ln -sf fedup $RPM_BUILD_ROOT/%{_bindir}/fedup-cli
 - Remove boot option after upgrade (#873065)
 - Fix running on minimal systems (#885990)
 - Work around wrong/missing plymouth theme (#879295)
-- Get instrepo automatically if available
+- Get instrepo automatically if available (#872899, #882141)
 - Rename 'fedup-cli' to 'fedup'
 - Rename '--repourl' to '--addrepo'
 - Add mirrorlist support for --addrepo/--instrepo
