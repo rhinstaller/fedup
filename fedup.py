@@ -50,6 +50,7 @@ def setup_downloader(version, instrepo=None, cacheonly=False, repos=[]):
     if disabled_repos:
         print _("No upgrade available for the following repos") + ": " + \
                 " ".join(disabled_repos)
+        log.info("disabled repos: " + " ".join(disabled_repos))
     return f
 
 def download_packages(f):
@@ -289,6 +290,17 @@ def main(args):
         reboot()
     else:
         print _('Finished. Reboot to start upgrade.')
+
+    if f.disabled_repos:
+        # NOTE: I hate having a hardcoded list of Important Repos here.
+        # This information should be provided by the system, somehow..
+        important = ("fedora", "updates")
+        if any(i in f.disabled_repos for i in important):
+            msg = _("WARNING: Some important repos could not be contacted: %s")
+        else:
+            msg = _("NOTE: Some repos could not be contacted: %s")
+        print msg % ", ".join(f.disabled_repos)
+        print _("If you start the upgrade now, packages from these repos will not be installed.")
 
 if __name__ == '__main__':
     args = parse_args()
