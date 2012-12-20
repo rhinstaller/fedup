@@ -70,6 +70,7 @@ class FedupDownloader(yum.YumBase):
         self.preconf.debuglevel = -1
         self.preconf.enabled_plugins = enabled_plugins
         self.preconf.disabled_plugins = disabled_plugins
+        self.version = version
         if version:
             self.preconf.releasever = version
         self.cacheonly = cacheonly
@@ -79,8 +80,6 @@ class FedupDownloader(yum.YumBase):
         self.instrepoid = None
         self.disabled_repos = []
         self._treeinfo = None
-        if version is None: # i.e. no --network arg
-            self.repos.disableRepo('*')
         self.failstate = URLGrabFailureState()
         self.prerepoconf.failure_callback = self.failstate.callback
         self._repoprogressbar = None
@@ -133,6 +132,9 @@ class FedupDownloader(yum.YumBase):
 
         # We need to read .repo files before we can enable/disable them, so:
         self.repos # implicit repo setup! ha ha! what fun!
+
+        if self.version is None: # i.e. no --network arg
+            self.repos.disableRepo('*')
 
         # user overrides to enable/disable repos.
         # NOTE: will raise YumBaseError if there are problems
