@@ -48,6 +48,14 @@ def isloop(dev):
 def find():
     return [m for m in mounts() if isblock(m.dev) and ismedia(m.mnt)]
 
+def removable():
+    '''Yield mounted block devices that don't have entries in /etc/fstab'''
+    for m in mounts():
+        if not isblock(m.dev):
+            continue
+        if not any(m.mnt == d.mnt for d in mounts("/etc/fstab")):
+            yield m
+
 def loopmount(filename, mntpoint=None):
     if mntpoint is None:
         mntpoint = mkdtemp(prefix='fedup.mnt.')
