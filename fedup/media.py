@@ -32,6 +32,8 @@ class FstabEntry(namedtuple('FstabEntry','dev rawmnt type opts freq passno')):
 
 def mounts(fstab="/proc/mounts"):
     for line in open(fstab):
+        if line.strip().startswith('#') or line.isspace():
+            continue
         yield FstabEntry(*line.split())
 
 def ismedia(mountpoint):
