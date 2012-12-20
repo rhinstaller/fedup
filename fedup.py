@@ -108,6 +108,16 @@ def device_or_mnt(arg):
         msg = _("multiple devices found. please choose one of (%s)") % devs
     raise argparse.ArgumentTypeError(msg)
 
+# check the argument to '--iso' to make sure it's somewhere we can use it
+def isofile(arg):
+    if not os.path.exists(arg):
+        raise argparse.ArgumentTypeError(_("File not found: %s") % arg)
+    if any(arg.startswith(d.mnt) for d in fedup.media.removable()):
+        raise argparse.ArgumentTypeError(_("ISO image on removable media\n"
+            "Sorry, but this isn't supported yet.\n"
+            "Copy the image to your hard drive or burn it to a disk."))
+    return arg
+
 def VERSION(arg):
     if arg.lower() == 'rawhide':
         return 'rawhide'
@@ -159,8 +169,8 @@ def parse_args():
     req.add_argument('--device', metavar='DEV', nargs='?',
         type=device_or_mnt, const='auto',
         help=_('device or mountpoint. default: check mounted devices'))
-    req.add_argument('--iso',
-        help='[TODO] '+_('installation image file'))
+    req.add_argument('--iso', type=isofile,
+        help=_('installation image file'))
     # Translators: This is for '--network [VERSION]' in --help output
     req.add_argument('--network', metavar=_('VERSION'), type=VERSION,
         help=_('online repos matching VERSION (a number or "rawhide")'))
