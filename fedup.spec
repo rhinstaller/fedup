@@ -1,6 +1,6 @@
 Name:           fedup
 Version:        0.7.2
-Release:        0.git20121206%{?dist}
+Release:        1%{?dist}
 Summary:        The Fedora Upgrade tool
 
 License:        GPLv2+
@@ -11,6 +11,10 @@ BuildRequires:  python2-devel
 BuildRequires:  systemd-devel
 Requires:       systemd
 BuildArch:      noarch
+
+# TODO: uncomment this once we figure out why PackageKit requires preupgrade..
+#Obsoletes:      preupgrade
+#Provides:       preupgrade
 
 %description
 fedup is the Fedora Upgrade tool.
@@ -63,6 +67,7 @@ ln -sf fedup $RPM_BUILD_ROOT/%{_bindir}/fedup-cli
 - Rename '--repourl' to '--addrepo'
 - Add mirrorlist support for --addrepo/--instrepo
 - Clearer messages for most errors
+- Fix --iso
 
 * Mon Nov 19 2012 Will Woods <wwoods@redhat.com> 0.7.1-1
 - Add --clean commandline argument
