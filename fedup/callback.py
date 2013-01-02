@@ -138,7 +138,7 @@ class DepsolveCallbackBase(object):
             self.log.debug("%s %s", self.modedict[mode], pkg)
     def procReqPo(self, po, formatted_req):
         self.log.debug('req po:   %s → %s', formatted_req, po)
-    def procConflictPo(self, name, formatted_conflict):
+    def procConflictPo(self, po, formatted_conflict):
         self.log.debug('CONFLICT: %s → %s', po, formatted_conflict)
     def unresolved(self, msg):
         self.log.debug('UNRESOLVED DEP: %s', msg)
