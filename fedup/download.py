@@ -124,11 +124,9 @@ class FedupDownloader(yum.YumBase):
 
         # Add default instrepo if needed
         if self.instrepoid is None:
-            # network install, no instrepo provided, try the default mirrorlist
             self.instrepoid = 'default-installrepo'
-            # NOTE 20121205: this doesn't exist yet, should be coming soon
             mirrorurl = mirrorlist('fedora-install-$releasever')
-            self.add_repo(self.instrepoid, mirrorlist=mirrorurl)
+            repos.append(('add', '%s=@%s' % (self.instrepoid, mirrorurl)))
 
         # We need to read .repo files before we can enable/disable them, so:
         self.repos # implicit repo setup! ha ha! what fun!
