@@ -147,6 +147,11 @@ class FedupDownloader(yum.YumBase):
                     self.add_repo(repoid, mirrorlist=url[1:])
                 else:
                     self.add_repo(repoid, baseurls=[url])
+                if self.conf.proxy:
+                    repo = self.repos.getRepo(repoid)
+                    repo.proxy = self.conf.proxy
+                    repo.proxy_username = self.conf.proxy_username
+                    repo.proxy_password = self.conf.proxy_password
 
         # check enabled repos
         for repo in self.repos.listEnabled():
