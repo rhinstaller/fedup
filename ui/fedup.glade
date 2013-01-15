@@ -8,8 +8,10 @@
     <property name="title" translatable="yes">Fedora Upgrade</property>
     <property name="window_position">center</property>
     <property name="default_width">440</property>
+    <property name="icon_name">fedora-logo-icon</property>
     <signal name="close" handler="close" swapped="no"/>
     <signal name="cancel" handler="cancel" swapped="no"/>
+    <signal name="prepare" handler="prepare" swapped="no"/>
     <child>
       <object class="GtkBox" id="introbox">
         <property name="visible">True</property>
@@ -145,93 +147,62 @@
             <property name="valign">start</property>
             <property name="column_homogeneous">True</property>
             <child>
-              <object class="GtkImage" id="sourceimage">
-                <property name="visible">True</property>
-                <property name="can_focus">False</property>
-                <property name="pixel_size">128</property>
-                <property name="icon_name">media-optical</property>
-              </object>
-              <packing>
-                <property name="left_attach">0</property>
-                <property name="top_attach">0</property>
-                <property name="width">1</property>
-                <property name="height">1</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GtkImage" id="targetimage">
-                <property name="visible">True</property>
-                <property name="can_focus">False</property>
-                <property name="pixel_size">128</property>
-                <property name="icon_name">drive-harddisk</property>
-              </object>
-              <packing>
-                <property name="left_attach">2</property>
-                <property name="top_attach">0</property>
-                <property name="width">1</property>
-                <property name="height">1</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GtkImage" id="sourcearrow">
-                <property name="visible">True</property>
-                <property name="can_focus">False</property>
-                <property name="valign">center</property>
-                <property name="pixel_size">64</property>
-                <property name="icon_name">forward</property>
-              </object>
-              <packing>
-                <property name="left_attach">1</property>
-                <property name="top_attach">0</property>
-                <property name="width">1</property>
-                <property name="height">1</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GtkLabel" id="newreleaselabel">
-                <property name="visible">True</property>
-                <property name="can_focus">False</property>
-                <property name="label">Fedora 18
-(Spherical Cow)</property>
-                <property name="justify">center</property>
-              </object>
-              <packing>
-                <property name="left_attach">0</property>
-                <property name="top_attach">1</property>
-                <property name="width">1</property>
-                <property name="height">1</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GtkLabel" id="currentreleaselabel">
-                <property name="visible">True</property>
-                <property name="can_focus">False</property>
-                <property name="label">Fedora 17
-(Beefy Miracle)</property>
-                <property name="use_markup">True</property>
-                <property name="justify">center</property>
-              </object>
-              <packing>
-                <property name="left_attach">2</property>
-                <property name="top_attach">1</property>
-                <property name="width">1</property>
-                <property name="height">1</property>
-              </packing>
-            </child>
-            <child>
               <object class="GtkComboBox" id="sourcecombo">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <property name="model">srcliststore</property>
-                <property name="active">0</property>
-                <property name="id_column">2</property>
+                <property name="id_column">0</property>
+                <signal name="changed" handler="sourcecombo_changed" swapped="no"/>
                 <child>
-                  <object class="GtkCellRendererText" id="renderer1"/>
+                  <object class="GtkCellRendererPixbuf" id="sourceimgrender"/>
                   <attributes>
-                    <attribute name="sensitive">4</attribute>
-                    <attribute name="text">0</attribute>
+                    <attribute name="sensitive">3</attribute>
+                    <attribute name="icon-name">1</attribute>
                   </attributes>
                 </child>
+                <child>
+                  <object class="GtkCellRendererText" id="sourcedevrender">
+                    <property name="style">italic</property>
+                    <property name="placeholder_text">&lt;device&gt;</property>
+                  </object>
+                  <attributes>
+                    <attribute name="sensitive">3</attribute>
+                    <attribute name="text">2</attribute>
+                  </attributes>
+                </child>
+              </object>
+              <packing>
+                <property name="left_attach">0</property>
+                <property name="top_attach">1</property>
+                <property name="width">1</property>
+                <property name="height">1</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkLabel" id="questlabel">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="label" translatable="yes">Where do you want to install from?</property>
+              </object>
+              <packing>
+                <property name="left_attach">0</property>
+                <property name="top_attach">0</property>
+                <property name="width">1</property>
+                <property name="height">1</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkCheckButton" id="updatesbox">
+                <property name="label" translatable="yes">_Download updates from the network</property>
+                <property name="visible">True</property>
+                <property name="sensitive">False</property>
+                <property name="can_focus">True</property>
+                <property name="receives_default">False</property>
+                <property name="image">updateimage</property>
+                <property name="use_underline">True</property>
+                <property name="xalign">0</property>
+                <property name="active">True</property>
+                <property name="draw_indicator">True</property>
               </object>
               <packing>
                 <property name="left_attach">0</property>
@@ -240,19 +211,10 @@
                 <property name="height">1</property>
               </packing>
             </child>
-            <child>
-              <placeholder/>
-            </child>
-            <child>
-              <placeholder/>
-            </child>
-            <child>
-              <placeholder/>
-            </child>
           </object>
           <packing>
             <property name="expand">True</property>
-            <property name="fill">True</property>
+            <property name="fill">False</property>
             <property name="position">2</property>
           </packing>
         </child>
@@ -433,12 +395,17 @@
     <property name="border_width">5</property>
     <property name="resizable">False</property>
     <property name="modal">True</property>
+    <property name="destroy_with_parent">True</property>
     <property name="type_hint">dialog</property>
     <property name="skip_taskbar_hint">True</property>
+    <property name="transient_for">assistant</property>
+    <property name="attached_to">assistant</property>
     <property name="has_resize_grip">False</property>
     <property name="message_type">error</property>
     <property name="text" translatable="yes">No installation media could be found</property>
     <property name="secondary_text" translatable="yes">Connect to the internet or insert installation media and try again.</property>
+    <signal name="delete-event" handler="disable_delete" swapped="no"/>
+    <signal name="response" handler="nosource_response" swapped="no"/>
     <child internal-child="vbox">
       <object class="GtkBox" id="messagedialog-vbox">
         <property name="can_focus">False</property>
@@ -464,11 +431,11 @@
             </child>
             <child>
               <object class="GtkButton" id="quitbutton">
-                <property name="label">gtk-quit</property>
+                <property name="label">_Quit</property>
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="receives_default">True</property>
-                <property name="use_stock">True</property>
+                <property name="use_underline">True</property>
               </object>
               <packing>
                 <property name="expand">False</property>
@@ -487,7 +454,7 @@
       </object>
     </child>
     <action-widgets>
-      <action-widget response="0">retrybutton</action-widget>
+      <action-widget response="1">retrybutton</action-widget>
       <action-widget response="0">quitbutton</action-widget>
     </action-widgets>
   </object>
@@ -513,17 +480,17 @@ Here's a bunch of dumb Unicode.
   <object class="GtkMessageDialog" id="searchdialog">
     <property name="can_focus">False</property>
     <property name="border_width">5</property>
-    <property name="type">popup</property>
     <property name="resizable">False</property>
     <property name="modal">True</property>
-    <property name="window_position">center-on-parent</property>
     <property name="destroy_with_parent">True</property>
     <property name="type_hint">dialog</property>
     <property name="skip_taskbar_hint">True</property>
     <property name="transient_for">assistant</property>
     <property name="attached_to">assistant</property>
+    <property name="has_resize_grip">False</property>
     <property name="buttons">cancel</property>
-    <property name="text" translatable="yes">Looking for installation media</property>
+    <property name="text" translatable="yes">Looking for installation media...</property>
+    <signal name="delete-event" handler="disable_delete" swapped="no"/>
     <child internal-child="vbox">
       <object class="GtkBox" id="messagedialog-vbox3">
         <property name="can_focus">False</property>
@@ -552,39 +519,34 @@ Here's a bunch of dumb Unicode.
   </object>
   <object class="GtkListStore" id="srcliststore">
     <columns>
-      <!-- column-name name -->
+      <!-- column-name id -->
       <column type="gchararray"/>
       <!-- column-name iconname -->
       <column type="gchararray"/>
-      <!-- column-name sourceid -->
-      <column type="gchararray"/>
-      <!-- column-name version -->
+      <!-- column-name label -->
       <column type="gchararray"/>
       <!-- column-name available -->
       <column type="gboolean"/>
     </columns>
     <data>
       <row>
-        <col id="0" translatable="yes">Install from DVD</col>
-        <col id="1">media-optical</col>
-        <col id="2" translatable="yes">dvd</col>
-        <col id="3" translatable="yes"/>
-        <col id="4">True</col>
+        <col id="0">dvd</col>
+        <col id="1">media-optical-symbolic</col>
+        <col id="2" translatable="yes">No install DVD found</col>
+        <col id="3">False</col>
       </row>
       <row>
-        <col id="0" translatable="yes">Install from USB</col>
-        <col id="1">media-removable</col>
-        <col id="2" translatable="yes">usb</col>
-        <col id="3" translatable="yes"/>
-        <col id="4">False</col>
-      </row>
-      <row>
-        <col id="0" translatable="yes">Download from network</col>
-        <col id="1">application-internet</col>
-        <col id="2" translatable="yes">net</col>
-        <col id="3" translatable="yes"/>
-        <col id="4">True</col>
+        <col id="0">usb</col>
+        <col id="1">media-removable-symbolic</col>
+        <col id="2" translatable="yes">No installable USB device found</col>
+        <col id="3">False</col>
       </row>
     </data>
+  </object>
+  <object class="GtkImage" id="updateimage">
+    <property name="visible">True</property>
+    <property name="can_focus">False</property>
+    <property name="ypad">3</property>
+    <property name="icon_name">system-software-update</property>
   </object>
 </interface>
