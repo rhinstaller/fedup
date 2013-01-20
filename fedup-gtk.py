@@ -132,7 +132,8 @@ class FedupUI(object):
             self.network = True
 
         # FIXME: what about non-mirrorlist URIs?
-        if "</url>" in msg.props.response_body.data:
+        respdata = msg.props.response_body.data
+        if respdata and "</url>" in respdata:
             log.info("checkuri for %s succeeded", uri)
             self.srclist.append(FedupSource(uri, icon='net', label=host))
         else:
