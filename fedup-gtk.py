@@ -32,7 +32,7 @@ from gi.repository import GObject
 GObject.threads_init()
 from gi.repository import Gtk, GLib, Gio, Soup
 
-from fedup.media import mounts, isblock, isloop
+from fedup.media import mounts, isblock, isloop, iscd
 
 import logging, fedup.logutils
 log = logging.getLogger("fedup.gtk")
@@ -101,11 +101,16 @@ class FedupUI(object):
         log.info("preparing page #%s", pageid)
         if pageid == 1 and not self.did_srclist:
             self.populate_srclist()
+            # FIXME: monitor for new devices
+            # FIXME: monitor for network up
 
     def populate_srclist(self):
         log.info("showing search dialog")
         self.searchdialog.show_all()
+        # Start with a list that contains two placeholder items
         self.srclist.clear()
+        self.srclist.append(self.missingsrc[0])
+        self.srclist.append(self.missingsrc[1])
         self.to_check = list()
 
         version = 17 # FIXME: actually get version from host
@@ -135,7 +140,7 @@ class FedupUI(object):
         respdata = msg.props.response_body.data
         if respdata and "</url>" in respdata:
             log.info("checkuri for %s succeeded", uri)
-            self.srclist.append(FedupSource(uri, icon='net', label=host))
+            self.srclist.insert(0, FedupSource(uri, icon='net', label=host))
         else:
             log.info("checkuri for %s failed", uri)
 
@@ -159,13 +164,18 @@ class FedupUI(object):
 
         if filetype == Gio.FileType.REGULAR:
             log.info("%s is install media", mnt.dev)
-            # FIXME: is this USB, a DVD, or a loop-mounted ISO?
             if isloop(mnt.dev):
                 devtype = 'loop'
+            if iscd(mnt.dev):
+                devtype = 'dvd'
             else:
                 devtype = 'usb'
             # FIXME: read version from file
             ver = '18'
+            # remove placeholder, if it exists
+            for row in self.srclist:
+                if row[0] == devtype:
+                    self.srclist.remove(row.iter)
             # add item to srclist
             self.srclist.insert(0, FedupSource(mnt.dev, icon=devtype))
 
@@ -180,11 +190,6 @@ class FedupUI(object):
         log.info("finished populating srclist. rows: %i", len(self.srclist))
         for row in self.srclist:
             log.info(", ".join(str(i) for i in row[:]))
-
-        # Add the "No installable DVD" items
-        for missing in self.missingsrc:
-            if not any(src.icon == missing.icon for src in self.srclist_objs):
-                self.srclist.append(missing)
 
         # TODO: handle this in a property or with a signal or something
         if self.network:
