@@ -193,7 +193,7 @@ class FedupUI(object):
 
         self.searchdialog.hide()
 
-        if any(FedupSource(*row).available for row in self.srclist):
+        if any(row.available for row in self.srclist_objs):
             self.did_srclist = True
             combo = self.builder.get_object("sourcecombo")
             combo.set_active(0)
@@ -213,7 +213,10 @@ class FedupUI(object):
         return True # ignore delete signal from Esc keypress
 
     def sourcecombo_changed(self, w, *args):
-        src = FedupSource._make(self.srclist[w.get_active()])
+        idx = w.get_active()
+        if idx < 0:
+            return
+        src = FedupSource._make(self.srclist[idx])
         page = self.builder.get_object("sourcebox")
         self.window.set_page_complete(page, src.available)
 
