@@ -42,6 +42,10 @@ def ismedia(mountpoint):
 def isblock(dev):
     return exists(dev) and stat.S_ISBLK(os.stat(dev).st_mode)
 
+def iscd(dev):
+    typefile = "/sys/class/block/%s/device/type" % os.path.basename(dev)
+    return os.path.exists(typefile) and int(open(typefile).read()) == 5
+
 def isloop(dev):
     return exists(dev) and os.major(os.stat(dev).st_rdev) == 7
 
