@@ -25,6 +25,7 @@
 # - Accept --instrepo
 
 import os
+import signal
 
 from fedup import _
 
@@ -228,6 +229,8 @@ class FedupUI(object):
 
 if __name__ == '__main__':
     try:
+        # Make ^C work. See https://bugzilla.gnome.org/show_bug.cgi?id=622084
+        signal.signal(signal.SIGINT, signal.SIG_DFL)
         ui = FedupUI()
         ui.run()
     except IOError as e:
