@@ -3,10 +3,11 @@ TODO
 
 _(ordered by priority, roughly)_
 
+Disk space handling::
+  * Pad RPM diskspace check to require more disk
+  * Add --packagedir and --cachedir flags
+
 ISO/Device/"Offline" upgrades::
-  * Fix ISO mount unit
-  ** Need to make sure loop device gets set up
-  ** Or maybe switch the file for the device and put `loop` in the mount opts
   * Handle ISO-on-USB-stick case
   * Handle mount chains deeper than ISO-on-USB
 
@@ -32,3 +33,8 @@ Upstreaming::
   *** read `/run/initramfs/upgrade.conf`
   *** check UPGRADEROOT and UPGRADELINK
   *** switch target for this boot
+
+SELinux::
+  * Find a way to run upgrade with SELinux enforcing
+  ** Enforce the old policy during boot
+  ** But use the new policy during upgrade
