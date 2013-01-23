@@ -144,7 +144,7 @@ def parse_args():
         const=logging.DEBUG, help=_('print lots of debugging info'))
     p.set_defaults(loglevel=logging.WARNING)
 
-    p.add_argument('--debuglog', type=str,
+    p.add_argument('--debuglog', default='/var/log/fedup.log',
         help=_('write lots of debugging output to the given file'))
 
     # FOR DEBUGGING ONLY
