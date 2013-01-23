@@ -55,6 +55,11 @@ def setup_downloader(version, instrepo=None, cacheonly=False, repos=[]):
 
 def download_packages(f):
     updates = f.build_update_transaction(callback=output.DepsolveCallback(f))
+    # check for empty upgrade transaction
+    if not updates:
+        print _('Your system is already upgraded!')
+        print _('Finished. Nothing to do.')
+        raise SystemExit(0)
     # clean out any unneeded packages from the cache
     f.clean_cache(keepfiles=(p.localPkg() for p in updates))
     # download packages
