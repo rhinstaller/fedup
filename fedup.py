@@ -226,21 +226,24 @@ def parse_args():
 
     return args
 
+def do_cleanup(args):
+    if not args.skipbootloader:
+        print "resetting bootloader config"
+        reset_boot()
+    if args.clean == 'bootloader':
+        return
+    if not args.skipkernel:
+        print "removing boot images"
+        remove_boot()
+    if not args.skippkgs:
+        print "removing downloaded packages"
+        remove_cache()
+    print "removing miscellaneous files"
+    misc_cleanup()
+
 def main(args):
     if args.clean:
-        if not args.skipbootloader:
-            print "resetting bootloader config"
-            reset_boot()
-        if args.clean == 'bootloader':
-            return
-        if not args.skipkernel:
-            print "removing boot images"
-            remove_boot()
-        if not args.skippkgs:
-            print "removing downloaded packages"
-            remove_cache()
-        print "removing miscellaneous files"
-        misc_cleanup()
+        do_cleanup(args)
         return
 
     # Get our packages set up where we can use 'em
