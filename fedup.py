@@ -282,6 +282,10 @@ def main(args):
         print _("Error: can't get boot images.")
         if args.instrepo:
             print _("The '%s' repo was rejected by yum as invalid.") % args.instrepo
+            if args.iso:
+                print _("The given ISO probably isn't an install DVD image.")
+            elif args.device:
+                print _("The media doesn't contain a valid install DVD image.")
         else:
             print _("The installation repo isn't available.")
             print "You need to specify one with --instrepo." # XXX temporary
