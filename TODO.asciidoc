@@ -35,6 +35,16 @@ Migration::
   ** Migrate `KEYTABLE=...` to `KEYMAP=...`
   *** See https://bugzilla.redhat.com/show_bug.cgi?id=859258 and others
 
+Legacy systems::
+  * Backport to Python 2.6
+  ** argparse not in standard lib
+  * Backport to upstart
+
+Updates::
+  * Figure out updates.img format
+  * Look for updates.img
+  * Apply it before switch-root
+
 Docs::
   * man pages for services
   * man pages for targets
