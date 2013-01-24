@@ -110,6 +110,7 @@ import hashlib
 import time
 from os.path import join, normpath
 import logging
+from StringIO import StringIO
 
 # TODO: release this separate from fedup so it can be used by other stuff
 #       (pungi, libvirt, etc.)
@@ -159,6 +160,9 @@ class Treeinfo(RawConfigParser):
                 topdir = self.topdir or '.'
             self._fullpath[relpath] = normpath(join(topdir, relpath))
         return self._fullpath[relpath]
+
+    def read_str(self, data):
+        self.readfp(StringIO(data)) # guh
 
     def setopt(self, section, option, value):
         '''Sets the given option, creating the section if it doesn't exist'''
