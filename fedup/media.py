@@ -46,6 +46,15 @@ def iscd(dev):
     typefile = "/sys/class/block/%s/device/type" % os.path.basename(dev)
     return os.path.exists(typefile) and int(open(typefile).read()) == 5
 
+def isiso(filename):
+    try:
+        iso = open(filename)
+        iso.seek(32769)
+        magic = iso.read(5)
+    except IOError:
+        magic = ''
+    return magic == 'CD001'
+
 def isloop(dev):
     return exists(dev) and os.major(os.stat(dev).st_rdev) == 7
 
