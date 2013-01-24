@@ -20,8 +20,12 @@
 import os, stat
 from collections import namedtuple
 from os.path import exists, join
-from subprocess import check_call, call
+from subprocess import check_output, call, STDOUT, CalledProcessError
 from tempfile import mkdtemp
+
+def check_call(cmd, stderr=STDOUT, *args, **kwargs):
+    # Use stderr=STDOUT so CalledProcessError has mount output in e.output
+    check_output(cmd, stderr=stderr, *args, **kwargs)
 
 class FstabEntry(namedtuple('FstabEntry','dev rawmnt type opts freq passno')):
     __slots__ = ()
