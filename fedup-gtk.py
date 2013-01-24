@@ -34,6 +34,7 @@ GObject.threads_init()
 from gi.repository import Gtk, GLib, Gio, Soup
 
 from fedup.media import mounts, isblock, isloop, iscd
+from fedup.treeinfo import Treeinfo, TreeinfoError
 
 import logging, fedup.logutils
 log = logging.getLogger("fedup.gtk")
@@ -46,6 +47,9 @@ srcicon = dict(net="network-server-symbolic",
 
 from collections import namedtuple
 FedupSourceBase = namedtuple('FedupSource', 'id icon label available')
+
+# FIXME DUMB
+testing = True
 
 class FedupSource(FedupSourceBase):
     def __new__(cls, id, icon=None, label=None, available=True):
@@ -104,6 +108,16 @@ class FedupUI(object):
             self.populate_srclist()
             # FIXME: monitor for new devices
             # FIXME: monitor for network up
+        if pageid == 2:
+            if testing:
+                GLib.timeout_add_seconds(3, self.reposetup_finished, page, True)
+
+    def reposetup_finished(self, page, ok):
+        progspin = self.builder.get_object("repoprogspin")
+        progspin.stop()
+        progbox = self.builder.get_object("repoprogbox")
+        progbox.hide()
+        self.window.set_page_complete(page, ok)
 
     def populate_srclist(self):
         log.info("showing search dialog")
@@ -114,36 +128,38 @@ class FedupUI(object):
         self.srclist.append(self.missingsrc[1])
         self.to_check = list()
 
-        version = 17 # FIXME: actually get version from host
-        # FIXME: how do we determine what versions to look for?
-        for v in (18,):
-            self.checkuri(mirrorlist(v), version=v)
+        self.checkmirror(18) # FIXME: system_version()+1
 
         for m in mounts():
             if isblock(m.dev) and m.mnt not in ("/", "/boot", "/boot/efi"):
                 self.checkdev(m)
 
-    def checkuri(self, uri, **kwargs):
+    def checkmirror(self, ver):
+        self.checkuri(mirrorlist(ver),
+                      callback=self.checkmirror_cb, version=ver)
+
+    def checkuri(self, uri, callback, **kwargs):
         if not self.soup:
             self.soup = Soup.SessionAsync()
         msg = Soup.Message.new("GET", uri)
         self.to_check.append(uri)
         kwargs['uri'] = uri
-        self.soup.queue_message(msg, self.checkuri_cb, kwargs)
+        self.soup.queue_message(msg, callback, kwargs)
 
-    def checkuri_cb(self, sess, msg, kwargs):
+    def checkmirror_cb(self, sess, msg, kwargs):
         host = msg.props.uri.host
         uri = kwargs['uri']
         if self.network is None and msg.props.status_code == 200:
             self.network = True
 
-        # FIXME: what about non-mirrorlist URIs?
         respdata = msg.props.response_body.data
         if respdata and "</url>" in respdata:
-            log.info("checkuri for %s succeeded", uri)
+            log.info("checkmirror for %s succeeded", uri)
             self.srclist.insert(0, FedupSource(uri, icon='net', label=host))
+            # Success - try the next mirror
+            self.checkmirror(kwargs['version']+1)
         else:
-            log.info("checkuri for %s failed", uri)
+            log.info("checkmirror for %s failed", uri)
 
         self.to_check.remove(uri)
         if not self.to_check:
@@ -152,27 +168,28 @@ class FedupUI(object):
     def checkdev(self, mnt):
         f = Gio.file_new_for_path(os.path.join(mnt.mnt, ".treeinfo"))
         self.to_check.append(mnt)
-        # FIXME: attempt to read version from .treeinfo
-        f.query_info_async(Gio.FILE_ATTRIBUTE_STANDARD_TYPE,
-                           0, 0, None, self.checkdev_cb, mnt)
+        f.load_contents_async(None, self.checkdev_cb, mnt)
 
     def checkdev_cb(self, f, result, mnt):
-        try:
-            inf = f.query_info_finish(result)
-            filetype = inf.get_file_type()
-        except GLib.GError as e:
-            filetype = None
+        treeinfo = Treeinfo()
 
-        if filetype == Gio.FileType.REGULAR:
+        try:
+            tdata = f.load_contents_finish(result)
+            treeinfo.read_str(tdata)
+            ver = treeinfo.get("general", "version")
+        except GLib.GError as e:
+            log.info("can't read .treeinfo in %s: %s", mnt.mnt, str(e))
+        except TreeinfoError as e:
+            log.info("invalid .treeinfo in %s: %s", mnt.mnt, str(e))
+        else:
             log.info("%s is install media", mnt.dev)
+            # figure out what kind of device it is
             if isloop(mnt.dev):
                 devtype = 'loop'
             if iscd(mnt.dev):
                 devtype = 'dvd'
             else:
                 devtype = 'usb'
-            # FIXME: read version from file
-            ver = '18'
             # remove placeholder, if it exists
             for row in self.srclist:
                 if row[0] == devtype:
@@ -180,9 +197,7 @@ class FedupUI(object):
             # add item to srclist
             self.srclist.insert(0, FedupSource(mnt.dev, icon=devtype))
 
-        else:
-            log.info("no .treeinfo in %s", mnt.mnt)
-
+        # remove the item from the work queue
         self.to_check.remove(mnt)
         if not self.to_check:
             self.populate_srclist_finished()
@@ -190,7 +205,7 @@ class FedupUI(object):
     def populate_srclist_finished(self):
         log.info("finished populating srclist. rows: %i", len(self.srclist))
         for row in self.srclist:
-            log.info(", ".join(str(i) for i in row[:]))
+            log.info(", ".join(str(i) for i in row[:])) # FIXME py2.4
 
         # TODO: handle this in a property or with a signal or something
         if self.network:
@@ -199,7 +214,7 @@ class FedupUI(object):
 
         self.searchdialog.hide()
 
-        if any(row.available for row in self.srclist_objs):
+        if any(row.available for row in self.srclist_objs): # FIXME py2.4
             self.did_srclist = True
             combo = self.builder.get_object("sourcecombo")
             combo.set_active(0)
@@ -237,4 +252,5 @@ if __name__ == '__main__':
         print e
         raise SystemExit(1)
     except KeyboardInterrupt:
+        print "KeyboardInterrupt"
         raise SystemExit(2)

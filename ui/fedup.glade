@@ -147,38 +147,6 @@
             <property name="valign">start</property>
             <property name="column_homogeneous">True</property>
             <child>
-              <object class="GtkComboBox" id="sourcecombo">
-                <property name="visible">True</property>
-                <property name="can_focus">False</property>
-                <property name="model">srcliststore</property>
-                <property name="id_column">0</property>
-                <signal name="changed" handler="sourcecombo_changed" swapped="no"/>
-                <child>
-                  <object class="GtkCellRendererPixbuf" id="sourceimgrender"/>
-                  <attributes>
-                    <attribute name="sensitive">3</attribute>
-                    <attribute name="icon-name">1</attribute>
-                  </attributes>
-                </child>
-                <child>
-                  <object class="GtkCellRendererText" id="sourcedevrender">
-                    <property name="style">italic</property>
-                    <property name="placeholder_text">&lt;device&gt;</property>
-                  </object>
-                  <attributes>
-                    <attribute name="sensitive">3</attribute>
-                    <attribute name="text">2</attribute>
-                  </attributes>
-                </child>
-              </object>
-              <packing>
-                <property name="left_attach">0</property>
-                <property name="top_attach">1</property>
-                <property name="width">1</property>
-                <property name="height">1</property>
-              </packing>
-            </child>
-            <child>
               <object class="GtkLabel" id="questlabel">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
@@ -207,6 +175,38 @@
               <packing>
                 <property name="left_attach">0</property>
                 <property name="top_attach">2</property>
+                <property name="width">1</property>
+                <property name="height">1</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkComboBox" id="sourcecombo">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="model">srcliststore</property>
+                <property name="id_column">0</property>
+                <signal name="changed" handler="sourcecombo_changed" swapped="no"/>
+                <child>
+                  <object class="GtkCellRendererPixbuf" id="sourceimgrender"/>
+                  <attributes>
+                    <attribute name="sensitive">3</attribute>
+                    <attribute name="icon-name">1</attribute>
+                  </attributes>
+                </child>
+                <child>
+                  <object class="GtkCellRendererText" id="sourcedevrender">
+                    <property name="style">italic</property>
+                    <property name="placeholder_text">&lt;device&gt;</property>
+                  </object>
+                  <attributes>
+                    <attribute name="sensitive">3</attribute>
+                    <attribute name="text">2</attribute>
+                  </attributes>
+                </child>
+              </object>
+              <packing>
+                <property name="left_attach">0</property>
+                <property name="top_attach">1</property>
                 <property name="width">1</property>
                 <property name="height">1</property>
               </packing>
@@ -292,10 +292,43 @@
             <property name="position">1</property>
           </packing>
         </child>
+        <child>
+          <object class="GtkBox" id="repoprogbox">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="spacing">5</property>
+            <child>
+              <object class="GtkLabel" id="repoproglabel">
+                <property name="can_focus">False</property>
+                <property name="label" translatable="yes">Setting up install sources...</property>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="position">0</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkSpinner" id="repoprogspin">
+                <property name="can_focus">False</property>
+                <property name="active">True</property>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="position">1</property>
+              </packing>
+            </child>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">2</property>
+          </packing>
+        </child>
       </object>
       <packing>
-        <property name="title" translatable="yes">Review release notes</property>
-        <property name="complete">True</property>
+        <property name="title" translatable="yes">Read release notes</property>
       </packing>
     </child>
     <child>
@@ -304,10 +337,40 @@
         <property name="can_focus">False</property>
         <property name="orientation">vertical</property>
         <child>
-          <object class="GtkLabel" id="label1">
+          <object class="GtkBox" id="summaryheaderbox">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
-            <property name="label" translatable="yes">Install summary</property>
+            <property name="margin_top">10</property>
+            <child>
+              <object class="GtkImage" id="logo4">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="pixbuf">fedora.svg</property>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="padding">10</property>
+                <property name="position">0</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkLabel" id="header4">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="xalign">0</property>
+                <property name="label" translatable="yes">A new version of Fedora is available.</property>
+                <attributes>
+                  <attribute name="weight" value="bold"/>
+                  <attribute name="size" value="14336"/>
+                </attributes>
+              </object>
+              <packing>
+                <property name="expand">True</property>
+                <property name="fill">True</property>
+                <property name="position">1</property>
+              </packing>
+            </child>
           </object>
           <packing>
             <property name="expand">False</property>
@@ -316,12 +379,54 @@
           </packing>
         </child>
         <child>
-          <placeholder/>
+          <object class="GtkLabel" id="summarylabel">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="label" translatable="yes">We're going to download %d GiB of data.</property>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">1</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkTreeView" id="problemview">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="model">problemstore</property>
+            <property name="headers_visible">False</property>
+            <property name="headers_clickable">False</property>
+            <property name="enable_search">False</property>
+            <child internal-child="selection">
+              <object class="GtkTreeSelection" id="problemselection">
+                <property name="mode">none</property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkTreeViewColumn" id="textcol">
+                <property name="title" translatable="yes">Problem</property>
+                <child>
+                  <object class="GtkCellRendererText" id="cellrenderertext1">
+                    <property name="placeholder_text">&lt;text&gt;</property>
+                  </object>
+                  <attributes>
+                    <attribute name="text">0</attribute>
+                  </attributes>
+                </child>
+              </object>
+            </child>
+          </object>
+          <packing>
+            <property name="expand">True</property>
+            <property name="fill">True</property>
+            <property name="position">2</property>
+          </packing>
         </child>
       </object>
       <packing>
         <property name="page_type">confirm</property>
-        <property name="title" translatable="yes">Customize installation</property>
+        <property name="title" translatable="yes">Review upgrade info</property>
         <property name="complete">True</property>
       </packing>
     </child>
@@ -331,10 +436,40 @@
         <property name="can_focus">False</property>
         <property name="orientation">vertical</property>
         <child>
-          <object class="GtkLabel" id="label2">
+          <object class="GtkBox" id="progressheaderbox">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
-            <property name="label" translatable="yes">PROGRESS GOES HERE</property>
+            <property name="margin_top">10</property>
+            <child>
+              <object class="GtkImage" id="logo5">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="pixbuf">fedora.svg</property>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="padding">10</property>
+                <property name="position">0</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkLabel" id="header5">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="xalign">0</property>
+                <property name="label" translatable="yes">A new version of Fedora is available.</property>
+                <attributes>
+                  <attribute name="weight" value="bold"/>
+                  <attribute name="size" value="14336"/>
+                </attributes>
+              </object>
+              <packing>
+                <property name="expand">True</property>
+                <property name="fill">True</property>
+                <property name="position">1</property>
+              </packing>
+            </child>
           </object>
           <packing>
             <property name="expand">False</property>
@@ -343,13 +478,48 @@
           </packing>
         </child>
         <child>
-          <placeholder/>
+          <object class="GtkBox" id="progressbox2">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="valign">center</property>
+            <property name="orientation">vertical</property>
+            <property name="spacing">10</property>
+            <child>
+              <object class="GtkLabel" id="progresslabel">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="label" translatable="yes">Preparing system for upgrade...</property>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="position">0</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkProgressBar" id="progressbar">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="text" translatable="yes">I AM A PROGRESS BAR</property>
+                <property name="show_text">True</property>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="position">1</property>
+              </packing>
+            </child>
+          </object>
+          <packing>
+            <property name="expand">True</property>
+            <property name="fill">True</property>
+            <property name="position">1</property>
+          </packing>
         </child>
       </object>
       <packing>
         <property name="page_type">progress</property>
         <property name="title" translatable="yes">Prepare system</property>
-        <property name="complete">True</property>
       </packing>
     </child>
     <child>
@@ -364,13 +534,10 @@
             <property name="label" translatable="yes">ALL DONE REBOOT YEAHH</property>
           </object>
           <packing>
-            <property name="expand">False</property>
+            <property name="expand">True</property>
             <property name="fill">True</property>
             <property name="position">0</property>
           </packing>
-        </child>
-        <child>
-          <placeholder/>
         </child>
       </object>
       <packing>
@@ -457,6 +624,23 @@
       <action-widget response="1">retrybutton</action-widget>
       <action-widget response="0">quitbutton</action-widget>
     </action-widgets>
+  </object>
+  <object class="GtkListStore" id="problemstore">
+    <columns>
+      <!-- column-name text -->
+      <column type="gchararray"/>
+    </columns>
+    <data>
+      <row>
+        <col id="0" translatable="yes">YOUR BUTT STINKS</col>
+      </row>
+      <row>
+        <col id="0" translatable="yes">ALSO YOUR FACE</col>
+      </row>
+      <row>
+        <col id="0" translatable="yes">SERIOUSLY, ENOUGH WITH THE STINK</col>
+      </row>
+    </data>
   </object>
   <object class="GtkTextBuffer" id="relnotebuffer">
     <property name="text">Release notes go here.
