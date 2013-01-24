@@ -216,15 +216,6 @@ def parse_args():
         args.repos.append(('add', 'cmdline-instrepo=%s' % args.instrepo))
         args.instrepo = 'cmdline-instrepo'
 
-    # treat --device like --repo REPO=file://$MOUNTPOINT
-    if args.device:
-        args.repos.append(('add', 'fedupdevice=file://%s' % args.device.mnt))
-        args.instrepo = 'fedupdevice'
-    elif args.iso:
-        args.device = fedup.media.loopmount(args.iso)
-        args.repos.append(('add', 'fedupiso=file://%s' % args.device.mnt))
-        args.instrepo = 'fedupiso'
-
     if args.clean:
         args.resetbootloader = True
 
@@ -245,10 +236,29 @@ def do_cleanup(args):
     print "removing miscellaneous files"
     misc_cleanup()
 
+def device_setup(args):
+    # treat --device like --repo REPO=file://$MOUNTPOINT
+    if args.device:
+        args.repos.append(('add', 'fedupdevice=file://%s' % args.device.mnt))
+        args.instrepo = 'fedupdevice'
+    elif args.iso:
+        try:
+            args.device = fedup.media.loopmount(args.iso)
+        except fedup.media.CalledProcessError as e:
+            log.info("mount failure: %s", e.output)
+            message('--iso: '+_('Unable to open %s') % args.iso)
+            raise SystemExit(2)
+        else:
+            args.repos.append(('add', 'fedupiso=file://%s' % args.device.mnt))
+            args.instrepo = 'fedupiso'
+
 def main(args):
     if args.clean:
         do_cleanup(args)
         return
+
+    if args.device or args.iso:
+        device_setup(args)
 
     # Get our packages set up where we can use 'em
     print _("setting up repos...")
