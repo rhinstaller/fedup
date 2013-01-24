@@ -19,7 +19,14 @@
 
 import os
 from shutil import rmtree
-from subprocess import call
+
+try:
+    from ctypes import cdll, c_bool
+    selinux = cdll.LoadLibrary("libselinux.so.1")
+    is_selinux_enabled = selinux.is_selinux_enabled
+    is_selinux_enabled.restype = c_bool
+except (ImportError, AttributeError, OSError):
+    is_selinux_enabled = lambda: False
 
 def listdir(d):
     for f in os.listdir(d):
@@ -42,6 +49,3 @@ def rm_f(f, rm=os.remove):
 
 def rm_rf(d):
     rm_f(d, rm=rmtree)
-
-def is_selinux_enabled():
-    return call(["selinuxenabled"]) == 0
