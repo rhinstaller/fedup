@@ -9,7 +9,7 @@ Source0:        https://github.com/downloads/wgwoods/fedup/%{name}-%{version}.ta
 
 BuildRequires:  python2-devel
 BuildRequires:  systemd-devel
-Requires:       systemd
+Requires:       systemd grubby
 BuildArch:      noarch
 
 # TODO: uncomment this once we figure out why PackageKit requires preupgrade..
