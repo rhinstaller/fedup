@@ -396,6 +396,11 @@ def modify_bootloader(kernel, initrd):
             "plymouth.splash=fedup"] # FIXME: remove when plymouth fix is built
     if not is_selinux_enabled():
         args.append("selinux=0")
+    else:
+        # BLERG. SELinux enforcing will cause problems if the new policy
+        # disallows something that the previous system did differently.
+        # See https://bugzilla.redhat.com/bugzilla/show_bug.cgi?id=896010
+        args.append("enforcing=0")
 
     boot.add_entry(kernel, initrd, banner=_("System Upgrade"), kargs=args)
 
