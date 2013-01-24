@@ -18,8 +18,9 @@
 # Author: Will Woods <wwoods@redhat.com>
 
 import logging
+from fedup.logutils import NullHandler
 log = logging.getLogger("fedup")
-log.addHandler(logging.NullHandler())
+log.addHandler(NullHandler())
 
 import gettext
 t = gettext.translation("fedup", "/usr/share/locale", fallback=True)
