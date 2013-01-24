@@ -16,6 +16,11 @@ GUI::
   * Wire up the UI bits
   * Wire up progress meter
 
+Migration::
+  * Add a "before-reboot" scriptlet hook
+  ** e.g. Migrate /dev/XXX to UUID=XXX in /etc/fstab
+  *** See https://bugzilla.redhat.com/show_bug.cgi?id=895805
+
 Updates::
   * Figure out updates.img format
   * Look for updates.img
