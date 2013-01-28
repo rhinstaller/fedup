@@ -1,6 +1,6 @@
 Name:           fedup
-Version:        0.7.2
-Release:        1%{?dist}
+Version:        0.7.3
+Release:        0%{?dist}
 Summary:        The Fedora Upgrade tool
 
 License:        GPLv2+
@@ -54,6 +54,16 @@ ln -sf fedup $RPM_BUILD_ROOT/%{_bindir}/fedup-cli
 #{_datadir}/fedup/ui
 
 %changelog
+* Mon Jan 28 2013 Will Woods <wwoods@redhat.com> 0.7.3-0
+- Write debuglog by default (/var/log/fedup.log)
+- Use proxy settings from yum.conf (#892994)
+- Fix "NameError: global name 'po' is not defined" (#895576)
+- Clearer error on already-upgraded systems (#895967)
+- Fix upgrade hang with multiple encrypted partitions (#896010)
+- Fix "OSError: [Errno 2]..." when `selinuxenabled` is not in PATH (#896721)
+- Fix tracebacks on bad arguments to --iso (#896440, #895665)
+- Fix traceback if grubby is missing (#896194)
+
 * Thu Dec 06 2012 Will Woods <wwoods@redhat.com> 0.7.2-1
 - Fix grubby traceback on EFI systems (#884696)
 - Fix traceback if /var/tmp is a different filesystem from /var/lib (#883107)
