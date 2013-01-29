@@ -3,9 +3,15 @@ TODO
 
 _(ordered by priority, roughly)_
 
+Fix `/dev/mdX` problems::
+  * If /etc/mdadm.conf exists, add it to upgrade.img (#859258 and others)
+
+Upgrade lock::
+  * If /etc/yum/vars/releasever exists, complain to user (#908017)
+
 Disk space handling::
   * Pad RPM diskspace check to require more disk
-  * Add --packagedir and --cachedir flags
+  * Add `--packagedir` and `--cachedir` flags
 
 ISO/Device/"Offline" upgrades::
   * Handle ISO-on-USB-stick case
@@ -14,12 +20,15 @@ ISO/Device/"Offline" upgrades::
 GUI::
   * Move commandline parsing to fedup library, use it
   * Wire up the UI bits
-  * Wire up progress meter
+  * Wire up progress callbacks
+  ** yum in a subprocess
+  *** use `multiprocessing.Queue` to send back progress data?
 
 Migration::
-  * Add a "before-reboot" scriptlet hook
-  ** e.g. Migrate /dev/XXX to UUID=XXX in /etc/fstab
-  *** See https://bugzilla.redhat.com/show_bug.cgi?id=895805
+  * Add a _fedup-before-upgrade_ scriptlet hook
+  ** Not technically a dracut hook, since it'll be run by fedup
+  ** Migrate `KEYTABLE=...` to `KEYMAP=...`
+  *** See https://bugzilla.redhat.com/show_bug.cgi?id=859258 and others
 
 Updates::
   * Figure out updates.img format
@@ -41,5 +50,6 @@ Upstreaming::
 
 SELinux::
   * Find a way to run upgrade with SELinux enforcing
-  ** Enforce the old policy during boot
-  ** But use the new policy during upgrade
+  . Start with new policy while in initramfs
+  . Enforce the old policy after switching to old system
+  . Use the new policy for writing files during upgrade
