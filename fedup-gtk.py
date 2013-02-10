@@ -20,14 +20,15 @@
 # Author: Will Woods <wwoods@redhat.com>
 #
 # TODO:
-# - Fix handling of KeyboardInterrupt and/or stuck UI on traceback
-# - Use the same ArgumentParser as the CLI
-# - Accept --instrepo
+# - Do device_setup()
+# - Actually set up yum object and, like, get packages
+# - Wire up progress
 
 import os
 import signal
 
 from fedup import _
+from fedup.commandline import parse_args, do_cleanup
 
 from gi.repository import GObject
 GObject.threads_init()
@@ -64,7 +65,8 @@ def mirrorlist(ver):
     return "https://mirrors.fedoraproject.org/metalink?repo=fedora-install-%i&arch=x86_64" % ver
 
 class FedupUI(object):
-    def __init__(self):
+    def __init__(self, args):
+        self.args = args
         self.builder = Gtk.Builder()
         self.builder.add_from_file(self.findUIFile("fedup.glade"))
         self.builder.connect_signals(self)
@@ -205,7 +207,7 @@ class FedupUI(object):
     def populate_srclist_finished(self):
         log.info("finished populating srclist. rows: %i", len(self.srclist))
         for row in self.srclist:
-            log.info(", ".join(str(i) for i in row[:])) # FIXME py2.4
+            log.info(", ".join(str(i) for i in row[:]))
 
         # TODO: handle this in a property or with a signal or something
         if self.network:
@@ -214,7 +216,7 @@ class FedupUI(object):
 
         self.searchdialog.hide()
 
-        if any(row.available for row in self.srclist_objs): # FIXME py2.4
+        if any(row.available for row in self.srclist_objs):
             self.did_srclist = True
             combo = self.builder.get_object("sourcecombo")
             combo.set_active(0)
@@ -243,10 +245,11 @@ class FedupUI(object):
 
 
 if __name__ == '__main__':
+    args = parse_args(gui=True)
     try:
         # Make ^C work. See https://bugzilla.gnome.org/show_bug.cgi?id=622084
         signal.signal(signal.SIGINT, signal.SIG_DFL)
-        ui = FedupUI()
+        ui = FedupUI(args)
         ui.run()
     except IOError as e:
         print e
