@@ -17,7 +17,7 @@
 #
 # Author: Will Woods <wwoods@redhat.com>
 
-import os
+import os, struct
 from shutil import rmtree
 
 try:
@@ -49,3 +49,18 @@ def rm_f(f, rm=os.remove):
 
 def rm_rf(d):
     rm_f(d, rm=rmtree)
+
+def kernelver(filename):
+    '''read the version number out of a vmlinuz file.'''
+    # this algorithm came from /usr/share/magic
+    with open(filename) as f:
+        f.seek(514)
+        if f.read(4) != 'HdrS':
+            return None
+        f.seek(526)
+        (offset,) = struct.unpack("<H", f.read(2))
+        f.seek(offset+0x200)
+        buf = f.read(256)
+    uname, nul, rest = buf.partition('\0')
+    version, spc, rest = uname.partition(' ')
+    return version
