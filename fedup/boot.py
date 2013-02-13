@@ -17,7 +17,7 @@
 #
 # Author: Will Woods <wwoods@redhat.com>
 
-from subprocess import check_output, PIPE
+from subprocess import check_output, PIPE, Popen, CalledProcessError
 
 kernelprefix = "/boot/vmlinuz-"
 
@@ -41,3 +41,17 @@ def add_entry(kernel, initrd, banner=None, kargs=[], makedefault=True):
 def remove_entry(kernel):
     cmd = ["new-kernel-pkg", "--remove", kernelver(kernel)]
     return check_output(cmd, stderr=PIPE)
+
+def initramfs_append(initramfs, files):
+    '''Append the given files to the named initramfs.
+       Raises IOError if the files can't be read/written.
+       Raises CalledProcessError if cpio returns a non-zero exit code.'''
+    if isinstance(files, basestring):
+        files = [files]
+    filelist = ''.join(f+'\n' for f in files if open(f))
+    with open(initramfs, 'ab') as outfd:
+        cmd = ["cpio", "-co"]
+        cpio = Popen(cmd, stdin=PIPE, stdout=outfd, stderr=PIPE)
+        (out, err) = cpio.communicate(input=filelist)
+        if cpio.returncode:
+            raise CalledProcessError(cpio.returncode, cmd, err)
