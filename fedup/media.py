@@ -93,7 +93,8 @@ def umount(mntpoint):
     try:
         check_call(['umount', '-d', mntpoint])
     except CalledProcessError:
-        log.warn('umount %s failed, trying lazy umount', mntpoint)
+        log.warn('umount %s failed: %s', mntpoint, e.output)
+        log.warn('trying lazy umount')
         call(['umount', '-l', mntpoint])
 
 # see systemd/src/shared/unit-name.c:do_escape()
