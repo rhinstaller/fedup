@@ -12,6 +12,10 @@ BuildRequires:  systemd-devel
 Requires:       systemd grubby
 BuildArch:      noarch
 
+# Require updates to various packages where necessary to fix bugs.
+# Bug #910326
+Requires:       systemd >= systemd-44-23.fc17
+
 # TODO: uncomment this once we figure out why PackageKit requires preupgrade..
 #Obsoletes:      preupgrade
 #Provides:       preupgrade
