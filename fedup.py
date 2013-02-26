@@ -23,7 +23,7 @@ import os, sys, time
 from subprocess import call
 
 from fedup.download import FedupDownloader, YumBaseError
-from fedup.download import prep_upgrade, prep_boot, setup_media_mount
+from fedup.sysprep import prep_upgrade, prep_boot, setup_media_mount
 from fedup.upgrade import FedupUpgrade, TransactionError
 
 from fedup.commandline import parse_args, do_cleanup, device_setup

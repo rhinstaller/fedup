@@ -20,7 +20,7 @@
 import os, argparse, platform
 
 import fedup.media
-from fedup.download import reset_boot, remove_boot, remove_cache, misc_cleanup
+from fedup.sysprep import reset_boot, remove_boot, remove_cache, misc_cleanup
 from fedup import _
 
 import logging
