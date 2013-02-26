@@ -55,3 +55,17 @@ def initramfs_append(initramfs, files):
         (out, err) = cpio.communicate(input=filelist)
         if cpio.returncode:
             raise CalledProcessError(cpio.returncode, cmd, err)
+
+def need_mdadmconf():
+    '''Does this system need /etc/mdadm.conf to boot?'''
+    # NOTE: there are probably systems that have mdadm.conf but don't require
+    # it to boot, but I don't know how you tell the difference, so...
+    try:
+        for line in open("/etc/mdadm.conf"):
+            line = line.strip()
+            if line and not line.startswith("#"):
+                # Hey there's actual *data* in here! WE MIGHT NEED THIS!!
+                return True
+    except IOError:
+        pass
+    return False

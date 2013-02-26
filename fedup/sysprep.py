@@ -141,6 +141,10 @@ def modify_bootloader(kernel, initrd):
     boot.add_entry(kernel, initrd, banner=_("System Upgrade"), kargs=args)
 
 def prep_boot(kernel, initrd):
+    # check for systems that need mdadm.conf
+    if boot.need_mdadmconf():
+        log.info("appending /etc/mdadm.conf to initrd")
+        boot.initramfs_append(initrd, "/etc/mdadm.conf")
     # set up the boot args
     modify_bootloader(kernel, initrd)
 
