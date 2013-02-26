@@ -30,6 +30,7 @@ kernel_id = 'fedup'
 kernelpath = '/boot/vmlinuz-%s' % kernel_id
 initrdpath = '/boot/initramfs-%s.img' % kernel_id
 
+cachedir = '/var/tmp/fedora-upgrade'
 packagedir = '/var/lib/fedora-upgrade'
 packagelist = packagedir + '/package.list'
 upgradeconf = packagedir + '/upgrade.conf'

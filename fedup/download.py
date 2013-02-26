@@ -32,11 +32,10 @@ enabled_plugins = ['blacklist', 'whiteout']
 disabled_plugins = ['rpm-warm-cache', 'remove-with-leaves', 'presto',
                     'auto-update-debuginfo', 'refresh-packagekit']
 
-cachedir="/var/tmp/fedora-upgrade"
 upgrade_target_wants = "/lib/systemd/system/system-upgrade.target.wants"
 
 from fedup import _
-from fedup import packagedir, packagelist, upgradeconf
+from fedup import cachedir, packagedir, packagelist, upgradeconf
 from fedup import upgradelink, upgraderoot, kernelpath, initrdpath
 from fedup import mirrormanager
 from fedup.media import write_systemd_unit
