@@ -18,6 +18,7 @@
 # Author: Will Woods <wwoods@redhat.com>
 
 from subprocess import check_output, PIPE, Popen, CalledProcessError
+from shutil import copyfileobj
 
 kernelprefix = "/boot/vmlinuz-"
 
@@ -42,7 +43,7 @@ def remove_entry(kernel):
     cmd = ["new-kernel-pkg", "--remove", kernelver(kernel)]
     return check_output(cmd, stderr=PIPE)
 
-def initramfs_append(initramfs, files):
+def initramfs_append_files(initramfs, files):
     '''Append the given files to the named initramfs.
        Raises IOError if the files can't be read/written.
        Raises CalledProcessError if cpio returns a non-zero exit code.'''
@@ -55,6 +56,14 @@ def initramfs_append(initramfs, files):
         (out, err) = cpio.communicate(input=filelist)
         if cpio.returncode:
             raise CalledProcessError(cpio.returncode, cmd, err)
+
+def initramfs_append_images(initramfs, images):
+    '''Append the given images to the named initramfs.
+       Raises IOError if the files can't be read/written.'''
+    with open(initramfs, 'ab') as outfd:
+        for i in images:
+            with open(i, 'rb') as infd:
+                copyfileobj(infd, outfd)
 
 def need_mdadmconf():
     '''Does this system need /etc/mdadm.conf to boot?'''

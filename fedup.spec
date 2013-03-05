@@ -35,6 +35,7 @@ rm -rf $RPM_BUILD_ROOT
 %{__python} setup.py install --skip-build --root $RPM_BUILD_ROOT
 make install-systemd DESTDIR=$RPM_BUILD_ROOT
 ln -sf fedup $RPM_BUILD_ROOT/%{_bindir}/fedup-cli
+mkdir -p $RPM_BUILD_ROOT/etc/fedup/update.img.d
 
 
 
@@ -51,6 +52,10 @@ ln -sf fedup $RPM_BUILD_ROOT/%{_bindir}/fedup-cli
 # binaries
 %{_bindir}/fedup
 %{_bindir}/fedup-cli
+# empty config dir
+%dir /etc/fedup
+# empty updates dir
+%dir /etc/fedup/update.img.d
 
 #TODO - finish and package gtk-based GUI
 #files gtk

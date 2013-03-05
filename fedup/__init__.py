@@ -38,3 +38,5 @@ upgradelink = '/system-upgrade'
 upgraderoot = '/system-upgrade-root'
 
 mirrormanager = 'https://mirrors.fedoraproject.org/metalink'
+
+update_img_dir = '/etc/fedup/update.img.d'

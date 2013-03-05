@@ -22,7 +22,7 @@ import fedup.boot as boot
 from shutil import copy2
 
 from fedup import _
-from fedup import cachedir, packagedir, packagelist
+from fedup import cachedir, packagedir, packagelist, update_img_dir
 from fedup import upgradeconf, upgradelink, upgraderoot
 from fedup.media import write_systemd_unit
 from fedup.util import listdir, mkdir_p, rm_f, rm_rf, is_selinux_enabled
@@ -144,7 +144,17 @@ def prep_boot(kernel, initrd):
     # check for systems that need mdadm.conf
     if boot.need_mdadmconf():
         log.info("appending /etc/mdadm.conf to initrd")
-        boot.initramfs_append(initrd, "/etc/mdadm.conf")
+        boot.initramfs_append_files(initrd, "/etc/mdadm.conf")
+
+    # look for updates, and add them to initrd if found
+    updates = []
+    try:
+        updates = listdir(update_img_dir)
+    except IOError as e:
+        log.info("can't list update img dir %s: %s", update_img_dir, e.strerror)
+    if updates:
+        log.info("found updates in %s, appending to initrd", update_img_dir)
+        boot.initramfs_append_images(initrd, updates)
     # set up the boot args
     modify_bootloader(kernel, initrd)
 
