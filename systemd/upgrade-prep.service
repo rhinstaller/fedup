@@ -10,6 +10,7 @@ DefaultDependencies=no
 Type=oneshot
 ExecStart=/usr/lib/systemd/upgrade-prep.sh
 ExecStopPost=-/usr/bin/systemctl --no-block isolate upgrade-switch-root.target
+StandardOutput=journal+console
 
 [Install]
 WantedBy=system-upgrade.target
