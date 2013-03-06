@@ -25,7 +25,7 @@ from fedup import _
 from fedup import cachedir, packagedir, packagelist, update_img_dir
 from fedup import upgradeconf, upgradelink, upgraderoot
 from fedup.media import write_systemd_unit
-from fedup.util import listdir, mkdir_p, rm_f, rm_rf, is_selinux_enabled
+from fedup.util import listdir, mkdir_p, rm_f, rm_rf, is_selinux_enabled, kernelver
 from fedup.conf import Config
 
 import logging
@@ -155,6 +155,15 @@ def prep_boot(kernel, initrd):
     if updates:
         log.info("found updates in %s, appending to initrd", update_img_dir)
         boot.initramfs_append_images(initrd, updates)
+
+    # make a dir in /lib/modules to hold a copy of the new kernel's modules
+    # (the initramfs will copy/bind them into place when we reboot)
+    kv = kernelver(kernel)
+    if kv:
+        mkdir_p("/lib/modules/"+kernelver(kernel))
+    else:
+        log.warn("can't determine version of kernel image '%s'", kernel)
+
     # set up the boot args
     modify_bootloader(kernel, initrd)
 
