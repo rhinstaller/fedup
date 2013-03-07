@@ -273,6 +273,12 @@ class FedupDownloader(yum.YumBase):
             if e.errno == 256:
                 err += "\n" + _("Last error was: %s") % e.errors[-1][1]
             raise YumBaseError(_("couldn't get boot images: %s") % err)
+        except KeyboardInterrupt:
+            # if an IOError occurs while writing the file to disk, F17
+            # urlgrabber actually raises *KeyboardInterrupt* for some reason.
+            # But urlgrabber.__version__ hasn't been changed since F12, so:
+            if not hasattr(yum.urlgrabber.grabber, 'exception2msg'): # <=F17
+                raise KeyboardInterrupt(_("or possible error writing file"))
 
         # Save kernel/initrd info so we can clean it up later
         mkdir_p(os.path.dirname(upgradeconf))
