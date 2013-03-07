@@ -34,6 +34,7 @@ from fedup import _
 from fedup import cachedir, upgradeconf, kernelpath, initrdpath
 from fedup import mirrormanager
 from fedup.util import listdir, mkdir_p
+from shutil import copy2
 
 log = logging.getLogger("fedup.yum") # XXX maybe I should rename this module..
 
@@ -265,7 +266,13 @@ class FedupDownloader(yum.YumBase):
             if not arch:
                 arch = self.treeinfo.get('general', 'arch')
             kernel = grab_and_check(arch, 'kernel', kernelpath)
-            initrd = grab_and_check(arch, 'upgrade', initrdpath)
+            # cache the initrd somewhere so we don't have to fetch it again
+            # if it gets modified later.
+            cacheinitrd = os.path.join(cachedir, os.path.basename(initrdpath))
+            initrd = grab_and_check(arch, 'upgrade', cacheinitrd)
+            # copy the downloaded initrd to the target path
+            copy2(initrd, initrdpath)
+            initrd = initrdpath
         except TreeinfoError as e:
             raise YumBaseError(_("invalid data in .treeinfo: %s") % str(e))
         except yum.URLGrabError as e:
