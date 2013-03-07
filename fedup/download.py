@@ -37,20 +37,14 @@ from fedup.util import listdir, mkdir_p
 
 log = logging.getLogger("fedup.yum") # XXX maybe I should rename this module..
 
+# TODO: add --urlgrabdebug to enable this... or something
+#yum.urlgrabber.grabber.set_logger(logging.getLogger("fedup.urlgrab"))
+
 def mirrorlist(repo, arch='$basearch'):
     return mirrormanager + '?repo=%s&arch=%s' % (repo, arch)
 
-class URLGrabFailureState(object):
-    '''urlgrabber raises "No more mirros to try", with no reference to the
-    original URL or HTTP/FTP error. So we save that information here.'''
-    def __init__(self):
-        self.lasturl = None
-        self.lastexc = None
-
-    def callback(self, fail):
-        self.lasturl = fail.url
-        self.lastexc = fail.exception
-        log.info(fail.exception)
+def raise_exception(failobj):
+    raise failobj.exception
 
 class FedupDownloader(yum.YumBase):
     '''Yum-based downloader class for fedup. Based roughly on AnacondaYum.'''
@@ -73,8 +67,7 @@ class FedupDownloader(yum.YumBase):
         self.instrepoid = None
         self.disabled_repos = []
         self._treeinfo = None
-        self.failstate = URLGrabFailureState()
-        self.prerepoconf.failure_callback = self.failstate.callback
+        self.prerepoconf.failure_callback = raise_exception
         self._repoprogressbar = None
         # TODO: locking to prevent multiple instances
         # TODO: override logging objects so we get yum logging
@@ -98,7 +91,8 @@ class FedupDownloader(yum.YumBase):
         r.basecachedir = cachedir
         r.cache = self.cacheonly
         r.callback = kwargs.get('callback') or self._repoprogressbar
-        r.failure_obj = self.failstate.callback
+        r.failure_obj = raise_exception
+        r.mirror_failure_obj = raise_exception
         r.baseurl = [varReplace(u, self.conf.yumvar) for u in baseurls if u]
         if mirrorlist:
             r.mirrorlist = varReplace(mirrorlist, self.conf.yumvar)
@@ -275,12 +269,10 @@ class FedupDownloader(yum.YumBase):
         except TreeinfoError as e:
             raise YumBaseError(_("invalid data in .treeinfo: %s") % str(e))
         except yum.URLGrabError as e:
-            f = os.path.basename(self.failstate.lasturl)
-            if e.errno >= 256:
-                err = str(self.failstate.lastexc)
-            else:
-                err = str(e)
-            raise YumBaseError(_("couldn't get %s:\n  %s") % (f, err))
+            err = e.strerror
+            if e.errno == 256:
+                err += "\n" + _("Last error was: %s") % e.errors[-1][1]
+            raise YumBaseError(_("couldn't get boot images: %s") % err)
 
         # Save kernel/initrd info so we can clean it up later
         mkdir_p(os.path.dirname(upgradeconf))
