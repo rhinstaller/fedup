@@ -149,8 +149,8 @@ def prep_boot(kernel, initrd):
     # look for updates, and add them to initrd if found
     updates = []
     try:
-        updates = listdir(update_img_dir)
-    except IOError as e:
+        updates = list(listdir(update_img_dir))
+    except (IOError, OSError) as e:
         log.info("can't list update img dir %s: %s", update_img_dir, e.strerror)
     if updates:
         log.info("found updates in %s, appending to initrd", update_img_dir)
