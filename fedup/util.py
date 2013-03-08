@@ -64,3 +64,22 @@ def kernelver(filename):
     uname, nul, rest = buf.partition('\0')
     version, spc, rest = uname.partition(' ')
     return version
+
+def df(mnt, reserved=False):
+    s = os.statvfs(mnt)
+    return s.f_bsize * (s.f_bfree if reserved else s.f_bavail)
+
+def hrsize(size, si=False, use_ib=False):
+    powers = 'KMGTPEZY'
+    multiple = 1000 if si else 1024
+    if si:       suffix = 'B'
+    elif use_ib: suffix = 'iB'
+    else:        suffix = ''
+    size = float(size)
+    for p in powers:
+        size /= multiple
+        if size < multiple:
+            if p in 'KM': # don't bother with sub-MB precision
+                return "%u%s%s" % (int(size)+1, p, suffix)
+            else:
+                return "%.1f%s%s" % (size, p, suffix)
