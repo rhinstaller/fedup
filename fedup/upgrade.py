@@ -29,6 +29,7 @@ import logging
 log = logging.getLogger('fedup.upgrade')
 
 from fedup import _
+from fedup.util import df, hrsize
 
 class TransactionSet(TransactionSetCore):
     flags = TransactionSetCore._flags
@@ -76,12 +77,52 @@ probtypes = { rpm.RPMPROB_NEW_FILE_CONFLICT : _('file conflicts'),
               rpm.RPMPROB_BADOS: _('package for incorrect os'),
             }
 
+# --- stuff for doing useful summaries of big sets of problems
+
+class ProblemSummary(object):
+    def __init__(self, probtype, problems):
+        self.type = probtype
+        self.problems = [p for p in problems if p.type == self.type]
+        self.desc = probtypes.get(probtype)
+        self.details = self.get_details()
+
+    def get_details(self):
+        return None
+
+    def __str__(self):
+        if self.details:
+            return "\n  ".join([self.desc] + self.format_details())
+        else:
+            return self.desc
+
+class DiskspaceProblemSummary(ProblemSummary):
+    def get_details(self):
+        needs = dict()
+        for p in self.problems:
+            (mnt, size) = (p._str, p._num)
+            if size > needs.get(mnt,0):
+                needs[mnt] = size
+        return needs
+
+    def format_details(self):
+        return [_("need %s free on %s (%s free)") %
+                      (hrsize(size), mnt, hrsize(df(mnt)))
+                  for (mnt,size) in self.details.iteritems()]
+
+probsummary = { rpm.RPMPROB_DISKSPACE: DiskspaceProblemSummary,
+              }
+
+
 class FedupError(Exception):
     pass
 
 class TransactionError(FedupError):
     def __init__(self, problems):
         self.problems = problems
+        self.summaries = list()
+        for t in set(p.type for p in problems):
+            summarize = probsummary.get(t, ProblemSummary)
+            self.summaries.append(summarize(t, problems))
 
 def pipelogger(pipe, level=logging.INFO):
     logger = logging.getLogger("fedup.rpm")

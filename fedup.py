@@ -198,10 +198,13 @@ if __name__ == '__main__':
         raise SystemExit(2)
     except TransactionError as e:
         print
-        message(_("Transaction test failed with the following problems"))
+        message(_("Upgrade test failed with the following problems:"))
+        for s in e.summaries:
+            message(s)
+        log.debug("Detailed transaction problems:")
         for p in e.problems:
-            message(p)
-        log.debug("Exception:", exc_info=True)
+            log.debug(p)
+        log.error(_("Upgrade test failed."))
         raise SystemExit(3)
     except Exception as e:
         log.info("Exception:", exc_info=True)
