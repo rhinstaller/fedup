@@ -65,6 +65,7 @@ mkdir -p $RPM_BUILD_ROOT/etc/fedup/update.img.d
 %changelog
 * Mon Jan 28 2013 Will Woods <wwoods@redhat.com> 0.7.3-0
 - Write debuglog by default (/var/log/fedup.log)
+- Add support for applying updates to upgrade.img
 - Use proxy settings from yum.conf (#892994)
 - Fix "NameError: global name 'po' is not defined" (#895576)
 - Clearer error on already-upgraded systems (#895967)
@@ -72,6 +73,9 @@ mkdir -p $RPM_BUILD_ROOT/etc/fedup/update.img.d
 - Fix "OSError: [Errno 2]..." when `selinuxenabled` is not in PATH (#896721)
 - Fix tracebacks on bad arguments to --iso (#896440, #895665)
 - Fix traceback if grubby is missing (#896194)
+- Require newer systemd to fix hang on not-updated systems (#910326)
+- Fix hang starting upgrade on systems with /dev/md* (#895805)
+- Better error messages if you're out of disk space (#896144)
 
 * Thu Dec 06 2012 Will Woods <wwoods@redhat.com> 0.7.2-1
 - Fix grubby traceback on EFI systems (#884696)
