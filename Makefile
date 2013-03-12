@@ -3,7 +3,7 @@ VERSION=0.7.3
 
 all: build
 
-SUBDIRS := systemd
+SUBDIRS := systemd man
 $(SUBDIRS):
 	$(MAKE) -C $@
 

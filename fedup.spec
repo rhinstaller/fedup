@@ -7,14 +7,16 @@ License:        GPLv2+
 URL:            https://github.com/wgwoods/fedup
 Source0:        https://github.com/downloads/wgwoods/fedup/%{name}-%{version}.tar.xz
 
-BuildRequires:  python2-devel
-BuildRequires:  systemd-devel
-Requires:       systemd grubby
-BuildArch:      noarch
-
 # Require updates to various packages where necessary to fix bugs.
 # Bug #910326
 Requires:       systemd >= systemd-44-23.fc17
+Requires:       grubby
+
+BuildRequires:  python2-devel
+BuildRequires:  systemd-devel
+BuildRequires:  asciidoc
+BuildArch:      noarch
+
 
 # TODO: uncomment this once we figure out why PackageKit requires preupgrade..
 #Obsoletes:      preupgrade
@@ -28,13 +30,15 @@ fedup is the Fedora Upgrade tool.
 %setup -q
 
 %build
-%{__python} setup.py build
+make PYTHON=%{__python}
 
 %install
 rm -rf $RPM_BUILD_ROOT
-%{__python} setup.py install --skip-build --root $RPM_BUILD_ROOT
-make install-systemd DESTDIR=$RPM_BUILD_ROOT
+make install PYTHON=%{__python} DESTDIR=$RPM_BUILD_ROOT MANDIR=%{_mandir}
+# backwards compatibility symlinks, wheee
 ln -sf fedup $RPM_BUILD_ROOT/%{_bindir}/fedup-cli
+ln -sf fedup.8 $RPM_BUILD_ROOT/%{_mandir}/man8/fedup-cli.8
+# empty updates dir
 mkdir -p $RPM_BUILD_ROOT/etc/fedup/update.img.d
 
 
@@ -52,6 +56,8 @@ mkdir -p $RPM_BUILD_ROOT/etc/fedup/update.img.d
 # binaries
 %{_bindir}/fedup
 %{_bindir}/fedup-cli
+# man pages
+%{_mandir}/man*/*
 # empty config dir
 %dir /etc/fedup
 # empty updates dir
