@@ -3,8 +3,9 @@ TODO
 
 _(ordered by priority, roughly)_
 
-Fix `/dev/mdX` problems::
-  * If /etc/mdadm.conf exists, add it to upgrade.img (#859258 and others)
+Compatibility with newer systemd target names::
+  * local-fs.target is now root-fs.target and initrd-fs.target
+  ** see http://cgit.freedesktop.org/systemd/systemd/commit/?id=700e07f
 
 Upgrade lock::
   * If /etc/yum/vars/releasever exists, complain to user (#908017)
@@ -29,11 +30,6 @@ Migration::
   ** Not technically a dracut hook, since it'll be run by fedup
   ** Migrate `KEYTABLE=...` to `KEYMAP=...`
   *** See https://bugzilla.redhat.com/show_bug.cgi?id=859258 and others
-
-Updates::
-  * Figure out updates.img format
-  * Look for updates.img
-  * Apply it before switch-root
 
 Docs::
   * man pages for services
