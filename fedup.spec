@@ -38,7 +38,7 @@ make install PYTHON=%{__python} DESTDIR=$RPM_BUILD_ROOT MANDIR=%{_mandir}
 # backwards compatibility symlinks, wheee
 ln -sf fedup $RPM_BUILD_ROOT/%{_bindir}/fedup-cli
 ln -sf fedup.8 $RPM_BUILD_ROOT/%{_mandir}/man8/fedup-cli.8
-# empty updates dir
+# updates dir
 mkdir -p $RPM_BUILD_ROOT/etc/fedup/update.img.d
 
 
@@ -69,7 +69,7 @@ mkdir -p $RPM_BUILD_ROOT/etc/fedup/update.img.d
 #{_datadir}/fedup/ui
 
 %changelog
-* Mon Jan 28 2013 Will Woods <wwoods@redhat.com> 0.7.3-0
+* Fri Mar 15 2013 Will Woods <wwoods@redhat.com> 0.7.3-0
 - Write debuglog by default (/var/log/fedup.log)
 - Add support for applying updates to upgrade.img
 - Use proxy settings from yum.conf (#892994)
