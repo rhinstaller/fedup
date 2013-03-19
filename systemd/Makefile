@@ -2,7 +2,7 @@ SERVICES=upgrade-prep.service upgrade-switch-root.service
 TARGETS=system-upgrade.target upgrade-switch-root.target
 SCRIPTS=upgrade-prep.sh
 UNITDIR=$(DESTDIR)$(shell pkg-config systemd --variable systemdsystemunitdir)
-UTILDIR=$(DESTDIR)$(shell pkg-config systemd --variable systemdutildir)
+UTILDIR=$(DESTDIR)/usr/libexec
 ifeq ($(strip $(UTILDIR)),$(DESTDIR))
   # Older systemd doesn't have this in its pkg-config, so..
   UTILDIR=$(UNITDIR)/..

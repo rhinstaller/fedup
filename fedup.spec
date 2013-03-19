@@ -50,7 +50,8 @@ mkdir -p $RPM_BUILD_ROOT/etc/fedup/update.img.d
 %{_unitdir}/upgrade-prep.service
 %{_unitdir}/upgrade-switch-root.service
 %{_unitdir}/upgrade-switch-root.target
-%{_unitdir}/../upgrade-prep.sh
+# upgrade prep program
+%{_libexecdir}/upgrade-prep.sh
 # python library
 %{python_sitelib}/fedup*
 # binaries
