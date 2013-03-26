@@ -123,6 +123,9 @@ def main(args):
         message("skipping package download")
     else:
         print _("setting up update...")
+        if len(f.pkgSack) == 0:
+            print("no updates available in configured repos!")
+            raise SystemExit(1)
         pkgs = download_packages(f)
         # Run a test transaction
         transaction_test(pkgs)
