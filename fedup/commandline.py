@@ -161,9 +161,9 @@ def VERSION(arg):
         return 'rawhide'
 
     distro, version, id = platform.linux_distribution()
-    version = int(version)
+    version = float(version)
 
-    if int(arg) >= version:
+    if float(arg) >= version:
         return arg
     else:
         msg = _("version must be greater than %i") % version
