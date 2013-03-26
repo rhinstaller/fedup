@@ -20,8 +20,8 @@
 # Author: Will Woods <wwoods@redhat.com>
 
 import os, sys, time
-from subprocess import call
 
+from fedup.util import call
 from fedup.download import FedupDownloader, YumBaseError
 from fedup.sysprep import prep_upgrade, prep_boot, setup_media_mount
 from fedup.upgrade import FedupUpgrade, TransactionError

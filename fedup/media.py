@@ -20,7 +20,7 @@
 import os, stat
 from collections import namedtuple
 from os.path import exists, join
-from subprocess import check_output, call, STDOUT, CalledProcessError
+from .util import check_output, call, STDOUT, CalledProcessError
 from tempfile import mkdtemp
 
 def check_call(cmd, stderr=STDOUT, *args, **kwargs):

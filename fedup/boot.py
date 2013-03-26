@@ -17,7 +17,7 @@
 #
 # Author: Will Woods <wwoods@redhat.com>
 
-from subprocess import check_output, PIPE, Popen, CalledProcessError
+from .util import check_output, PIPE, Popen, CalledProcessError
 from shutil import copyfileobj
 
 kernelprefix = "/boot/vmlinuz-"
@@ -37,11 +37,11 @@ def add_entry(kernel, initrd, banner=None, kargs=[], makedefault=True):
     if makedefault:
         cmd += ["--make-default"]
     cmd += ["--install", kernelver(kernel)]
-    return check_output(cmd, stderr=PIPE)
+    return check_output(cmd)
 
 def remove_entry(kernel):
     cmd = ["new-kernel-pkg", "--remove", kernelver(kernel)]
-    return check_output(cmd, stderr=PIPE)
+    return check_output(cmd)
 
 def initramfs_append_files(initramfs, files):
     '''Append the given files to the named initramfs.
