@@ -9,11 +9,11 @@ MANPAGES=$(MAN8PAGES)
 all: $(MANPAGES)
 
 $(MANPAGES): %: %.asciidoc
-	a2x --format=manpage $<
+	-a2x --format=manpage $<
 
 install: $(MANPAGES)
 	$(INSTALL) -d $(DESTDIR)$(man8dir)
-	$(INSTALL) $(MAN8PAGES) $(DESTDIR)$(man8dir)
+	-$(INSTALL) $(MAN8PAGES) $(DESTDIR)$(man8dir)
 
 clean:
 	rm -f $(MANPAGES) $(MANPAGES:%=%.xml)
