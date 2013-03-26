@@ -3,20 +3,25 @@ TARGETS=system-upgrade.target upgrade-switch-root.target
 SCRIPTS=upgrade-prep.sh
 UNITDIR=$(DESTDIR)$(shell pkg-config systemd --variable systemdsystemunitdir)
 UTILDIR=$(DESTDIR)/usr/libexec
-ifeq ($(strip $(UTILDIR)),$(DESTDIR))
-  # Older systemd doesn't have this in its pkg-config, so..
-  UTILDIR=$(UNITDIR)/..
-endif
 INSTALL=install -p
 
 all:
 
-install: $(SERVICES) $(TARGETS) $(SCRIPTS)
+ifeq ($(strip $(UNITDIR)),$(DESTDIR))
+install: install-scripts
+	@echo "no UNITDIR, skipping systemd units"
+else
+install: install-scripts install-units
+endif
+
+install-scripts: $(SCRIPTS)
 	$(INSTALL) -d $(UTILDIR)
 	$(INSTALL) -m 0755 $(SCRIPTS) $(UTILDIR)
+
+install-units: $(SERVICES) $(TARGETS)
 	$(INSTALL) -d $(UNITDIR)
 	$(INSTALL) -m 0644 $(SERVICES) $(TARGETS) $(UNITDIR)
 
 clean:
 
-.PHONY: all install clean
+.PHONY: all install install-scripts install-units clean
