@@ -25,25 +25,17 @@ sys.path.insert(0, '/usr/share/yum-cli')
 from output import YumTextMeter, CacheProgressCallback
 
 from fedup.callback import *
+import fedup.terminal as term
 
 from fedup import _
 
 import logging
 log = logging.getLogger("fedup.cli")
 
-import fcntl, struct, termios
-def termwidth(fd=1):
-    try:
-        buf = 'DEADBEEF' # 8 bytes
-        buf = fcntl.ioctl(fd, termios.TIOCGWINSZ, buf)
-        width = struct.unpack('hhhh', buf)[1]
-    except IOError:
-        width = 0
-    return width
 
 class SimpleProgress(object):
-    def __init__(self, maxval, prefix="", barstyle='[=]', width=termwidth,
-                 update_interval=0.3, width_interval=1.0, tty=sys.stdout):
+    def __init__(self, maxval, prefix="", barstyle='[=]', update_interval=0.3,
+                 tty=sys.stdout):
         self.maxval = maxval
         self.curval = 0
         self.formatstr = "{0.prefix} {0.percent:2}% {0.bar}"
@@ -53,22 +45,10 @@ class SimpleProgress(object):
         self.tty = tty
         self.update_interval = update_interval
         self.screenupdate = 0
-        # check terminal width every so often and adjust output
-        # TODO: dumb. use SIGWINCH instead.
-        self.width_interval = width_interval
-        self.widthupdate = 0
-        if callable(width):
-            self.getwidth = width
-        else:
-            self.getwidth = lambda: width
 
     @property
     def width(self):
-        now = time.time()
-        if now - self.widthupdate > self.width_interval:
-            self.widthupdate = now
-            self._width = self.getwidth() or 80 # assume 80 cols on stupid term
-        return self._width
+        return term.size.cols or 80 # fallback for stupid terminals
 
     @property
     def percent(self):
