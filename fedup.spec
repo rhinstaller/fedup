@@ -17,10 +17,8 @@ BuildRequires:  systemd-devel
 BuildRequires:  asciidoc
 BuildArch:      noarch
 
-
-# TODO: uncomment this once we figure out why PackageKit requires preupgrade..
-#Obsoletes:      preupgrade
-#Provides:       preupgrade
+# GET THEE BEHIND ME, SATAN
+Obsoletes:      preupgrade
 
 %description
 fedup is the Fedora Upgrade tool.
