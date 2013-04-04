@@ -10,6 +10,10 @@ Compatibility with newer systemd target names::
 Upgrade lock::
   * If /etc/yum/vars/releasever exists, complain to user (#908017)
 
+Safety checks::
+  * Count/report packages without updates/obsoletes
+  * Report packages with missing deps
+
 Disk space handling::
   * Pad RPM diskspace check to require more disk
   * Add `--packagedir` and `--cachedir` flags
