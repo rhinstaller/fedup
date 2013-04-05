@@ -1,6 +1,6 @@
 SERVICES=upgrade-prep.service upgrade-switch-root.service
 TARGETS=system-upgrade.target upgrade-switch-root.target
-SCRIPTS=upgrade-prep.sh
+SCRIPTS=upgrade-prep.sh upgrade-init
 UNITDIR=$(DESTDIR)$(shell pkg-config systemd --variable systemdsystemunitdir)
 UTILDIR=$(DESTDIR)/usr/libexec
 INSTALL=install -p

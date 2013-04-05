@@ -1,0 +1,111 @@
+#!/bin/bash
+# Mini 'init' to run system upgrade for SysV-style systems.
+
+export PATH="/sbin:/usr/sbin:/bin:/usr/bin:$PATH"
+. /run/initramfs/upgrade.conf
+
+# method borrowed from dracut/modules.d/99base/init.sh
+udev_shutdown() {
+    local udevpids="" udevbin="udevd systemd-udevd"
+    if [ "$(udevadm --version)" -lt 168 ]; then
+        udevadm control --stop-exec-queue
+        kill $(pidof $udevbin) &>/dev/null
+        sleep 0.1
+        while udevpids=$(pidof $udevbin); do
+            kill -9 $udevpids
+        done
+    else
+        udevadm control --exit
+        udevadm info --cleanup-db
+    fi
+    # return success if udev is no longer running
+    [ -z "$(pidof $udevbin)" ]
+}
+
+# list killable pids - everything but init and daemons that need to survive.
+killpids() {
+    local pid cmd
+    set --
+    for pid in /proc/[0-9]*; do
+        pid=${pid##/proc/}
+        [ $pid == 1 ] && continue  # don't kill init
+        [ $pid == $$ ] && continue # suicide is not the answer
+        [ -e /proc/$pid/exe -a -e /proc/$pid/root ] || continue # kernel procs
+        # skip anything that starts with '@', as per systemd convention:
+        # http://www.freedesktop.org/wiki/Software/systemd/RootStorageDaemons
+        [ -e /proc/$pid/cmdline ] || continue
+        cmd=$(< /proc/$pid/cmdline)
+        [ "${cmd#@}" != "$cmd" ] && continue
+        # add it to the list
+        set -- $@ $pid
+    done
+    echo "$@"
+    [ $# -gt 0 ]
+}
+
+# Reboot like doing 'telinit 6'
+do_reboot() {
+    bash -i -l
+    echo "Rebooting..."
+    /etc/rc.d/rc 6
+    reboot --force
+}
+
+# return the number of items given
+count() { echo $#; }
+
+# OKAY HERE WE GO, SYSTEM STARTUP TIME!
+
+# Ignore SIGTERM, SIGHUP, SIGSTOP, etc.
+trap '' TERM HUP STOP
+
+# Turn on debugging, if desired
+grep 'upgrade\.debug' /proc/cmdline && set -x
+
+# 1) system init
+/etc/rc.d/rc.sysinit
+# NOTE: it's possible some systems need to run some weirdo services to get
+# the rest of their disks mounted, so we might need to do e.g.:
+#/etc/rc.d/rc 1
+# Otherwise the system should be fully mounted and ready to upgrade now.
+
+# 2) prep for upgrade
+echo "Preparing for system upgrade:"
+/usr/libexec/upgrade-prep.sh
+[ $? != 0 ] && echo "Failed to set up upgrade." && do_reboot
+
+# 3) shut down processes
+echo "shutting down udevd..."
+udev_shutdown
+
+echo "shutting down other processes..."
+kill $(killpids)
+sleep 0.1
+while pids=$(killpids); do
+    kill -9 $pids
+    sleep 0.1
+    if [ $(count $lastpids) == $(count $pids) ]; then
+        echo "some processes refused to die: $pids"
+        break
+    fi
+    lastpids="$pids"
+done
+
+# 4) unmount old mounts
+echo FIXME OKAY HERE ARE THE MOUNTS
+mount
+
+# 5) pivot_root and go
+echo "starting upgrade..."
+echo
+
+cd "$UPGRADEROOT"
+mkdir -p mnt
+pivot_root . mnt
+echo POST-PIVOT MOUNTS
+mount
+exec 0<>/dev/console 1<>/dev/console 2<>/dev/console
+exec chroot . /usr/lib/systemd/systemd --unit=upgrade.target
+
+echo "Failed to start upgrade. Oh dear."
+do_reboot
