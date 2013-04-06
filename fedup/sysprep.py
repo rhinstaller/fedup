@@ -125,10 +125,21 @@ def prep_upgrade(pkgs):
     # make dir for upgraderoot
     setup_upgraderoot()
 
+def init_is_systemd():
+    try:
+        return "systemd" in os.readlink("/sbin/init")
+    except OSError:
+        return False
+
 def modify_bootloader(kernel, initrd):
     log.info("adding new boot entry")
 
-    args = ["upgrade", "systemd.unit=system-upgrade.target"]
+    args = ["upgrade"]
+    if init_is_systemd():
+        args.append("systemd.unit=system-upgrade.target")
+    else:
+        args.append("init=/usr/libexec/upgrade-init") # XXX hardcoded path :/
+
     if not is_selinux_enabled():
         args.append("selinux=0")
     else:
