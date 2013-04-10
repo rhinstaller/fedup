@@ -32,8 +32,11 @@ GUI::
 Migration::
   * Add a _fedup-before-upgrade_ scriptlet hook
   ** Not technically a dracut hook, since it'll be run by fedup
-  ** Migrate `KEYTABLE=...` to `KEYMAP=...`
-  *** See https://bugzilla.redhat.com/show_bug.cgi?id=859258 and others
+  ** Example uses:
+  *** https://bugzilla.redhat.com/show_bug.cgi?id=881624[Bug #881624]:
+      Migrate `KEYTABLE=...` to `KEYMAP=...`
+  *** https://bugzilla.redhat.com/show_bug.cgi?id=881670[Bug #881670]:
+      Add x-systemd.device-timeout=0 for mounts that need it
 
 Docs::
   * man pages for services
