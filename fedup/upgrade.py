@@ -105,9 +105,8 @@ class DiskspaceProblemSummary(ProblemSummary):
         return needs
 
     def format_details(self):
-        return [_("need %s free on %s (%s free)") %
-                      (hrsize(size), mnt, hrsize(df(mnt)))
-                  for (mnt,size) in self.details.iteritems()]
+        return [_("%s needs %s more free space") % (mnt, hrsize(size))
+                 for (mnt,size) in self.details.iteritems()]
 
 probsummary = { rpm.RPMPROB_DISKSPACE: DiskspaceProblemSummary,
               }
