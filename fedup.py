@@ -37,9 +37,12 @@ def message(m):
 
 from fedup import _, kernelpath, initrdpath
 
-def setup_downloader(version, instrepo=None, cacheonly=False, repos=[]):
+def setup_downloader(version, instrepo=None, cacheonly=False, repos=[],
+                     enable_plugins=[], disable_plugins=[]):
     log.debug("setup_downloader(version=%s, repos=%s)", version, repos)
     f = FedupDownloader(version=version, cacheonly=cacheonly)
+    f.preconf.enabled_plugins += enable_plugins
+    f.preconf.disabled_plugins += disable_plugins
     f.instrepoid = instrepo
     repo_cb = output.RepoCallback()
     repo_prog = output.RepoProgress(fo=sys.stderr)
@@ -90,7 +93,9 @@ def main(args):
     f = setup_downloader(version=args.network,
                          cacheonly=args.cacheonly,
                          instrepo=args.instrepo,
-                         repos=args.repos)
+                         repos=args.repos,
+                         enable_plugins=args.enable_plugins,
+                         disable_plugins=args.disable_plugins)
 
     if args.expire_cache:
         print "expiring cache files"

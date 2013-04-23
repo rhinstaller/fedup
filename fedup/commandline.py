@@ -58,6 +58,16 @@ def parse_args(gui=False):
         help=argparse.SUPPRESS)
 
 
+    # === yum options ===
+    yumopts = p.add_argument_group(_('yum options'))
+    yumopts.add_argument('--enableplugin', metavar='PLUGIN',
+        action='append', dest='enable_plugins', default=[],
+        help=_('enable yum plugins by name'))
+    yumopts.add_argument('--disableplugin', metavar='PLUGIN',
+        action='append', dest='disable_plugins', default=[],
+        help=_('disable yum plugins by name'))
+
+
     # === <SOURCE> options ===
     req = p.add_argument_group(_('options for <SOURCE>'),
                                _('Location to search for upgrade data.'))

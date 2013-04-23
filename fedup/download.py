@@ -83,6 +83,11 @@ class FedupDownloader(yum.YumBase):
             log.debug("conf.cache=%i", conf.cache)
         return conf
 
+    def doPluginSetup(self, *args, **kwargs):
+        yum.YumBase.doPluginSetup(self, *args, **kwargs)
+        # Now that plugins have been set up, let's save some info about them
+        log.info("enabled plugins: %s", self.plugins._plugins.keys())
+
     def add_repo(self, repoid, baseurls=[], mirrorlist=None, **kwargs):
         '''like add_enable_repo, but doesn't do initial repo setup and doesn't
         make unnecessary changes'''
