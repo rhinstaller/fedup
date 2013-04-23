@@ -47,6 +47,18 @@ def mirrorlist(repo, arch='$basearch'):
 def raise_exception(failobj):
     raise failobj.exception
 
+pluginpath = []
+def yum_plugin_for_exc():
+    import sys, traceback
+    tb_files = [i[0] for i in traceback.extract_tb(sys.exc_info()[2])]
+    log.debug("checking traceback files: %s", tb_files)
+    log.debug("plugin path is %s", pluginpath)
+    for f in tb_files:
+        for p in pluginpath:
+            if f.startswith(p):
+                return f
+    return None
+
 class FedupDownloader(yum.YumBase):
     '''Yum-based downloader class for fedup. Based roughly on AnacondaYum.'''
     def __init__(self, version=None, cachedir=cachedir, cacheonly=False):
@@ -86,6 +98,8 @@ class FedupDownloader(yum.YumBase):
     def doPluginSetup(self, *args, **kwargs):
         yum.YumBase.doPluginSetup(self, *args, **kwargs)
         # Now that plugins have been set up, let's save some info about them
+        global pluginpath
+        pluginpath = self.plugins.searchpath
         log.info("enabled plugins: %s", self.plugins._plugins.keys())
 
     def add_repo(self, repoid, baseurls=[], mirrorlist=None, **kwargs):

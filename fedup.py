@@ -22,7 +22,7 @@
 import os, sys, time
 from subprocess import call
 
-from fedup.download import FedupDownloader, YumBaseError
+from fedup.download import FedupDownloader, YumBaseError, yum_plugin_for_exc
 from fedup.sysprep import prep_upgrade, prep_boot, setup_media_mount
 from fedup.upgrade import FedupUpgrade, TransactionError
 
@@ -215,6 +215,13 @@ if __name__ == '__main__':
         log.error(_("Upgrade test failed."))
         raise SystemExit(3)
     except Exception as e:
+        pluginfile = yum_plugin_for_exc()
+        if pluginfile:
+            plugin, ext = os.path.splitext(os.path.basename(pluginfile))
+            log.error(_("The '%s' yum plugin has crashed.") % plugin)
+            log.error(_("Please report this problem to the plugin developers:"),
+                      exc_info=True)
+            raise SystemExit(1)
         log.info("Exception:", exc_info=True)
         raise
     finally:
