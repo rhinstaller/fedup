@@ -30,9 +30,10 @@ def parse_args(gui=False):
     p = argparse.ArgumentParser(
         description=_('Prepare system for upgrade.'),
         # Translators: This is the CLI's "usage:" string
-        usage=_('%(prog)s SOURCE [options]'),
+        usage=_('%(prog)s <SOURCE> [options]'),
     )
 
+    # === basic options ===
     p.add_argument('-v', '--verbose', action='store_const', dest='loglevel',
         const=logging.INFO, help=_('print more info'))
     p.add_argument('-d', '--debug', action='store_const', dest='loglevel',
@@ -42,7 +43,11 @@ def parse_args(gui=False):
     p.add_argument('--debuglog', default='/var/log/fedup.log',
         help=_('write lots of debugging output to the given file'))
 
-    # FOR DEBUGGING ONLY
+    p.add_argument('--reboot', action='store_true', default=False,
+        help=_('automatically reboot to start the upgrade when ready'))
+
+
+    # === hidden options. FOR DEBUGGING ONLY. ===
     p.add_argument('--skippkgs', action='store_true', default=False,
         help=argparse.SUPPRESS)
     p.add_argument('--skipkernel', action='store_true', default=False,
@@ -52,10 +57,9 @@ def parse_args(gui=False):
     p.add_argument('-C', '--cacheonly', action='store_true', default=False,
         help=argparse.SUPPRESS)
 
-    p.add_argument('--reboot', action='store_true', default=False,
-        help=_('automatically reboot to start the upgrade when ready'))
 
-    req = p.add_argument_group('SOURCE',
+    # === <SOURCE> options ===
+    req = p.add_argument_group(_('options for <SOURCE>'),
                                _('Location to search for upgrade data.'))
     req.add_argument('--device', metavar='DEV', nargs='?',
         type=device_or_mnt, const='auto',
@@ -66,6 +70,8 @@ def parse_args(gui=False):
     req.add_argument('--network', metavar=_('VERSION'), type=VERSION,
         help=_('online repos matching VERSION (a number or "rawhide")'))
 
+
+    # === options for --network ===
     net = p.add_argument_group(_('additional options for --network'))
     net.add_argument('--enablerepo', metavar='REPOID', action=RepoAction,
         dest='repos', help=_('enable one or more repos (wildcards allowed)'))
