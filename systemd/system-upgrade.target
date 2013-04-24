@@ -1,12 +1,11 @@
-# This is the system-update.target from systemd v183, with the addition of
-# udev services (which are required but aren't in sysinit.target in v44)
+# This is the system-update.target from systemd v183, plus upgrade-prep.service
 [Unit]
 Description=System Upgrade
 Documentation=http://freedesktop.org/wiki/Software/systemd/SystemUpdates
 Documentation=man:systemd.special(7)
-Requires=sysinit.target udev.service udev-trigger.service
+Requires=sysinit.target
 Conflicts=shutdown.target systemd-readahead-collect.service systemd-readahead-replay.service
-After=sysinit.target udev.service udev-trigger.service
+After=sysinit.target
 Before=shutdown.target
 Wants=upgrade-prep.service
 AllowIsolate=yes
