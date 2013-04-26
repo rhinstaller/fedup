@@ -1,0 +1,13 @@
+[Unit]
+Description=Plymouth switch root service
+DefaultDependencies=no
+ConditionPathExists=/run/initramfs/upgrade.conf
+Before=upgrade-switch-root.service
+
+[Service]
+Type=oneshot
+EnvironmentFile=/run/initramfs/upgrade.conf
+ExecStart=-/usr/bin/plymouth update-root-fs --new-root-dir=${UPGRADEROOT}
+StandardInput=null
+StandardOutput=null
+StandardError=null
