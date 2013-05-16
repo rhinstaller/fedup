@@ -6,6 +6,9 @@ Documentation=man:systemd.special(7)
 Requires=sysinit.target
 Conflicts=shutdown.target systemd-readahead-collect.service systemd-readahead-replay.service
 After=sysinit.target
+# F17 needs these to start properly
+Wants=udev.service udev-trigger.service
+After=udev.service udev-trigger.service
 Before=shutdown.target
 Wants=upgrade-prep.service
 AllowIsolate=yes
