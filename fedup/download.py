@@ -217,6 +217,11 @@ class FedupDownloader(yum.YumBase):
             ok = self.verifyPkg(local, p, False) # result will be cached by yum
         log.info("beginning package download...")
         updates = self._downloadPackages(callback)
+
+        # Handle _downloadPackages returning None instead of an empty list
+        if updates is None:
+            updates = []
+
         if set(updates) != set(pkgs):
             log.debug("differences between requested pkg set and downloaded:")
             for p in set(pkgs).difference(updates):
