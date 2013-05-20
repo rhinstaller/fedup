@@ -310,6 +310,9 @@ class FedupDownloader(yum.YumBase):
             # But urlgrabber.__version__ hasn't been changed since F12, so:
             if not hasattr(yum.urlgrabber.grabber, 'exception2msg'): # <=F17
                 raise KeyboardInterrupt(_("or possible error writing file"))
+            else:
+                # The exception actually was a KeyBoardInterrupt, re-raise it
+                raise
 
         # Save kernel/initrd info so we can clean it up later
         mkdir_p(os.path.dirname(upgradeconf))
