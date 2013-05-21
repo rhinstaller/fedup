@@ -1,9 +1,9 @@
 [Unit]
 Description=Switch Root
+ConditionPathExists=/run/initramfs/upgrade.conf
 DefaultDependencies=no
 Requires=upgrade-switch-root.service
 Before=upgrade-switch-root.service
-Wants=upgrade-plymouth-switch-root.service
-After=cryptsetup.target
 AllowIsolate=yes
-ConditionPathExists=/run/initramfs/upgrade.conf
+Wants=sysinit.target upgrade-plymouth-switch-root.service
+After=sysinit.target upgrade-plymouth-switch-root.service
