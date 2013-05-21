@@ -1,0 +1,8 @@
+#!/bin/sh
+
+[ -d "$2" ] || exit 1
+umask 022
+
+if [ -f /system-upgrade/.start ]; then
+    ln -sf /usr/lib/systemd/system/system-upgrade.target "$2/default.target"
+fi

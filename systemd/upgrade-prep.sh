@@ -26,6 +26,9 @@ die() { echo "$@"; exit 1; }
 
 grep -qw 'upgrade.test' /proc/cmdline && UPGRADETEST=1 || UPGRADETEST=''
 
+# turn off upgrade mode
+rm -f /system-upgrade/.start
+
 # remove our boot entry
 [ $UPGRADETEST ] || new-kernel-pkg --remove fedup
 

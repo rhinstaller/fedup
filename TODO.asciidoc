@@ -44,12 +44,8 @@ Docs::
   * document boot args
 
 Upstreaming::
-  * Get system-upgrade.target upstream
-  ** Pass `switch-root` flags to new `systemd`
-  ** Generator to switch to system-upgrade.target
-  *** read `/run/initramfs/upgrade.conf`
-  *** check UPGRADEROOT and UPGRADELINK
-  *** switch target for this boot
+  * systemd: get system-upgrade.target, system-upgrade-generator upstream
+  ** Parallel with http://freedesktop.org/wiki/Software/systemd/SystemUpdates/
 
 SELinux::
   * Find a way to run upgrade with SELinux enforcing
