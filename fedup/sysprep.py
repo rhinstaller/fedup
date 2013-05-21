@@ -128,14 +128,8 @@ def prep_upgrade(pkgs):
 def modify_bootloader(kernel, initrd):
     log.info("adding new boot entry")
 
-    args = ["upgrade", "systemd.unit=system-upgrade.target"]
     if not is_selinux_enabled():
         args.append("selinux=0")
-    else:
-        # BLERG. SELinux enforcing will cause problems if the new policy
-        # disallows something that the previous system did differently.
-        # See https://bugzilla.redhat.com/bugzilla/show_bug.cgi?id=896010
-        args.append("enforcing=0")
 
     boot.add_entry(kernel, initrd, banner=_("System Upgrade"), kargs=args)
 
