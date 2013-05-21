@@ -36,9 +36,10 @@ rm -f /system-upgrade/.start
 mkdir -p $UPGRADEROOT/mnt
 
 # unmount any temporary mounts set up by the initramfs
-cat /proc/mounts | while read dev mnt rest; do
+while read dev mnt fstype rest; do
+    [ $fstype == autofs ] && continue # skip autofs to avoid causing mounts
     [ -f $mnt/.please-unmount ] && umount -l $mnt
-done
+done < /proc/mounts
 
 # XXX backwards compatibility for F17->F18, drop for F18->F19
 # if /lib/modules/$(uname -r) is a mount, umount it
