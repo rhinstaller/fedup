@@ -74,9 +74,13 @@ def link_pkgs(pkgs):
                     raise
 
     # remove spurious / leftover RPMs
+    count = 0
     for f in os.listdir(packagedir):
         if f.endswith(".rpm") and f not in pkgbasenames:
             os.remove(os.path.join(packagedir, f))
+            count += 1
+    if count:
+        log.info("cleaned %u old RPMs", count)
 
     # write packagelist
     with open(packagelist, 'w') as outf:
