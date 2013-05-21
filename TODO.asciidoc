@@ -3,9 +3,8 @@ TODO
 
 _(ordered by priority, roughly)_
 
-Compatibility with newer systemd target names::
-  * local-fs.target is now root-fs.target and initrd-fs.target
-  ** see http://cgit.freedesktop.org/systemd/systemd/commit/?id=700e07f
+Logging::
+  * Log the disk layout (lvs, pvs, blkid, fstab, mounts) in debug log
 
 Upgrade lock::
   * If /etc/yum/vars/releasever exists, complain to user (#908017)
@@ -22,8 +21,10 @@ ISO/Device/"Offline" upgrades::
   * Handle ISO-on-USB-stick case
   * Handle mount chains deeper than ISO-on-USB
 
+Updates::
+  * Scheme for associating updates images with upgrade.img vintages
+
 GUI::
-  * Move commandline parsing to fedup library, use it
   * Wire up the UI bits
   * Wire up progress callbacks
   ** yum in a subprocess
