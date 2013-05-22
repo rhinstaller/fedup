@@ -111,7 +111,7 @@ def parse_args(gui=False):
 
     args = p.parse_args()
 
-    if not (args.network or args.device or args.iso or args.clean):
+    if not (gui or args.network or args.device or args.iso or args.clean):
         p.error(_('SOURCE is required (--network, --device, --iso)'))
 
     # allow --instrepo URL as shorthand for --repourl REPO=URL --instrepo REPO
