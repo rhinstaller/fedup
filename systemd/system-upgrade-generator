@@ -1,8 +1,8 @@
 #!/bin/sh
 
-[ -d "$2" ] || exit 1
-umask 022
+target=/usr/lib/systemd/system/system-upgrade.target
 
-if [ -f /system-upgrade/.start ]; then
-    ln -sf /usr/lib/systemd/system/system-upgrade.target "$2/default.target"
+if [ -f /run/initramfs/start-system-upgrade -a \
+     -d /system-upgrade -a -L /system-upgrade -a -f "$target" ]; then
+    ln -sf "$target" "${2:-$1}/default.target"
 fi
