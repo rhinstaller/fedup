@@ -64,10 +64,15 @@ grep 'upgrade\.debug' /proc/cmdline && set -x
 
 # 1) system init
 /etc/rc.d/rc.sysinit
-# NOTE: it's possible some systems need to run some weirdo services to get
-# the rest of their disks mounted, so we might need to do e.g.:
+# NOTE: I'm assuming that this is sufficient to set up all the (relevant)
+# local disks. It's possible that I'm wrong and some systems will need to run
+# some weirdo runlevel 1 services to get the rest of their disks mounted.
+#
+# If testing reveals that to be the case, we should add a check here to see
+# if everything we care about in /etc/fstab is mounted, and if not, do e.g.:
 #/etc/rc.d/rc 1
-# Otherwise the system should be fully mounted and ready to upgrade now.
+#
+# Otherwise, the system should be fully mounted and ready to upgrade now.
 
 # 2) prep for upgrade
 echo "Preparing for system upgrade:"
@@ -91,9 +96,9 @@ while pids=$(killpids); do
     lastpids="$pids"
 done
 
-# 4) unmount old mounts
-echo FIXME OKAY HERE ARE THE MOUNTS
-mount
+# 4) unmount old/unneeded mounts
+# TODO/FIXME: unmount stuff we don't need
+mkdir -p /run/upgrade; mount &> /run/upgrade/mounts-pre-pivot # XXX debugging
 
 # 5) pivot_root and go
 echo "starting upgrade..."
@@ -102,8 +107,7 @@ echo
 cd "$UPGRADEROOT"
 mkdir -p mnt
 pivot_root . mnt
-echo POST-PIVOT MOUNTS
-mount
+mount &> /run/upgrade/mounts-post-pivot # XXX debugging
 exec 0<>/dev/console 1<>/dev/console 2<>/dev/console
 exec chroot . /usr/lib/systemd/systemd --unit=upgrade.target
 
