@@ -131,6 +131,7 @@ def prep_upgrade(pkgs):
 
 def modify_bootloader(kernel, initrd):
     log.info("adding new boot entry")
+    args = []
 
     if not is_selinux_enabled():
         args.append("selinux=0")
