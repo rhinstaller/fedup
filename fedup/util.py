@@ -20,6 +20,9 @@
 import os, struct
 from shutil import rmtree
 
+import logging
+log = logging.getLogger("fedup.util")
+
 try:
     from ctypes import cdll, c_bool
     selinux = cdll.LoadLibrary("libselinux.so.1")
