@@ -1,0 +1,7 @@
+[Unit]
+Description=Start System Upgrade
+Before=default.target
+ConditionPathExists=/run/initramfs/upgrade.conf
+
+[Service]
+ExecStart=/usr/bin/systemctl --no-block isolate system-upgrade.target

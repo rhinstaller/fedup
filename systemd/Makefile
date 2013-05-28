@@ -1,4 +1,4 @@
-SERVICES=upgrade-prep.service upgrade-switch-root.service upgrade-plymouth-switch-root.service
+SERVICES=upgrade-prep.service upgrade-switch-root.service upgrade-plymouth-switch-root.service start-system-upgrade.service
 TARGETS=system-upgrade.target upgrade-switch-root.target
 SCRIPTS=upgrade-prep.sh
 UNITDIR=$(DESTDIR)$(shell pkg-config systemd --variable systemdsystemunitdir)

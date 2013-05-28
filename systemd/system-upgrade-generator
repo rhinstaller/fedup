@@ -1,8 +1,14 @@
 #!/bin/sh
 
 target=/usr/lib/systemd/system/system-upgrade.target
+service=/usr/lib/systemd/system/start-system-upgrade.service
 
-if [ -f /run/initramfs/start-system-upgrade -a \
-     -d /system-upgrade -a -L /system-upgrade -a -f "$target" ]; then
-    ln -sf "$target" "${2:-$1}/default.target"
+if [ -f /run/initramfs/upgrade.conf -a \
+     -d /system-upgrade -a -L /system-upgrade ] ; then
+    if [ -d "$2" ]; then   # systemd >= v183 can override default.target
+        ln -sf "$target" "$2/default.target"
+    elif [ -d "$1" ]; then # use a service to isolate system-upgrade.target
+        mkdir "$1/default.target.wants"
+        ln -sf "$service" "$1/default.target.wants"
+    fi
 fi
