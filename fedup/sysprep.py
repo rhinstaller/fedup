@@ -159,7 +159,9 @@ def prep_boot(kernel, initrd):
     # (the initramfs will copy/bind them into place when we reboot)
     kv = kernelver(kernel)
     if kv:
-        mkdir_p("/lib/modules/"+kernelver(kernel))
+        moddir = os.path.join("/lib/modules", kv)
+        log.info("creating module dir %s", moddir)
+        mkdir_p(moddir)
     else:
         log.warn("can't determine version of kernel image '%s'", kernel)
 
