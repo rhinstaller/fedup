@@ -60,10 +60,7 @@ tac /proc/mounts | while read dev mnt type opts x y; do
     fi
 done
 
-# XXX: we can drop this once there's a way to pass args to new init
-echo "switching upgraderoot default target to upgrade.target"
-# switch the upgrade chroot target to upgrade.target
-ln -sf upgrade.target $UPGRADEROOT/etc/systemd/system/default.target
-rm -f $UPGRADEROOT/usr/lib/systemd/system/default.target
+# save our unit files so systemd knows what's up after switch-root
+cp /usr/lib/systemd/system/*upgrade*.{target,service} /run/systemd/system
 
 echo "upgrade prep complete, switching root..."
