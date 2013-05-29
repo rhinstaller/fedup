@@ -1,7 +1,11 @@
 [Unit]
 Description=Start System Upgrade
-Before=default.target
+DefaultDependencies=false
 ConditionPathExists=/run/initramfs/upgrade.conf
+After=sockets.target
+Before=shutdown.target
+Conflicts=shutdown.target
 
 [Service]
+Type=oneshot
 ExecStart=/usr/bin/systemctl --no-block isolate system-upgrade.target
