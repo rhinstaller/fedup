@@ -106,6 +106,7 @@ def main(args):
         f.cleanMetadata()
         return
 
+    # TODO: error msg generation should be shared between CLI and GUI
     if args.skipkernel:
         message("skipping kernel/initrd download")
     elif f.instrepoid is None or f.instrepoid in f.disabled_repos:
@@ -117,8 +118,8 @@ def main(args):
             elif args.device:
                 print _("The media doesn't contain a valid install DVD image.")
         else:
-            print _("The installation repo isn't available.")
-            print "You need to specify one with --instrepo." # XXX temporary
+            print _("The installation repo isn't currently available.")
+            print _("Try again later, or specify a repo using --instrepo.")
         raise SystemExit(1)
     else:
         print _("getting boot images...")
