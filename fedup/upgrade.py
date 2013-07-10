@@ -197,18 +197,21 @@ class FedupUpgrade(object):
                 log.warn('error adding pkg: %s', e)
                 # TODO: error callback
         log.debug('ts.check()')
-        problems = self.ts.check()
+        problems = self.ts.check() or []
         if problems:
             log.info("problems with transaction check:")
             for p in problems:
                 log.info(p)
             if check_fatal:
                 raise TransactionError(problems=problems)
+
         log.debug('ts.order()')
         self.ts.order()
         log.debug('ts.clean()')
         self.ts.clean()
         log.debug('transaction is ready')
+        if problems:
+            return TransactionError(problems=problems)
 
     def openpipe(self):
         log.debug("creating log pipe")
