@@ -25,6 +25,7 @@ from fedup.treeinfo import Treeinfo, TreeinfoError
 from fedup.conf import Config
 from yum.Errors import YumBaseError
 from yum.parser import varReplace
+from yum.constants import TS_REMOVE_STATES
 
 enabled_plugins = ['blacklist', 'whiteout']
 disabled_plugins = ['rpm-warm-cache', 'remove-with-leaves', 'presto',
@@ -193,6 +194,7 @@ class FedupDownloader(yum.YumBase):
         self.dsCallback = callback
         self.update()
         (rv, msgs) = self.buildTransaction(unfinished_transactions_check=False)
+        # NOTE: self.po_with_problems is now a list of (po1, po2, errmsg) tuples
         log.info("buildTransaction returned %i", rv)
         for m in msgs:
             log.info("    %s", m)
@@ -200,6 +202,45 @@ class FedupDownloader(yum.YumBase):
         self.dsCallback = None
         return [t.po for t in self.tsInfo.getMembers()
                      if t.ts_state in ("i", "u")]
+
+    def find_packages_without_updates(self):
+        '''packages on the local system that aren't being updated/obsoleted'''
+        remove = self.tsInfo.getMembersWithState(output_states=TS_REMOVE_STATES)
+        return set(p for p in self.rpmdb if p not in remove)
+
+    def describe_transaction_problems(self):
+        problems = []
+
+        def find_replacement(po):
+            for tx in self.tsInfo.getMembers(po.pkgtup):
+                # XXX multiple replacers?
+                for otherpo, rel in tx.relatedto:
+                    if rel in ('obsoletedby', 'updatedby'):
+                        return po, otherpo
+                    if rel in ('obsoletes', 'updates'):
+                        return otherpo, po
+            if po in self.rpmdb:
+                return po, None
+            else:
+                return None, po
+
+        def format_replacement(po):
+            oldpkg, newpkg = find_replacement(po)
+            if oldpkg and newpkg:
+                return "%s (replaced by %s)" % (oldpkg, newpkg)
+            elif oldpkg:
+                return "%s (no replacement)" % oldpkg
+            elif newpkg:
+                return "%s (new package)" % newpkg
+
+        done = set()
+        for pkg1, pkg2, err in self.po_with_problems:
+            if (pkg1,pkg2) not in done:
+                problems.append("%s requires %s" % (format_replacement(pkg1),
+                                                    format_replacement(pkg2)))
+                done.add((pkg1,pkg2))
+
+        return problems
 
     def download_packages(self, pkgs, callback=None):
         # Verifying a full upgrade payload of ~2000 pkgs takes a good 90-120
