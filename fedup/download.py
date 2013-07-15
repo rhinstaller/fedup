@@ -19,6 +19,7 @@
 
 import os
 import yum
+import struct
 import logging
 from fedup.callback import BaseTsCallback
 from fedup.treeinfo import Treeinfo, TreeinfoError
@@ -269,7 +270,9 @@ class FedupDownloader(yum.YumBase):
                 log.debug("  -%s", p)
             for p in set(updates).difference(pkgs):
                 log.debug("  +%s", p)
-        # TODO check signatures of downloaded packages
+        # check signatures of downloaded packages
+        if updates:
+            self._checkSignatures(updates, callback)
 
     def clean_cache(self, keepfiles):
         log.info("checking for unneeded rpms in cache")
@@ -362,3 +365,81 @@ class FedupDownloader(yum.YumBase):
             conf.set("boot", "initrd", initrd)
 
         return kernel, initrd
+
+    def _checkSignatures(self, pkgs, callback):
+        keycheck = lambda info: self._GPGKeyCheck(info, callback)
+        for po in pkgs:
+            result, errmsg = self.sigCheckPkg(po)
+            if result == 0:
+                continue
+            elif result == 1:
+                self.getKeyForPackage(po, fullaskcb=keycheck)
+            else:
+                raise yum.Errors.YumGPGCheckError(errmsg)
+
+    def _getKeyImportMessage(self, info, keyurl, keytype='GPG'):
+        pass
+
+    def _GPGKeyCheck(self, info, callback=None):
+        '''special key importer: import trusted keys automatically'''
+        if info['keyurl'].startswith("file://"):
+            keyfile = info['keyurl'][7:]
+        else:
+            return False
+        po = info['po']
+        log.info("repo '%s' wants to import key %s", po.repoid, keyfile)
+        if self.check_keyfile(keyfile):
+            log.info("key was installed by signed, trusted package - importing")
+            return True
+        else:
+            log.info("no automatic trust for key %s")
+            return False
+
+    def check_keyfile(self, keyfile):
+        '''
+        If a keyfile was installed by a package that was signed with a trusted
+        key (and the key hasn't been modified or tampered with), we can assume
+        that the key is trustworthy.
+
+        This is kind of a roundabout way to establish trust between the two
+        keys. It'd be a lot more straightforward if we just signed the new
+        release key with the old release key - "If you trust this, you can
+        trust this too.."
+        '''
+        # did the key come from a package?
+        keypkgs = self.rpmdb.searchFiles(keyfile)
+        if keypkgs:
+            keypkg = sorted(keypkgs)[-1]
+            log.debug("%s is owned by %s", keyfile, keypkg.nevr)
+        if not keypkgs:
+            log.info("%s does not belong to any package", keyfile)
+            return False
+
+        # was that package signed?
+        hdr = keypkg.returnLocalHeader()
+        if hdr.sigpgp or hdr.siggpg:
+            sigdata = hdr.sigpgp or hdr.siggpg
+            siginfo = yum.pgpmsg.decode(sigdata)[0]
+            (keyid,) = struct.unpack('>Q', siginfo.key_id())
+            hexkeyid = yum.misc.keyIdToRPMVer(keyid)
+            log.debug("%s is signed with key %s", keypkg.nevr, hexkeyid)
+        else:
+            log.info("%s unsigned", keypkg.nevr)
+            return False
+
+        # do we trust the key that signed it?
+        if yum.misc.keyInstalled(self.ts, keyid, 0):
+            log.debug("key %s is trusted by rpmdb", hexkeyid)
+        else:
+            log.info("key %s is not trusted", hexkeyid)
+            return False
+
+        # has the key been tampered with?
+        problems = keypkg.verify([keyfile]).get(keyfile, [])
+        if problems:
+            log.info("%s does not match packaged file (%s)",
+                     keyfile, " ".join(p.type for p in problems))
+            return False
+
+        # everything checks out OK!
+        return True
