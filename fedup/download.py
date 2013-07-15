@@ -443,3 +443,38 @@ class FedupDownloader(yum.YumBase):
 
         # everything checks out OK!
         return True
+
+    def check_signed_file(signedfile, outfile, gpgdir=cachedir+'/gpgdir'):
+        '''
+        verify the signed file, writing plaintext to outfile.
+        returns True if the file was signed by one of the keys trusted by RPM.
+        '''
+        gpgme = yum.misc.gpgme
+
+        # set up gpgdir
+        if not os.path.isdir(gpgdir):
+            os.makedirs(gpgdir, 0o700)
+        else:
+            os.chmod(gpgdir, 0o700)
+        os.environ['GNUPGHOME'] = gpgdir
+
+        # import trusted keys from rpmdb
+        pubring_keys = yum.misc.return_keyids_from_pubring()
+        for hdr in self.ts.dbMatch('name', 'gpg-pubkey'):
+            if hdr.version not in pubring_keys:
+                yum.misc.import_key_to_pubring(hdr.description, hdr.version,
+                                            gpgdir=gpgdir, make_ro_copy=False)
+
+        # verify the signed file, writing plaintext to outfile
+        result = False
+        with open(signedfile) as inf, open(outfile, 'w') as outf:
+            try:
+                ctx = gpgme.Context()
+                sigresults = ctx.verify(inf, None, outf)
+            except gpgme.GpgmeError as e:
+                log.info('GPGME error: %s', e.message)
+            else:
+                result = all((sig.summary & gpgme.SIGSUM_VALID and
+                              sig.validity >= gpgme.VALIDITY_FULL)
+                              for sig in sigresults)
+        return result
