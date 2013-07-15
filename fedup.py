@@ -63,6 +63,12 @@ def download_packages(f):
         print _('Your system is already upgraded!')
         print _('Finished. Nothing to do.')
         raise SystemExit(0)
+    # print dependency problems before we start the upgrade
+    transprobs = f.describe_transaction_problems()
+    if transprobs:
+        print "WARNING: potential problems with upgrade"
+        for p in transprobs:
+            print "  " + p
     # clean out any unneeded packages from the cache
     f.clean_cache(keepfiles=(p.localPkg() for p in updates))
     # download packages
@@ -163,6 +169,16 @@ def main(args):
     else:
         print _('Finished. Reboot to start upgrade.')
 
+    # --- Here's where we summarize potential problems. ---
+
+    # list packages without updates, if any
+    missing = sorted(f.find_packages_without_updates(), key=lambda p:p.envra)
+    if missing:
+        message(_('Packages without updates:'))
+        for p in missing:
+            message("  %s" % p)
+
+    # warn if the "important" repos are disabled
     if f.disabled_repos:
         # NOTE: I hate having a hardcoded list of Important Repos here.
         # This information should be provided by the system, somehow..
