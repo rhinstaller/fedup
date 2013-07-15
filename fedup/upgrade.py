@@ -115,13 +115,17 @@ probsummary = { rpm.RPMPROB_DISKSPACE: DiskspaceProblemSummary,
 class FedupError(Exception):
     pass
 
+def summarize_problems(problems):
+    summaries = []
+    for t in set(p.type for p in problems):
+        summarize = probsummary.get(t, ProblemSummary) # get the summarizer
+        summaries.append(summarize(t, problems))       # summarize the problem
+    return summaries
+
 class TransactionError(FedupError):
     def __init__(self, problems):
         self.problems = problems
-        self.summaries = list()
-        for t in set(p.type for p in problems):
-            summarize = probsummary.get(t, ProblemSummary)
-            self.summaries.append(summarize(t, problems))
+        self.summaries = summarize_problems(problems)
 
 def pipelogger(pipe, level=logging.INFO):
     logger = logging.getLogger("fedup.rpm")
