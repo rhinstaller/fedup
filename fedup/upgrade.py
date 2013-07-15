@@ -54,13 +54,12 @@ class TransactionSet(TransactionSetCore):
         log.debug('add_install(%s, %s, upgrade=%s)', path, key, upgrade)
         if key is None:
             key = path
-        fileobj = open(path)
-        retval, header = self.hdrFromFdno(fileobj)
+        with open(path) as fileobj:
+            retval, header = self.hdrFromFdno(fileobj)
         if retval != rpm.RPMRC_OK:
             raise rpm.error("error reading package header")
         if not self.addInstall(header, key, upgrade):
             raise rpm.error("adding package to transaction failed")
-        fileobj.close()
 
     def __del__(self):
         self.closeDB()
@@ -72,12 +71,16 @@ probtypes = { rpm.RPMPROB_NEW_FILE_CONFLICT : _('file conflicts'),
               rpm.RPMPROB_DISKNODES: _('insufficient disk inodes'),
               rpm.RPMPROB_CONFLICT: _('package conflicts'),
               rpm.RPMPROB_PKG_INSTALLED: _('package already installed'),
-              rpm.RPMPROB_REQUIRES: _('required package'),
+              rpm.RPMPROB_REQUIRES: _('broken dependencies'),
               rpm.RPMPROB_BADARCH: _('package for incorrect arch'),
               rpm.RPMPROB_BADOS: _('package for incorrect os'),
             }
 
 # --- stuff for doing useful summaries of big sets of problems
+
+probattrs = ('type', 'pkgNEVR', 'altNEVR', 'key', '_str', '_num')
+def prob2dict(p):
+    return {f:getattr(p,f) for f in probattrs}
 
 class ProblemSummary(object):
     def __init__(self, probtype, problems):
@@ -89,9 +92,13 @@ class ProblemSummary(object):
     def get_details(self):
         return None
 
+    def _log_probs(self):
+        for p in self.problems:
+            log.debug('%s -> "%s"', prob2dict(p), p)
+
     def __str__(self):
         if self.details:
-            return "\n  ".join([self.desc] + self.format_details())
+            return "\n  ".join([self.desc+':'] + self.format_details())
         else:
             return self.desc
 
@@ -108,7 +115,27 @@ class DiskspaceProblemSummary(ProblemSummary):
         return [_("%s needs %s more free space") % (mnt, hrsize(size))
                  for (mnt,size) in self.details.iteritems()]
 
+class DepProblemSummary(ProblemSummary):
+    def get_details(self):
+        self._log_probs()
+        pkgprobs = dict()
+        # pkgprobs['installedpkg'] = {'otherpkg1': [req1, req2, ...], ...}
+        for p in self.problems:
+            # NOTE: p._num is a header reference if p.pkgNEVR is installed
+            thispkg, otherpkg, req = p.altNEVR, p.pkgNEVR, p._str
+            if thispkg not in pkgprobs:
+                pkgprobs[thispkg] = {}
+            if otherpkg not in pkgprobs[thispkg]:
+                pkgprobs[thispkg][otherpkg] = set()
+            pkgprobs[thispkg][otherpkg].add(req)
+        return pkgprobs
+
+    def format_details(self):
+        return [_("%s requires %s") % (pkg, ", ".join(pkgprob))
+                 for (pkg, pkgprob) in self.details.iteritems()]
+
 probsummary = { rpm.RPMPROB_DISKSPACE: DiskspaceProblemSummary,
+                rpm.RPMPROB_REQUIRES:  DepProblemSummary,
               }
 
 
