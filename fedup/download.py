@@ -453,17 +453,23 @@ class FedupDownloader(yum.YumBase):
 
         # set up gpgdir
         if not os.path.isdir(gpgdir):
+            log.debug("creating gpgdir %s", gpgdir)
             os.makedirs(gpgdir, 0o700)
         else:
             os.chmod(gpgdir, 0o700)
         os.environ['GNUPGHOME'] = gpgdir
 
         # import trusted keys from rpmdb
-        pubring_keys = yum.misc.return_keyids_from_pubring()
+        log.debug("checking rpmdb trusted keys")
+        pubring_keys = [yum.misc.keyIdToRPMVer(int(k, 16))
+                        for k in yum.misc.return_keyids_from_pubring(gpgdir)]
         for hdr in self.ts.dbMatch('name', 'gpg-pubkey'):
             if hdr.version not in pubring_keys:
+                log.debug("importing key %s", hdr.version)
                 yum.misc.import_key_to_pubring(hdr.description, hdr.version,
                                             gpgdir=gpgdir, make_ro_copy=False)
+            else:
+                log.debug("key %s is already in keyring", hdr.version)
 
         # verify the signed file, writing plaintext to outfile
         result = False
