@@ -446,8 +446,14 @@ class FedupDownloader(yum.YumBase):
 
     def check_signed_file(signedfile, outfile, gpgdir=cachedir+'/gpgdir'):
         '''
-        verify the signed file, writing plaintext to outfile.
-        returns True if the file was signed by one of the keys trusted by RPM.
+        uses the keys trusted by RPM to verify signedfile.
+        writes the resulting plaintext to outfile.
+        returns a list of unicode strings describing any errors in verification.
+        if the list is empty, the verification was successful.
+
+        It'd be great if RPM could do this for us, since it already has all the
+        keys imported and has its own signature verification code, but AFAICT
+        it doesn't (at least not in any way reachable from Python), so..
         '''
         gpgme = yum.misc.gpgme
 
@@ -472,15 +478,13 @@ class FedupDownloader(yum.YumBase):
                 log.debug("key %s is already in keyring", hdr.version)
 
         # verify the signed file, writing plaintext to outfile
-        result = False
         with open(signedfile) as inf, open(outfile, 'w') as outf:
-            try:
-                ctx = gpgme.Context()
-                sigresults = ctx.verify(inf, None, outf)
-            except gpgme.GpgmeError as e:
-                log.info('GPGME error: %s', e.message)
-            else:
-                result = all((sig.summary & gpgme.SIGSUM_VALID and
-                              sig.validity >= gpgme.VALIDITY_FULL)
-                              for sig in sigresults)
-        return result
+            ctx = gpgme.Context()
+            sigresults = ctx.verify(inf, None, outf)
+        # return a list of error messages. if it's empty, we're OK.
+        # NOTE: this is enough detail for current use cases, but it's very
+        # possible we'll want/need to just return sigresults and let the caller
+        # sort out the details..
+        return [sig.status.message for sig in sigresults if not (
+                     sig.summary & gpgme.SIGSUM_VALID and
+                     sig.validity >= gpgme.VALIDITY_FULL)]
