@@ -1,4 +1,4 @@
-# fedup.callback - callback functions for the Fedora Upgrader
+# callback.py - callback functions for progress reporting
 # vim: set fileencoding=UTF-8:
 #
 # Copyright (C) 2012 Red Hat Inc.
@@ -36,7 +36,7 @@ class BaseTsCallback(object):
 
     def __init__(self):
         self._openfds = dict()
-        self.log = logging.getLogger("fedup.rpm")
+        self.log = logging.getLogger(__package__+".rpm")
 
     def callback(self, what, amount, total, key, data):
         if what not in self.callback_map:
@@ -82,7 +82,7 @@ class RPMTsCallback(BaseTsCallback):
 class DownloadCallbackBase(ProcessTransBaseCallback):
     def __init__(self):
         ProcessTransBaseCallback.__init__(self)
-        self.log = logging.getLogger("fedup.download")
+        self.log = logging.getLogger(__package__+".download")
 
     # for Yum transaction callbacks (i.e. YumBase.processTransaction stuff)
     def event(self, state, data=None):
@@ -109,7 +109,7 @@ class DepsolveCallbackBase(object):
     def __init__(self, yumobj=None):
         if yumobj:
             self.yum_setup(yumobj)
-        self.log = logging.getLogger("fedup.depsolve")
+        self.log = logging.getLogger(__package__+".depsolve")
         self.mode_counter = dict((m, 0) for m in self.modedict)
         self.missingreqs = set()
     def yum_setup(self, yumobj):

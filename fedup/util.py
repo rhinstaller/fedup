@@ -1,4 +1,4 @@
-# fedup.util - various shared utility functions for fedup
+# util.py - various shared utility functions
 #
 # Copyright (C) 2012 Red Hat Inc.
 #
@@ -21,7 +21,7 @@ import os, struct
 from shutil import rmtree
 
 import logging
-log = logging.getLogger("fedup.util")
+log = logging.getLogger(__package__+".util")
 
 try:
     from ctypes import cdll, c_bool

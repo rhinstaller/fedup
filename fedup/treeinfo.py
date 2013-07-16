@@ -112,11 +112,11 @@ from os.path import join, normpath
 import logging
 from StringIO import StringIO
 
-# TODO: release this separate from fedup so it can be used by other stuff
+# TODO: release this separately so it can be used by other stuff
 #       (pungi, libvirt, etc.)
 #log = logging.getLogger('treeinfo')
 #log.addHandler(logging.NullHandler())
-log = logging.getLogger('fedup.treeinfo')
+log = logging.getLogger(__package__+".treeinfo")
 
 def hexdigest(filename, algo, blocksize=8192):
     hasher = hashlib.new(algo)

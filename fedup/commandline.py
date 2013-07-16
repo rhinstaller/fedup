@@ -1,4 +1,4 @@
-# fedup.commandline - commandline parsing functions
+# commandline.py - commandline parsing functions
 #
 # Copyright (C) 2012 Red Hat Inc.
 #
@@ -19,12 +19,12 @@
 
 import os, argparse, platform
 
-import fedup.media
-from fedup.sysprep import reset_boot, remove_boot, remove_cache, misc_cleanup
-from fedup import _
+from . import media
+from .sysprep import reset_boot, remove_boot, remove_cache, misc_cleanup
+from . import _
 
 import logging
-log = logging.getLogger("fedup")
+log = logging.getLogger(__package__)
 
 def parse_args(gui=False):
     p = argparse.ArgumentParser(
@@ -40,7 +40,7 @@ def parse_args(gui=False):
         const=logging.DEBUG, help=_('print lots of debugging info'))
     p.set_defaults(loglevel=logging.WARNING)
 
-    p.add_argument('--debuglog', default='/var/log/fedup.log',
+    p.add_argument('--debuglog', default='/var/log/%s.log' % __package__,
         help=_('write lots of debugging output to the given file'))
 
     p.add_argument('--reboot', action='store_true', default=False,
@@ -103,7 +103,7 @@ def parse_args(gui=False):
             dest='clean', const='bootloader', default=None,
             help=_('remove any modifications made to bootloader'))
         clean.add_argument('--clean', action='store_const', const='all',
-            help=_('clean up everything written by fedup'))
+            help=_('clean up everything written by %s') % __package__)
         p.add_argument('--expire-cache', action='store_true', default=False,
             help=argparse.SUPPRESS)
         p.add_argument('--clean-metadata', action='store_true', default=False,
@@ -142,9 +142,9 @@ class RepoAction(argparse.Action):
 # check the argument to '--device' to see if it refers to install media
 def device_or_mnt(arg):
     if arg == 'auto':
-        media = fedup.media.find()
+        media = media.find()
     else:
-        media = [m for m in fedup.media.find() if arg in (m.dev, m.mnt)]
+        media = [m for m in media.find() if arg in (m.dev, m.mnt)]
 
     if len(media) == 1:
         return media.pop()
@@ -164,9 +164,9 @@ def isofile(arg):
         raise argparse.ArgumentTypeError(_("File not found: %s") % arg)
     if not os.path.isfile(arg):
         raise argparse.ArgumentTypeError(_("Not a regular file: %s") % arg)
-    if not fedup.media.isiso(arg):
+    if not media.isiso(arg):
         raise argparse.ArgumentTypeError(_("Not an ISO 9660 image: %s") % arg)
-    if any(arg.startswith(d.mnt) for d in fedup.media.removable()):
+    if any(arg.startswith(d.mnt) for d in media.removable()):
         raise argparse.ArgumentTypeError(_("ISO image on removable media\n"
             "Sorry, but this isn't supported yet.\n"
             "Copy the image to your hard drive or burn it to a disk."))
@@ -203,15 +203,15 @@ def do_cleanup(args):
 def device_setup(args):
     # treat --device like --repo REPO=file://$MOUNTPOINT
     if args.device:
-        args.repos.append(('add', 'fedupdevice=file://%s' % args.device.mnt))
-        args.instrepo = 'fedupdevice'
+        args.repos.append(('add', 'upgradedevice=file://%s' % args.device.mnt))
+        args.instrepo = 'upgradedevice'
     elif args.iso:
         try:
-            args.device = fedup.media.loopmount(args.iso)
-        except fedup.media.CalledProcessError as e:
+            args.device = media.loopmount(args.iso)
+        except media.CalledProcessError as e:
             log.info("mount failure: %s", e.output)
             message('--iso: '+_('Unable to open %s') % args.iso)
             raise SystemExit(2)
         else:
-            args.repos.append(('add', 'fedupiso=file://%s' % args.device.mnt))
-            args.instrepo = 'fedupiso'
+            args.repos.append(('add', 'upgradeiso=file://%s' % args.device.mnt))
+            args.instrepo = 'upgradeiso'

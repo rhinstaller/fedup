@@ -22,14 +22,17 @@
 import os, sys, time
 from subprocess import call
 
-from fedup.download import FedupDownloader, YumBaseError, yum_plugin_for_exc
+from fedup.download import UpgradeDownloader, YumBaseError, yum_plugin_for_exc
 from fedup.sysprep import prep_upgrade, prep_boot, setup_media_mount
-from fedup.upgrade import FedupUpgrade, TransactionError
+from fedup.upgrade import RPMUpgrade, TransactionError
 
 from fedup.commandline import parse_args, do_cleanup, device_setup
 from fedup import textoutput as output
 
-import logging, fedup.logutils, fedup.media
+import fedup.logutils as logutils
+import fedup.media as media
+
+import logging
 log = logging.getLogger("fedup")
 def message(m):
     print m
@@ -40,7 +43,7 @@ from fedup import _, kernelpath, initrdpath
 def setup_downloader(version, instrepo=None, cacheonly=False, repos=[],
                      enable_plugins=[], disable_plugins=[]):
     log.debug("setup_downloader(version=%s, repos=%s)", version, repos)
-    f = FedupDownloader(version=version, cacheonly=cacheonly)
+    f = UpgradeDownloader(version=version, cacheonly=cacheonly)
     f.preconf.enabled_plugins += enable_plugins
     f.preconf.disabled_plugins += disable_plugins
     f.instrepoid = instrepo
@@ -73,7 +76,7 @@ def download_packages(f):
 def transaction_test(pkgs):
     print _("testing upgrade transaction")
     pkgfiles = set(po.localPkg() for po in pkgs)
-    fu = FedupUpgrade()
+    fu = RPMUpgrade()
     fu.setup_transaction(pkgfiles=pkgfiles)
     fu.test_transaction(callback=output.TransactionCallback(numpkgs=len(pkgfiles)))
 
@@ -115,7 +118,7 @@ def main(args):
             print _("The '%s' repo was rejected by yum as invalid.") % args.instrepo
             if args.iso:
                 print _("The given ISO probably isn't an install DVD image.")
-                fedup.media.umount(args.device.mnt)
+                media.umount(args.device.mnt)
             elif args.device:
                 print _("The media doesn't contain a valid install DVD image.")
         else:
@@ -155,7 +158,7 @@ def main(args):
         setup_media_mount(args.device)
 
     if args.iso:
-        fedup.media.umount(args.device.mnt)
+        media.umount(args.device.mnt)
 
     if args.reboot:
         reboot()
@@ -183,8 +186,8 @@ if __name__ == '__main__':
 
     # set up logging
     if args.debuglog:
-        fedup.logutils.debuglog(args.debuglog)
-    fedup.logutils.consolelog(level=args.loglevel)
+        logutils.debuglog(args.debuglog)
+    logutils.consolelog(level=args.loglevel)
     log.info("%s starting at %s", sys.argv[0], time.asctime())
 
     try:

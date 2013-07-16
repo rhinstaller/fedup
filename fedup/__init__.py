@@ -1,4 +1,4 @@
-# __init__.py for fedup - the Fedora Upgrade python package
+# __init__.py for the system upgrade python package
 #
 # Copyright (C) 2012 Red Hat Inc.
 #
@@ -18,20 +18,20 @@
 # Author: Will Woods <wwoods@redhat.com>
 
 import logging
-log = logging.getLogger("fedup")
+log = logging.getLogger(__package__)
 log.addHandler(logging.NullHandler())
 
 import gettext
-t = gettext.translation("fedup", "/usr/share/locale", fallback=True)
+t = gettext.translation(__package__, "/usr/share/locale", fallback=True)
 _ = t.lgettext
 
-kernel_id = 'fedup'
+kernel_id = __package__
 # NOTE: new-kernel-pkg requires this kernel name/path
 kernelpath = '/boot/vmlinuz-%s' % kernel_id
 initrdpath = '/boot/initramfs-%s.img' % kernel_id
 
-cachedir = '/var/tmp/fedora-upgrade'
-packagedir = '/var/lib/fedora-upgrade'
+cachedir = '/var/tmp/system-upgrade'
+packagedir = '/var/lib/system-upgrade'
 packagelist = packagedir + '/package.list'
 upgradeconf = packagedir + '/upgrade.conf'
 upgradelink = '/system-upgrade'
@@ -39,4 +39,4 @@ upgraderoot = '/system-upgrade-root'
 
 mirrormanager = 'https://mirrors.fedoraproject.org/metalink'
 
-update_img_dir = '/etc/fedup/update.img.d'
+update_img_dir = '/etc/' + __package__ + '/update.img.d'
