@@ -1,4 +1,4 @@
-# fedup.commandline - commandline parsing functions
+# commandline.py - commandline parsing functions
 #
 # Copyright (C) 2012 Red Hat Inc.
 #
@@ -19,30 +19,35 @@
 
 import os, argparse, platform
 
-import fedup.media
-from fedup.sysprep import reset_boot, remove_boot, remove_cache, misc_cleanup
-from fedup import _
+from . import media
+from .sysprep import reset_boot, remove_boot, remove_cache, misc_cleanup
+from . import _
 
 import logging
-log = logging.getLogger("fedup")
+log = logging.getLogger(__package__)
 
 def parse_args(gui=False):
     p = argparse.ArgumentParser(
         description=_('Prepare system for upgrade.'),
         # Translators: This is the CLI's "usage:" string
-        usage=_('%(prog)s SOURCE [options]'),
+        usage=_('%(prog)s <SOURCE> [options]'),
     )
 
+    # === basic options ===
     p.add_argument('-v', '--verbose', action='store_const', dest='loglevel',
         const=logging.INFO, help=_('print more info'))
     p.add_argument('-d', '--debug', action='store_const', dest='loglevel',
         const=logging.DEBUG, help=_('print lots of debugging info'))
     p.set_defaults(loglevel=logging.WARNING)
 
-    p.add_argument('--debuglog', default='/var/log/fedup.log',
+    p.add_argument('--debuglog', default='/var/log/%s.log' % __package__,
         help=_('write lots of debugging output to the given file'))
 
-    # FOR DEBUGGING ONLY
+    p.add_argument('--reboot', action='store_true', default=False,
+        help=_('automatically reboot to start the upgrade when ready'))
+
+
+    # === hidden options. FOR DEBUGGING ONLY. ===
     p.add_argument('--skippkgs', action='store_true', default=False,
         help=argparse.SUPPRESS)
     p.add_argument('--skipkernel', action='store_true', default=False,
@@ -52,10 +57,19 @@ def parse_args(gui=False):
     p.add_argument('-C', '--cacheonly', action='store_true', default=False,
         help=argparse.SUPPRESS)
 
-    p.add_argument('--reboot', action='store_true', default=False,
-        help=_('automatically reboot to start the upgrade when ready'))
 
-    req = p.add_argument_group('SOURCE',
+    # === yum options ===
+    yumopts = p.add_argument_group(_('yum options'))
+    yumopts.add_argument('--enableplugin', metavar='PLUGIN',
+        action='append', dest='enable_plugins', default=[],
+        help=_('enable yum plugins by name'))
+    yumopts.add_argument('--disableplugin', metavar='PLUGIN',
+        action='append', dest='disable_plugins', default=[],
+        help=_('disable yum plugins by name'))
+
+
+    # === <SOURCE> options ===
+    req = p.add_argument_group(_('options for <SOURCE>'),
                                _('Location to search for upgrade data.'))
     req.add_argument('--device', metavar='DEV', nargs='?',
         type=device_or_mnt, const='auto',
@@ -66,6 +80,8 @@ def parse_args(gui=False):
     req.add_argument('--network', metavar=_('VERSION'), type=VERSION,
         help=_('online repos matching VERSION (a number or "rawhide")'))
 
+
+    # === options for --network ===
     net = p.add_argument_group(_('additional options for --network'))
     net.add_argument('--enablerepo', metavar='REPOID', action=RepoAction,
         dest='repos', help=_('enable one or more repos (wildcards allowed)'))
@@ -87,7 +103,7 @@ def parse_args(gui=False):
             dest='clean', const='bootloader', default=None,
             help=_('remove any modifications made to bootloader'))
         clean.add_argument('--clean', action='store_const', const='all',
-            help=_('clean up everything written by fedup'))
+            help=_('clean up everything written by %s') % __package__)
         p.add_argument('--expire-cache', action='store_true', default=False,
             help=argparse.SUPPRESS)
         p.add_argument('--clean-metadata', action='store_true', default=False,
@@ -95,7 +111,7 @@ def parse_args(gui=False):
 
     args = p.parse_args()
 
-    if not (args.network or args.device or args.iso or args.clean):
+    if not (gui or args.network or args.device or args.iso or args.clean):
         p.error(_('SOURCE is required (--network, --device, --iso)'))
 
     # allow --instrepo URL as shorthand for --repourl REPO=URL --instrepo REPO
@@ -126,9 +142,9 @@ class RepoAction(argparse.Action):
 # check the argument to '--device' to see if it refers to install media
 def device_or_mnt(arg):
     if arg == 'auto':
-        media = fedup.media.find()
+        media = media.find()
     else:
-        media = [m for m in fedup.media.find() if arg in (m.dev, m.mnt)]
+        media = [m for m in media.find() if arg in (m.dev, m.mnt)]
 
     if len(media) == 1:
         return media.pop()
@@ -148,9 +164,9 @@ def isofile(arg):
         raise argparse.ArgumentTypeError(_("File not found: %s") % arg)
     if not os.path.isfile(arg):
         raise argparse.ArgumentTypeError(_("Not a regular file: %s") % arg)
-    if not fedup.media.isiso(arg):
+    if not media.isiso(arg):
         raise argparse.ArgumentTypeError(_("Not an ISO 9660 image: %s") % arg)
-    if any(arg.startswith(d.mnt) for d in fedup.media.removable()):
+    if any(arg.startswith(d.mnt) for d in media.removable()):
         raise argparse.ArgumentTypeError(_("ISO image on removable media\n"
             "Sorry, but this isn't supported yet.\n"
             "Copy the image to your hard drive or burn it to a disk."))
@@ -187,15 +203,15 @@ def do_cleanup(args):
 def device_setup(args):
     # treat --device like --repo REPO=file://$MOUNTPOINT
     if args.device:
-        args.repos.append(('add', 'fedupdevice=file://%s' % args.device.mnt))
-        args.instrepo = 'fedupdevice'
+        args.repos.append(('add', 'upgradedevice=file://%s' % args.device.mnt))
+        args.instrepo = 'upgradedevice'
     elif args.iso:
         try:
-            args.device = fedup.media.loopmount(args.iso)
-        except fedup.media.CalledProcessError as e:
+            args.device = media.loopmount(args.iso)
+        except media.CalledProcessError as e:
             log.info("mount failure: %s", e.output)
             message('--iso: '+_('Unable to open %s') % args.iso)
             raise SystemExit(2)
         else:
-            args.repos.append(('add', 'fedupiso=file://%s' % args.device.mnt))
-            args.instrepo = 'fedupiso'
+            args.repos.append(('add', 'upgradeiso=file://%s' % args.device.mnt))
+            args.instrepo = 'upgradeiso'

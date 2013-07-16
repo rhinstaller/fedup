@@ -1,4 +1,4 @@
-# fedup.upgrade - actually run the upgrade.
+# upgrade.py - test the upgrade transaction using RPM
 #
 # Copyright (C) 2012 Red Hat Inc.
 #
@@ -26,10 +26,10 @@ import os, tempfile
 from threading import Thread
 
 import logging
-log = logging.getLogger('fedup.upgrade')
+log = logging.getLogger(__package__+'.upgrade')
 
-from fedup import _
-from fedup.util import df, hrsize
+from . import _
+from .util import df, hrsize
 
 class TransactionSet(TransactionSetCore):
     flags = TransactionSetCore._flags
@@ -105,18 +105,14 @@ class DiskspaceProblemSummary(ProblemSummary):
         return needs
 
     def format_details(self):
-        return [_("need %s free on %s (%s free)") %
-                      (hrsize(size), mnt, hrsize(df(mnt)))
-                  for (mnt,size) in self.details.iteritems()]
+        return [_("%s needs %s more free space") % (mnt, hrsize(size))
+                 for (mnt,size) in self.details.iteritems()]
 
 probsummary = { rpm.RPMPROB_DISKSPACE: DiskspaceProblemSummary,
               }
 
 
-class FedupError(Exception):
-    pass
-
-class TransactionError(FedupError):
+class TransactionError(Exception):
     def __init__(self, problems):
         self.problems = problems
         self.summaries = list()
@@ -125,7 +121,7 @@ class TransactionError(FedupError):
             self.summaries.append(summarize(t, problems))
 
 def pipelogger(pipe, level=logging.INFO):
-    logger = logging.getLogger("fedup.rpm")
+    logger = logging.getLogger(__package__+".rpm")
     logger.info("opening pipe")
     with open(pipe, 'r') as fd:
         for line in fd:
@@ -144,7 +140,7 @@ logging_to_rpm = {
     logging.CRITICAL:   rpm.RPMLOG_CRIT,
 }
 
-class FedupUpgrade(object):
+class RPMUpgrade(object):
     def __init__(self, root='/', logpipe=True, rpmloglevel=logging.INFO):
         self.root = root
         self.ts = None
@@ -182,7 +178,7 @@ class FedupUpgrade(object):
 
     def openpipe(self):
         log.debug("creating log pipe")
-        pipefile = tempfile.mktemp(prefix='fedup-rpm-log.')
+        pipefile = tempfile.mktemp(prefix='rpm-log-pipe.')
         os.mkfifo(pipefile, 0600)
         log.debug("starting logging thread")
         pipethread = Thread(target=pipelogger, name='pipelogger',

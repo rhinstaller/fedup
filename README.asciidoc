@@ -81,5 +81,38 @@ Upgrading old system using `fedup`
 . Enjoy your newly-upgraded system
     * upgrade logs are in `/var/log/upgrade.log`
 
+How network upgrades work
+-------------------------
+
+There's two simple rules that control where `fedup` looks for packages when
+doing network upgrades.
+
+Given `fedup --network $VERSION`, fedup will:
+
+1. Use the existing repo configuration, with `$releasever` set to `$VERSION`
+2. Add an extra 'instrepo' for fetching boot images; this repo defaults to
+   https://mirrors.fedoraproject.org/metalink/repo=fedora-install-$releasever&arch=$basearch
+
+`$VERSION` could be any string; currently `fedup` accepts "rawhide" or numbers
+greater than the current system version. No explicit validation of `$VERSION`
+is done beyond that.
+
+If the user gives an invalid version (e.g. `fedup --network 31337`), fedup
+will still set up repos and attempt to contact them, but they won't be found,
+which will cause the upgrade to fail. So invalid versions are _implicitly_
+rejected.
+
+For repo maintainers
+~~~~~~~~~~~~~~~~~~~~
+If you are a repo maintainer and you want upgrades to work, you should ensure
+that the URLs in your `.repo` file will work for any valid `$releasever`,
+including "rawhide".
+
+If you change the layout of your repos, set up symlinks/redirects for the old
+URL schemes.
+
+Conversely, you should also ensure that the URLs _don't_ work for _invalid_
+versions. So you should avoid wildcard redirects or URLs without
+`$releasever`.
 
 // vim: syntax=asciidoc tw=78:

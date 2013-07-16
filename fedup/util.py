@@ -1,4 +1,4 @@
-# fedup.util - various shared utility functions for fedup
+# util.py - various shared utility functions
 #
 # Copyright (C) 2012 Red Hat Inc.
 #
@@ -23,6 +23,9 @@ from subprocess import Popen, CalledProcessError, PIPE, STDOUT
 from pipes import quote as shellquote
 import logging
 log = logging.getLogger('fedup.util')
+
+import logging
+log = logging.getLogger(__package__+".util")
 
 try:
     from ctypes import cdll, c_bool

@@ -1,4 +1,4 @@
-# fedup.sysprep - utility functions for system prep for Fedora Upgrade
+# sysprep.py - utility functions for system prep
 #
 # Copyright (C) 2012 Red Hat Inc.
 #
@@ -18,18 +18,18 @@
 # Author: Will Woods <wwoods@redhat.com>
 
 import os
-import fedup.boot as boot
 from shutil import copy2
 
-from fedup import _
-from fedup import cachedir, packagedir, packagelist, update_img_dir
-from fedup import upgradeconf, upgradelink, upgraderoot
-from fedup.media import write_systemd_unit
-from fedup.util import listdir, mkdir_p, rm_f, rm_rf, is_selinux_enabled, kernelver
-from fedup.conf import Config
+from .import _
+from .import cachedir, packagedir, packagelist, update_img_dir
+from .import upgradeconf, upgradelink, upgraderoot
+from .media import write_systemd_unit
+from .util import listdir, mkdir_p, rm_f, rm_rf, is_selinux_enabled, kernelver
+from .conf import Config
+from . import boot
 
 import logging
-log = logging.getLogger("fedup.sysprep")
+log = logging.getLogger(__package__+".sysprep")
 
 upgrade_target_wants = "/lib/systemd/system/system-upgrade.target.wants"
 
@@ -170,7 +170,9 @@ def prep_boot(kernel, initrd):
     # (the initramfs will copy/bind them into place when we reboot)
     kv = kernelver(kernel)
     if kv:
-        mkdir_p("/lib/modules/"+kernelver(kernel))
+        moddir = os.path.join("/lib/modules", kv)
+        log.info("creating module dir %s", moddir)
+        mkdir_p(moddir)
     else:
         log.warn("can't determine version of kernel image '%s'", kernel)
 

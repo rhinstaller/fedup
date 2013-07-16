@@ -1,4 +1,4 @@
-# fedup.download - yum-based download/depsolver for Fedora Upgrade
+# download.py - yum-based download/depsolver for system upgrades
 #
 # Copyright (C) 2012 Red Hat Inc.
 #
@@ -20,9 +20,9 @@
 import os
 import yum
 import logging
-from fedup.callback import BaseTsCallback
-from fedup.treeinfo import Treeinfo, TreeinfoError
-from fedup.conf import Config
+from .callback import BaseTsCallback
+from .treeinfo import Treeinfo, TreeinfoError
+from .conf import Config
 from yum.Errors import YumBaseError
 from yum.parser import varReplace
 
@@ -30,16 +30,16 @@ enabled_plugins = ['blacklist', 'whiteout']
 disabled_plugins = ['rpm-warm-cache', 'remove-with-leaves', 'presto',
                     'auto-update-debuginfo', 'refresh-packagekit']
 
-from fedup import _
-from fedup import cachedir, upgradeconf, kernelpath, initrdpath
-from fedup import mirrormanager
-from fedup.util import listdir, mkdir_p
+from . import _
+from . import cachedir, upgradeconf, kernelpath, initrdpath
+from . import mirrormanager
+from .util import listdir, mkdir_p
 from shutil import copy2
 
-log = logging.getLogger("fedup.yum") # XXX maybe I should rename this module..
+log = logging.getLogger(__package__+".yum") # maybe I should rename this..
 
 # TODO: add --urlgrabdebug to enable this... or something
-#yum.urlgrabber.grabber.set_logger(logging.getLogger("fedup.urlgrab"))
+#yum.urlgrabber.grabber.set_logger(logging.getLogger(__package__+".urlgrab"))
 
 def mirrorlist(repo, arch='$basearch'):
     return mirrormanager + '?repo=%s&arch=%s' % (repo, arch)
@@ -47,12 +47,24 @@ def mirrorlist(repo, arch='$basearch'):
 def raise_exception(failobj):
     raise failobj.exception
 
-class FedupDownloader(yum.YumBase):
-    '''Yum-based downloader class for fedup. Based roughly on AnacondaYum.'''
+pluginpath = []
+def yum_plugin_for_exc():
+    import sys, traceback
+    tb_files = [i[0] for i in traceback.extract_tb(sys.exc_info()[2])]
+    log.debug("checking traceback files: %s", tb_files)
+    log.debug("plugin path is %s", pluginpath)
+    for f in tb_files:
+        for p in pluginpath:
+            if f.startswith(p):
+                return f
+    return None
+
+class UpgradeDownloader(yum.YumBase):
+    '''Yum-based downloader class. Based roughly on AnacondaYum.'''
     def __init__(self, version=None, cachedir=cachedir, cacheonly=False):
         # TODO: special handling for version='test' where we just synthesize
         #       a bunch of fake RPMs with interesting properties
-        log.info("FedupDownloader(version=%s, cachedir=%s)", version, cachedir)
+        log.info("UpgradeDownloader(version=%s,cachedir=%s)",version,cachedir)
         yum.YumBase.__init__(self)
         self.use_txmbr_in_callback = True
         self.preconf.debuglevel = -1
@@ -82,6 +94,13 @@ class FedupDownloader(yum.YumBase):
             conf.cache = self.cacheonly
             log.debug("conf.cache=%i", conf.cache)
         return conf
+
+    def doPluginSetup(self, *args, **kwargs):
+        yum.YumBase.doPluginSetup(self, *args, **kwargs)
+        # Now that plugins have been set up, let's save some info about them
+        global pluginpath
+        pluginpath = self.plugins.searchpath
+        log.info("enabled plugins: %s", self.plugins._plugins.keys())
 
     def add_repo(self, repoid, baseurls=[], mirrorlist=None, **kwargs):
         '''like add_enable_repo, but doesn't do initial repo setup and doesn't
@@ -113,6 +132,7 @@ class FedupDownloader(yum.YumBase):
         # Add default instrepo if needed
         if self.instrepoid is None:
             self.instrepoid = 'default-installrepo'
+            # FIXME: hardcoded and Fedora-specific
             mirrorurl = mirrorlist('fedora-install-$releasever')
             repos.append(('add', '%s=@%s' % (self.instrepoid, mirrorurl)))
 
@@ -198,6 +218,11 @@ class FedupDownloader(yum.YumBase):
             ok = self.verifyPkg(local, p, False) # result will be cached by yum
         log.info("beginning package download...")
         updates = self._downloadPackages(callback)
+
+        # Handle _downloadPackages returning None instead of an empty list
+        if updates is None:
+            updates = []
+
         if set(updates) != set(pkgs):
             log.debug("differences between requested pkg set and downloaded:")
             for p in set(pkgs).difference(updates):
@@ -286,6 +311,9 @@ class FedupDownloader(yum.YumBase):
             # But urlgrabber.__version__ hasn't been changed since F12, so:
             if not hasattr(yum.urlgrabber.grabber, 'exception2msg'): # <=F17
                 raise KeyboardInterrupt(_("or possible error writing file"))
+            else:
+                # The exception actually was a KeyBoardInterrupt, re-raise it
+                raise
 
         # Save kernel/initrd info so we can clean it up later
         mkdir_p(os.path.dirname(upgradeconf))

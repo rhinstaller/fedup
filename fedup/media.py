@@ -1,4 +1,4 @@
-# fedup.media - check for installable media
+# media.py - check for installable media, mount/umount devices, etc.
 #
 # Copyright (C) 2012 Red Hat Inc.
 #
@@ -75,7 +75,7 @@ def removable():
 
 def loopmount(filename, mntpoint=None):
     if mntpoint is None:
-        mntpoint = mkdtemp(prefix='fedup.mnt.')
+        mntpoint = mkdtemp(prefix=__package__+'.mnt.')
     check_call(['mount', '-oloop', filename, mntpoint])
     for m in mounts():
         if m.mnt == mntpoint:

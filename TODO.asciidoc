@@ -3,9 +3,25 @@ TODO
 
 _(ordered by priority, roughly)_
 
-Compatibility with newer systemd target names::
-  * local-fs.target is now root-fs.target and initrd-fs.target
-  ** see http://cgit.freedesktop.org/systemd/systemd/commit/?id=700e07f
+Logging::
+  * Log the disk layout (lvs, pvs, blkid, fstab, mounts) in debug log
+  * Use yum's console output for downloads (see bug #981819)
+  ** Or at least show download speed / ETA
+
+Commandline behavior::
+  * Write sys.argv into config file
+  ** use `fedup --continue` to repeat last run
+  ** use `fedup --abort` to delete stored args and remove bootloader config
+  * Don't mess with bootloader unless specifically requested
+  * At end of upgrade: ``Run 'fedup --reboot' to begin upgrade''
+  ** and/or `fedup --start`
+
+Crash handling::
+  * Log state to a file
+  * Display error message, wait for keypress, then reboot:
+  ** "The upgrade failed. Your system has not been harmed. Press <Enter> to
+      restart your system."
+  ** Allow reboot-on-failure (e.g. for remote systems)
 
 Upgrade lock::
   * If /etc/yum/vars/releasever exists, complain to user (#908017)
@@ -22,8 +38,10 @@ ISO/Device/"Offline" upgrades::
   * Handle ISO-on-USB-stick case
   * Handle mount chains deeper than ISO-on-USB
 
+Updates::
+  * Scheme for associating updates images with upgrade.img vintages
+
 GUI::
-  * Move commandline parsing to fedup library, use it
   * Wire up the UI bits
   * Wire up progress callbacks
   ** yum in a subprocess
@@ -32,8 +50,11 @@ GUI::
 Migration::
   * Add a _fedup-before-upgrade_ scriptlet hook
   ** Not technically a dracut hook, since it'll be run by fedup
-  ** Migrate `KEYTABLE=...` to `KEYMAP=...`
-  *** See https://bugzilla.redhat.com/show_bug.cgi?id=859258 and others
+  ** Example uses:
+  *** https://bugzilla.redhat.com/show_bug.cgi?id=881624[Bug #881624]:
+      Migrate `KEYTABLE=...` to `KEYMAP=...`
+  *** https://bugzilla.redhat.com/show_bug.cgi?id=881670[Bug #881670]:
+      Add x-systemd.device-timeout=0 for mounts that need it
 
 Legacy systems::
   * Backport to Python 2.6
@@ -51,12 +72,8 @@ Docs::
   * document boot args
 
 Upstreaming::
-  * Get system-upgrade.target upstream
-  ** Pass `switch-root` flags to new `systemd`
-  ** Generator to switch to system-upgrade.target
-  *** read `/run/initramfs/upgrade.conf`
-  *** check UPGRADEROOT and UPGRADELINK
-  *** switch target for this boot
+  * systemd: get system-upgrade.target, system-upgrade-generator upstream
+  ** Parallel with http://freedesktop.org/wiki/Software/systemd/SystemUpdates/
 
 SELinux::
   * Find a way to run upgrade with SELinux enforcing

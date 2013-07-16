@@ -1,4 +1,4 @@
-# fedup.boot - bootloader config modification code for the Fedora Upgrader
+# boot - bootloader config modification code
 #
 # Copyright (C) 2012 Red Hat Inc.
 #

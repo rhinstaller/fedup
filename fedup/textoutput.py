@@ -1,4 +1,4 @@
-# textoutput - text output routines for fedora-upgrade
+# textoutput - text output routines
 # vim: set fileencoding=UTF-8:
 #
 # Copyright (C) 2012 Red Hat Inc.
@@ -24,13 +24,13 @@ import rpm
 sys.path.insert(0, '/usr/share/yum-cli')
 from output import YumTextMeter, CacheProgressCallback
 
-from fedup.callback import *
-import fedup.terminal as term
+from .callback import *
+from . import terminal as term
 
-from fedup import _
+from . import _
 
 import logging
-log = logging.getLogger("fedup.cli")
+log = logging.getLogger(__package__+".cli")
 
 
 class SimpleProgress(object):
