@@ -20,9 +20,9 @@
 import os
 from shutil import copy2
 
-from .import _
-from .import cachedir, packagedir, packagelist, update_img_dir
-from .import upgradeconf, upgradelink, upgraderoot
+from . import _
+from . import cachedir, packagedir, packagelist, update_img_dir
+from . import upgradeconf, upgradelink, upgraderoot
 from .media import write_systemd_unit
 from .util import listdir, mkdir_p, rm_f, rm_rf, is_selinux_enabled, kernelver
 from .conf import Config
