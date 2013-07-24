@@ -128,7 +128,7 @@ def pipelogger(pipe, level=logging.INFO):
             if line.startswith('D: '):
                 logger.debug(line[3:].rstrip())
             else:
-                logger.log(thislevel, line.rstrip())
+                logger.log(level, line.rstrip())
         logger.info("got EOF")
     logger.info("exiting")
 
