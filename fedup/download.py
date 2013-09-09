@@ -92,6 +92,7 @@ class UpgradeDownloader(yum.YumBase):
             # override some of yum's defaults
             conf.disable_excludes = ['all']
             conf.cache = self.cacheonly
+            conf.deltarpm = 0
             log.debug("conf.cache=%i", conf.cache)
         return conf
 
