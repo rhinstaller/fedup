@@ -66,6 +66,12 @@ def download_packages(f):
         print _('Your system is already upgraded!')
         print _('Finished. Nothing to do.')
         raise SystemExit(0)
+    # print dependency problems before we start the upgrade
+    transprobs = f.describe_transaction_problems()
+    if transprobs:
+        print "WARNING: potential problems with upgrade"
+        for p in transprobs:
+            print "  " + p
     # clean out any unneeded packages from the cache
     f.clean_cache(keepfiles=(p.localPkg() for p in updates))
     # download packages
@@ -77,8 +83,9 @@ def transaction_test(pkgs):
     print _("testing upgrade transaction")
     pkgfiles = set(po.localPkg() for po in pkgs)
     fu = RPMUpgrade()
-    fu.setup_transaction(pkgfiles=pkgfiles)
-    fu.test_transaction(callback=output.TransactionCallback(numpkgs=len(pkgfiles)))
+    probs = fu.setup_transaction(pkgfiles=pkgfiles, check_fatal=False)
+    rv = fu.test_transaction(callback=output.TransactionCallback(numpkgs=len(pkgfiles)))
+    return (probs, rv)
 
 def reboot():
     call(['systemctl', 'reboot'])
@@ -138,7 +145,8 @@ def main(args):
             raise SystemExit(1)
         pkgs = download_packages(f)
         # Run a test transaction
-        transaction_test(pkgs)
+        probs, rv = transaction_test(pkgs)
+
 
     # And prepare for upgrade
     # TODO: use polkit to get root privs for these things
@@ -165,6 +173,16 @@ def main(args):
     else:
         print _('Finished. Reboot to start upgrade.')
 
+    # --- Here's where we summarize potential problems. ---
+
+    # list packages without updates, if any
+    missing = sorted(f.find_packages_without_updates(), key=lambda p:p.envra)
+    if missing:
+        message(_('Packages without updates:'))
+        for p in missing:
+            message("  %s" % p)
+
+    # warn if the "important" repos are disabled
     if f.disabled_repos:
         # NOTE: I hate having a hardcoded list of Important Repos here.
         # This information should be provided by the system, somehow..
@@ -175,6 +193,16 @@ def main(args):
             msg = _("NOTE: Some repos could not be contacted: %s")
         print msg % ", ".join(f.disabled_repos)
         print _("If you start the upgrade now, packages from these repos will not be installed.")
+
+    # warn about broken dependencies etc.
+    if probs:
+        print
+        print _("WARNING: problems were encountered during transaction test:")
+        for s in probs.summaries:
+            print "  "+s.desc
+            for line in s.format_details():
+                print "    "+line
+        print _("Continue with the upgrade at your own risk.")
 
 if __name__ == '__main__':
     args = parse_args()

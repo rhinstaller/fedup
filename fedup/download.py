@@ -19,12 +19,14 @@
 
 import os
 import yum
+import struct
 import logging
 from .callback import BaseTsCallback
 from .treeinfo import Treeinfo, TreeinfoError
 from .conf import Config
 from yum.Errors import YumBaseError
 from yum.parser import varReplace
+from yum.constants import TS_REMOVE_STATES
 
 enabled_plugins = ['blacklist', 'whiteout']
 disabled_plugins = ['rpm-warm-cache', 'remove-with-leaves', 'presto',
@@ -195,6 +197,7 @@ class UpgradeDownloader(yum.YumBase):
         self.dsCallback = callback
         self.update()
         (rv, msgs) = self.buildTransaction(unfinished_transactions_check=False)
+        # NOTE: self.po_with_problems is now a list of (po1, po2, errmsg) tuples
         log.info("buildTransaction returned %i", rv)
         for m in msgs:
             log.info("    %s", m)
@@ -202,6 +205,45 @@ class UpgradeDownloader(yum.YumBase):
         self.dsCallback = None
         return [t.po for t in self.tsInfo.getMembers()
                      if t.ts_state in ("i", "u")]
+
+    def find_packages_without_updates(self):
+        '''packages on the local system that aren't being updated/obsoleted'''
+        remove = self.tsInfo.getMembersWithState(output_states=TS_REMOVE_STATES)
+        return set(p for p in self.rpmdb if p not in remove)
+
+    def describe_transaction_problems(self):
+        problems = []
+
+        def find_replacement(po):
+            for tx in self.tsInfo.getMembers(po.pkgtup):
+                # XXX multiple replacers?
+                for otherpo, rel in tx.relatedto:
+                    if rel in ('obsoletedby', 'updatedby'):
+                        return po, otherpo
+                    if rel in ('obsoletes', 'updates'):
+                        return otherpo, po
+            if po in self.rpmdb:
+                return po, None
+            else:
+                return None, po
+
+        def format_replacement(po):
+            oldpkg, newpkg = find_replacement(po)
+            if oldpkg and newpkg:
+                return "%s (replaced by %s)" % (oldpkg, newpkg)
+            elif oldpkg:
+                return "%s (no replacement)" % oldpkg
+            elif newpkg:
+                return "%s (new package)" % newpkg
+
+        done = set()
+        for pkg1, pkg2, err in self.po_with_problems:
+            if (pkg1,pkg2) not in done:
+                problems.append("%s requires %s" % (format_replacement(pkg1),
+                                                    format_replacement(pkg2)))
+                done.add((pkg1,pkg2))
+
+        return problems
 
     def download_packages(self, pkgs, callback=None):
         # Verifying a full upgrade payload of ~2000 pkgs takes a good 90-120
@@ -230,7 +272,9 @@ class UpgradeDownloader(yum.YumBase):
                 log.debug("  -%s", p)
             for p in set(updates).difference(pkgs):
                 log.debug("  +%s", p)
-        # TODO check signatures of downloaded packages
+        # check signatures of downloaded packages
+        if updates:
+            self._checkSignatures(updates, callback)
 
     def clean_cache(self, keepfiles):
         log.info("checking for unneeded rpms in cache")
@@ -323,3 +367,126 @@ class UpgradeDownloader(yum.YumBase):
             conf.set("boot", "initrd", initrd)
 
         return kernel, initrd
+
+    def _checkSignatures(self, pkgs, callback):
+        keycheck = lambda info: self._GPGKeyCheck(info, callback)
+        for po in pkgs:
+            result, errmsg = self.sigCheckPkg(po)
+            if result == 0:
+                continue
+            elif result == 1:
+                self.getKeyForPackage(po, fullaskcb=keycheck)
+            else:
+                raise yum.Errors.YumGPGCheckError(errmsg)
+
+    def _getKeyImportMessage(self, info, keyurl, keytype='GPG'):
+        pass
+
+    def _GPGKeyCheck(self, info, callback=None):
+        '''special key importer: import trusted keys automatically'''
+        if info['keyurl'].startswith("file://"):
+            keyfile = info['keyurl'][7:]
+        else:
+            return False
+        po = info['po']
+        log.info("repo '%s' wants to import key %s", po.repoid, keyfile)
+        if self.check_keyfile(keyfile):
+            log.info("key was installed by signed, trusted package - importing")
+            return True
+        else:
+            log.info("no automatic trust for key %s")
+            return False
+
+    def check_keyfile(self, keyfile):
+        '''
+        If a keyfile was installed by a package that was signed with a trusted
+        key (and the key hasn't been modified or tampered with), we can assume
+        that the key is trustworthy.
+
+        This is kind of a roundabout way to establish trust between the two
+        keys. It'd be a lot more straightforward if we just signed the new
+        release key with the old release key - "If you trust this, you can
+        trust this too.."
+        '''
+        # did the key come from a package?
+        keypkgs = self.rpmdb.searchFiles(keyfile)
+        if keypkgs:
+            keypkg = sorted(keypkgs)[-1]
+            log.debug("%s is owned by %s", keyfile, keypkg.nevr)
+        if not keypkgs:
+            log.info("%s does not belong to any package", keyfile)
+            return False
+
+        # was that package signed?
+        hdr = keypkg.returnLocalHeader()
+        if hdr.sigpgp or hdr.siggpg:
+            sigdata = hdr.sigpgp or hdr.siggpg
+            siginfo = yum.pgpmsg.decode(sigdata)[0]
+            (keyid,) = struct.unpack('>Q', siginfo.key_id())
+            hexkeyid = yum.misc.keyIdToRPMVer(keyid)
+            log.debug("%s is signed with key %s", keypkg.nevr, hexkeyid)
+        else:
+            log.info("%s unsigned", keypkg.nevr)
+            return False
+
+        # do we trust the key that signed it?
+        if yum.misc.keyInstalled(self.ts, keyid, 0):
+            log.debug("key %s is trusted by rpmdb", hexkeyid)
+        else:
+            log.info("key %s is not trusted", hexkeyid)
+            return False
+
+        # has the key been tampered with?
+        problems = keypkg.verify([keyfile]).get(keyfile, [])
+        if problems:
+            log.info("%s does not match packaged file (%s)",
+                     keyfile, " ".join(p.type for p in problems))
+            return False
+
+        # everything checks out OK!
+        return True
+
+    def check_signed_file(signedfile, outfile, gpgdir=cachedir+'/gpgdir'):
+        '''
+        uses the keys trusted by RPM to verify signedfile.
+        writes the resulting plaintext to outfile.
+        returns a list of unicode strings describing any errors in verification.
+        if the list is empty, the verification was successful.
+
+        It'd be great if RPM could do this for us, since it already has all the
+        keys imported and has its own signature verification code, but AFAICT
+        it doesn't (at least not in any way reachable from Python), so..
+        '''
+        gpgme = yum.misc.gpgme
+
+        # set up gpgdir
+        if not os.path.isdir(gpgdir):
+            log.debug("creating gpgdir %s", gpgdir)
+            os.makedirs(gpgdir, 0o700)
+        else:
+            os.chmod(gpgdir, 0o700)
+        os.environ['GNUPGHOME'] = gpgdir
+
+        # import trusted keys from rpmdb
+        log.debug("checking rpmdb trusted keys")
+        pubring_keys = [yum.misc.keyIdToRPMVer(int(k, 16))
+                        for k in yum.misc.return_keyids_from_pubring(gpgdir)]
+        for hdr in self.ts.dbMatch('name', 'gpg-pubkey'):
+            if hdr.version not in pubring_keys:
+                log.debug("importing key %s", hdr.version)
+                yum.misc.import_key_to_pubring(hdr.description, hdr.version,
+                                            gpgdir=gpgdir, make_ro_copy=False)
+            else:
+                log.debug("key %s is already in keyring", hdr.version)
+
+        # verify the signed file, writing plaintext to outfile
+        with open(signedfile) as inf, open(outfile, 'w') as outf:
+            ctx = gpgme.Context()
+            sigresults = ctx.verify(inf, None, outf)
+        # return a list of error messages. if it's empty, we're OK.
+        # NOTE: this is enough detail for current use cases, but it's very
+        # possible we'll want/need to just return sigresults and let the caller
+        # sort out the details..
+        return [sig.status.message for sig in sigresults if not (
+                     sig.summary & gpgme.SIGSUM_VALID and
+                     sig.validity >= gpgme.VALIDITY_FULL)]
