@@ -116,7 +116,7 @@ from StringIO import StringIO
 #       (pungi, libvirt, etc.)
 #log = logging.getLogger('treeinfo')
 #log.addHandler(logging.NullHandler())
-log = logging.getLogger(__package__+".treeinfo")
+log = logging.getLogger(__package__ or 'test'+".treeinfo")
 
 def hexdigest(filename, algo, blocksize=8192):
     hasher = hashlib.new(algo)
