@@ -85,29 +85,16 @@ class TreeinfoBasicTest(unittest.TestCase):
         self.assertEqual(self.t.get_image('x86_64', 'boot.iso'),
                                           'images/boot.iso')
 
-    def mock_hexdigest(self, name, data):
-        mock_open = my_mock_open(read_data=data)
-        with mock.patch('treeinfo.open', mock_open, create=True) as m:
-            rv = self.t.checkfile('dummyfile', name)
-            m.assert_called_once_with('dummyfile', 'rb')
-            fd = m.return_value
-            self.assertTrue(fd.read.called)
-
-    def mock_checkfile(self, name, data):
-        mock_open = my_mock_open(read_data=data)
-        with mock.patch('treeinfo.open', mock_open, create=True) as m:
-            rv = self.t.checkfile('dummyfile', name)
-            m.assert_called_once_with('dummyfile', 'rb')
-            fd = m.return_value
-            self.assertTrue(fd.read.called)
-        return rv
-
     def test_checkfile_ok(self):
         for name in filelist:
-            self.assertTrue(self.mock_checkfile(name, filedata[name]))
+            localpath = '/some/random/path/' + name
+            with mock_image_file(localpath, data=filedata[name]):
+                self.assertTrue(self.t.checkfile(localpath, name))
 
     def test_checkfile_bad(self):
-        self.assertFalse(self.mock_checkfile(filelist[0],'OH BALLS, BAD DATA'))
+        badfile = '/some/local/path/corruptfile'
+        with mock_image_file(badfile, data='OH BALLS, BAD DATA'):
+            self.assertFalse(self.t.checkfile(badfile, filelist[0]))
 
     def test_setopt(self):
         self.t.setopt("bonk", "clonk", "flap")
