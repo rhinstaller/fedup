@@ -26,11 +26,14 @@ clean: $(CLEAN_TARGETS)
 	rm -rf build
 	rm -f $(ARCHIVE)
 
+test:
+	$(PYTHON) -m unittest discover fedup
+
 ARCHIVE = fedup-$(VERSION).tar.xz
 archive: $(ARCHIVE)
 fedup-$(VERSION).tar.xz:
 	git archive --format=tar --prefix=fedup-$(VERSION)/ HEAD \
 	  | xz -c > $@ || rm $@
 
-.PHONY: all archive install clean
+.PHONY: all archive install clean test
 .PHONY: $(SUBDIRS) $(INSTALL_TARGETS) $(CLEAN_TARGETS)
