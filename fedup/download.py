@@ -27,6 +27,7 @@ from .conf import Config
 from yum.Errors import YumBaseError
 from yum.parser import varReplace
 from yum.constants import TS_REMOVE_STATES
+from yum.misc import gpgme
 
 enabled_plugins = ['blacklist', 'whiteout']
 disabled_plugins = ['rpm-warm-cache', 'remove-with-leaves', 'presto',
@@ -457,8 +458,6 @@ class UpgradeDownloader(yum.YumBase):
         keys imported and has its own signature verification code, but AFAICT
         it doesn't (at least not in any way reachable from Python), so..
         '''
-        gpgme = yum.misc.gpgme
-
         # set up gpgdir
         if not os.path.isdir(gpgdir):
             log.debug("creating gpgdir %s", gpgdir)
