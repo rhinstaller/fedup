@@ -66,6 +66,8 @@ def parse_args(gui=False):
     yumopts.add_argument('--disableplugin', metavar='PLUGIN',
         action='append', dest='disable_plugins', default=[],
         help=_('disable yum plugins by name'))
+    yumopts.add_argument('--nogpgcheck', action='store_true', default=False,
+        help=_('disable GPG signature checking'))
 
 
     # === <SOURCE> options ===

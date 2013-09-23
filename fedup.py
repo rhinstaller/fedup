@@ -107,6 +107,9 @@ def main(args):
                          enable_plugins=args.enable_plugins,
                          disable_plugins=args.disable_plugins)
 
+    if args.nogpgcheck:
+        f._override_sigchecks = True
+
     if args.expire_cache:
         print "expiring cache files"
         f.cleanExpireCache()
