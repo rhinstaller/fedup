@@ -17,6 +17,20 @@
 #
 # Author: Will Woods <wwoods@redhat.com>
 
+'''
+NOTE WELL, DEAR READER: None of this is intended as a public API!  I reserve
+the right to change anything and everything about how this library works at the
+merest whim.
+
+If you're actually trying to write something that uses this library, please
+contact me (or whatever people/constructs are maintaining this after I quit
+computers forever) to discuss how we could best design a sensible API that
+would actually work for you.
+
+Your pal,
+-w
+'''
+
 import logging
 log = logging.getLogger(__package__)
 log.addHandler(logging.NullHandler())
