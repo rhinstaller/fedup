@@ -394,18 +394,18 @@ class UpgradeDownloader(yum.YumBase):
         return kernel, initrd
 
     def _checkSignatures(self, pkgs, callback):
-        keycheck = lambda info: self._GPGKeyCheck(info, callback)
+        '''check the package signatures and get keys if needed.
+           works like YumBase._checkSignatures() except it only uses our
+           special automatic _GPGKeyCheck to import untrusted keys.'''
         for po in pkgs:
             result, errmsg = self.sigCheckPkg(po)
             if result == 0:
                 continue
             elif result == 1:
+                keycheck = lambda info: self._GPGKeyCheck(info, callback)
                 self.getKeyForPackage(po, fullaskcb=keycheck)
             else:
                 raise yum.Errors.YumGPGCheckError(errmsg)
-
-    def _getKeyImportMessage(self, info, keyurl, keytype='GPG'):
-        pass
 
     def _GPGKeyCheck(self, info, callback=None):
         '''special key importer: import trusted keys automatically'''
@@ -433,6 +433,8 @@ class UpgradeDownloader(yum.YumBase):
         release key with the old release key - "If you trust this, you can
         trust this too.."
         '''
+        if keyfile.startswith('file://'):
+            keyfile = keyfile[7:]
         # did the key come from a package?
         keypkgs = self.rpmdb.searchFiles(keyfile)
         if keypkgs:
@@ -471,7 +473,7 @@ class UpgradeDownloader(yum.YumBase):
         # everything checks out OK!
         return True
 
-    def check_signed_file(signedfile, outfile, gpgdir=cachedir+'/gpgdir'):
+    def check_signed_file(self, signedfile, outfile, gpgdir=cachedir+'/gpgdir'):
         '''
         uses the keys trusted by RPM to verify signedfile.
         writes the resulting plaintext to outfile.
