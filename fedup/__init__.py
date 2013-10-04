@@ -52,5 +52,6 @@ upgradelink = '/system-upgrade'
 upgraderoot = '/system-upgrade-root'
 
 mirrormanager = 'https://mirrors.fedoraproject.org/metalink'
+defaultkey = 'file:///etc/pki/rpm-gpg/RPM-GPG-KEY-fedora-$releasever-$basearch'
 
 update_img_dir = '/etc/' + __package__ + '/update.img.d'

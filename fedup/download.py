@@ -34,7 +34,7 @@ disabled_plugins = ['rpm-warm-cache', 'remove-with-leaves', 'presto',
                     'auto-update-debuginfo', 'refresh-packagekit']
 
 from . import _
-from . import cachedir, upgradeconf, kernelpath, initrdpath
+from . import cachedir, upgradeconf, kernelpath, initrdpath, defaultkey
 from . import mirrormanager
 from .util import listdir, mkdir_p
 from shutil import copy2
@@ -133,12 +133,13 @@ class UpgradeDownloader(yum.YumBase):
         # TODO invalidate cache if the version doesn't match previous version
         log.info("checking repos")
 
-        # Add default instrepo if needed
+        # Add default instrepo (and its key) if needed
         if self.instrepoid is None:
             self.instrepoid = 'default-installrepo'
             # FIXME: hardcoded and Fedora-specific
             mirrorurl = mirrorlist('fedora-install-$releasever')
             repos.append(('add', '%s=@%s' % (self.instrepoid, mirrorurl)))
+            repos.append(('gpgkey', '%s=%s' % (self.instrepoid, defaultkey)))
 
         # We need to read .repo files before we can enable/disable them, so:
         self.repos # implicit repo setup! ha ha! what fun!
@@ -164,6 +165,14 @@ class UpgradeDownloader(yum.YumBase):
                     repo.proxy = self.conf.proxy
                     repo.proxy_username = self.conf.proxy_username
                     repo.proxy_password = self.conf.proxy_password
+
+        # add GPG keys *after* the repos are created
+        for action, repo in repos:
+            if action == 'gpgkey':
+                (repoid, keyurl) = repo.split('=',1)
+                repo = self.repos.getRepo(repoid)
+                repo.gpgkey.append(varReplace(keyurl, self.conf.yumvar))
+                repo.gpgcheck = True
 
         # check enabled repos
         for repo in self.repos.listEnabled():
@@ -294,6 +303,14 @@ class UpgradeDownloader(yum.YumBase):
                 log.info("failed to remove %s", f)
         # TODO remove dirs that don't belong to any repo
 
+    def _import_key(self, keyurl, gpgdir=cachedir+'/gpgdir'):
+        log.info("importing keys from %s", keyurl)
+        keys = self._retrievePublicKey(keyurl) # XXX getSig?
+        for info in keys:
+            log.debug("importing key %s", info['hexkeyid'].lower())
+            yum.misc.import_key_to_pubring(info['raw_key'], info['hexkeyid'],
+                                           gpgdir=gpgdir)
+
     def _get_treeinfo(self):
         mkdir_p(cachedir)
         outfile = os.path.join(cachedir, '.treeinfo')
@@ -307,6 +324,13 @@ class UpgradeDownloader(yum.YumBase):
             fn = self.instrepo.grab.urlgrab('.treeinfo.signed',
                                             outfile+'.signed',
                                             reget=None)
+
+            # try to import key(s) into our personal keyring
+            log.info("checking GPG keys for instrepo")
+            for k in self.instrepo.gpgkey:
+                if self.check_keyfile(k):
+                    self._import_key(k)
+
             try:
                 log.info("verifying .treeinfo.signed")
                 # verify file and write plaintext to outfile
