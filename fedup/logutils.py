@@ -38,14 +38,19 @@ class Formatter(logging.Formatter):
     def format(self, record):
         record.reltime = float(record.relativeCreated / 1000)
         record.levelsym = self.levelsyms.get(record.levelno, '(--)')
+        if record.levelno < logging.DEBUG:
+            record.levelsym = '(D%d)' % (10-record.levelno)
         return logging.Formatter.format(self, record)
 
-def debuglog(filename, loggername=__package__):
+def debuglog(filename, level=logging.DEBUG, loggername=__package__):
+    # for even more debugging info:
+    #import yum.logginglevels
+    #level=yum.logginglevels.DEBUG_2
     h = logging.FileHandler(filename)
-    h.setLevel(logging.DEBUG)
+    h.setLevel(level)
     h.setFormatter(Formatter())
     logger = logging.getLogger(loggername)
-    logger.setLevel(logging.DEBUG)
+    logger.setLevel(level)
     logger.addHandler(h)
 
 def consolelog(level=logging.WARNING, loggername=__package__, tty=None):
