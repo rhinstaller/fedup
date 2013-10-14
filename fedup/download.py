@@ -86,7 +86,7 @@ class UpgradeDownloader(yum.YumBase):
         self.prerepoconf.failure_callback = raise_exception
         self._repoprogressbar = None
         # TODO: locking to prevent multiple instances
-        # TODO: override logging objects so we get yum logging
+        self.verbose_logger = log
 
     def _getConfig(self):
         firstrun = hasattr(self, 'preconf')

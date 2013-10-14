@@ -23,6 +23,14 @@ import logging
 from rpmUtils.miscutils import formatRequire
 from yum.callbacks import ProcessTransBaseCallback
 
+def format_pkgtup(tup):
+    (n,a,e,v,r) = tup
+    if e not in (0, '0', None):
+        return '%s:%s-%s-%s.%s' % (e,n,v,r,a)
+    else:
+        return '%s-%s-%s.%s' % (n,v,r,a)
+
+
 # callback objects for RPM transactions
 
 class BaseTsCallback(object):
@@ -107,6 +115,7 @@ class DepsolveCallbackBase(object):
         'od': 'obsoleted',
     }
     def __init__(self, yumobj=None):
+        self.yumobj = yumobj
         if yumobj:
             self.yum_setup(yumobj)
         self.log = logging.getLogger(__package__+".depsolve")
@@ -130,14 +139,14 @@ class DepsolveCallbackBase(object):
         for tup in self.missingreqs:
             self.log.debug("missing: %s", formatRequire(*tup))
     def pkgAdded(self, tup, mode):
-        (n,a,e,v,r) = tup
-        pkg = "%s.%s" % (n,a)
-        self.log.debug('added %s.%s for %s', n, a, mode)
         self.mode_counter[mode] += 1
-        if mode in ('e', 'i', 'od', 'o'):
-            self.log.debug("%s %s", self.modedict[mode], pkg)
+        pkg = format_pkgtup(tup)
+        if mode in ('e', 'od', 'ud'):
+            self.log.debug('%s: remove (%s)',pkg, self.modedict[mode])
+        elif mode in ('u', 'i', 'd', 'r', 'o'):
+            self.log.debug('%s: install (%s)', pkg, self.modedict[mode])
     def procReqPo(self, po, formatted_req):
-        self.log.debug('req po:   %s → %s', formatted_req, po)
+        self.log.debug('%s → %s', po, formatted_req)
     def procConflictPo(self, po, formatted_conflict):
         self.log.debug('CONFLICT: %s → %s', po, formatted_conflict)
     def unresolved(self, msg):
