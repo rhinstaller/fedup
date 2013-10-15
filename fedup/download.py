@@ -325,12 +325,6 @@ class UpgradeDownloader(yum.YumBase):
                                             outfile+'.signed',
                                             reget=None)
 
-            # try to import key(s) into our personal keyring
-            log.info("checking GPG keys for instrepo")
-            for k in self.instrepo.gpgkey:
-                if self.check_keyfile(k):
-                    self._import_key(k)
-
             try:
                 log.info("verifying .treeinfo.signed")
                 # verify file and write plaintext to outfile
@@ -529,6 +523,12 @@ class UpgradeDownloader(yum.YumBase):
                                             gpgdir=gpgdir, make_ro_copy=False)
             else:
                 log.debug("key %s is already in keyring", hdr.version)
+
+        # check instrepo keys to see if they're trustworthy
+        log.info("checking GPG keys for instrepo")
+        for k in self.instrepo.gpgkey:
+            if self.check_keyfile(k):
+                self._import_key(k)
 
         # verify the signed file, writing plaintext to outfile
         with open(signedfile) as inf, open(outfile, 'w') as outf:
