@@ -489,7 +489,7 @@ class UpgradeDownloader(yum.YumBase):
             return False
 
         # do we trust the key that signed it?
-        if yum.misc.keyInstalled(self.ts, keyid, 0):
+        if yum.misc.keyInstalled(self.ts, keyid, 0) >= 0:
             log.debug("key %s is trusted by rpm", hexkeyid)
         else:
             log.info("REJECTED: key %s is not trusted by rpm", hexkeyid)
