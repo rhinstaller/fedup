@@ -502,20 +502,7 @@ class UpgradeDownloader(yum.YumBase):
         # everything checks out OK!
         return True
 
-    def check_signed_file(self, signedfile, outfile, gpgdir=cachedir+'/gpgdir'):
-        '''
-        uses the keys trusted by RPM to verify signedfile.
-        writes the resulting plaintext to outfile.
-        returns a list of unicode strings describing any errors in verification.
-        if the list is empty, the verification was successful.
-
-        It'd be great if RPM could do this for us, since it already has all the
-        keys imported and has its own signature verification code, but AFAICT
-        it doesn't (at least not in any way reachable from Python), so..
-        '''
-        if self._override_sigchecks:
-            return []
-
+    def _setup_keyring(self, gpgdir):
         # set up gpgdir
         init_keyring(gpgdir)
 
@@ -535,6 +522,23 @@ class UpgradeDownloader(yum.YumBase):
                 keys = self._retrievePublicKey(k) # XXX getSig?
                 for info in keys:
                     import_key(info['raw_key'], info['hexkeyid'], gpgdir)
+
+    def check_signed_file(self, signedfile, outfile, gpgdir=cachedir+'/gpgdir'):
+        '''
+        uses the keys trusted by RPM to verify signedfile.
+        writes the resulting plaintext to outfile.
+        returns a list of unicode strings describing any errors in verification.
+        if the list is empty, the verification was successful.
+
+        It'd be great if RPM could do this for us, since it already has all the
+        keys imported and has its own signature verification code, but AFAICT
+        it doesn't (at least not in any way reachable from Python), so..
+        '''
+        if self._override_sigchecks:
+            return []
+
+        # set up our own GPG keyring containing all the trusted keys
+        self._setup_keyring(gpgdir)
 
         # verify the signed file, writing plaintext to outfile
         with open(signedfile) as inf, open(outfile, 'w') as outf:
