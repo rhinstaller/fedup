@@ -56,7 +56,10 @@ def rm_f(f, rm=os.remove):
         log.warn("failed to remove %s: %s", f, str(e))
 
 def rm_rf(d):
-    rm_f(d, rm=rmtree)
+    if os.path.isdir(d):
+        rm_f(d, rm=rmtree)
+    else:
+        rm_f(d)
 
 def kernelver(filename):
     '''read the version number out of a vmlinuz file.'''
