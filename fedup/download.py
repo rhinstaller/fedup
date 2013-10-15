@@ -303,14 +303,6 @@ class UpgradeDownloader(yum.YumBase):
                 log.info("failed to remove %s", f)
         # TODO remove dirs that don't belong to any repo
 
-    def _import_key(self, keyurl, gpgdir=cachedir+'/gpgdir'):
-        log.info("importing keys from %s", keyurl)
-        keys = self._retrievePublicKey(keyurl) # XXX getSig?
-        for info in keys:
-            log.debug("importing key %s", info['hexkeyid'].lower())
-            yum.misc.import_key_to_pubring(info['raw_key'], info['hexkeyid'],
-                                           gpgdir=gpgdir)
-
     def _get_treeinfo(self):
         mkdir_p(cachedir)
         outfile = os.path.join(cachedir, '.treeinfo')
@@ -528,7 +520,12 @@ class UpgradeDownloader(yum.YumBase):
         log.info("checking GPG keys for instrepo")
         for k in self.instrepo.gpgkey:
             if self.check_keyfile(k):
-                self._import_key(k)
+                keys = self._retrievePublicKey(k) # XXX getSig?
+                for info in keys:
+                    log.debug("importing key %s", info['hexkeyid'].lower())
+                    yum.misc.import_key_to_pubring(info['raw_key'],
+                                                   info['hexkeyid'],
+                                                   gpgdir=gpgdir)
 
         # verify the signed file, writing plaintext to outfile
         with open(signedfile) as inf, open(outfile, 'w') as outf:
