@@ -36,7 +36,7 @@ disabled_plugins = ['rpm-warm-cache', 'remove-with-leaves', 'presto',
 from . import _
 from . import cachedir, upgradeconf, kernelpath, initrdpath, defaultkey
 from . import mirrormanager
-from .util import listdir, mkdir_p
+from .util import listdir, mkdir_p, rm_rf
 from shutil import copy2
 
 log = logging.getLogger(__package__+".yum") # maybe I should rename this..
@@ -503,7 +503,8 @@ class UpgradeDownloader(yum.YumBase):
         return True
 
     def _setup_keyring(self, gpgdir):
-        # set up gpgdir
+        # set up a fresh gpgdir
+        rm_rf(gpgdir)
         init_keyring(gpgdir)
 
         # import trusted keys from rpmdb
