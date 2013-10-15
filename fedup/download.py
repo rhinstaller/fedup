@@ -62,6 +62,25 @@ def yum_plugin_for_exc():
                 return f
     return None
 
+def init_keyring(gpgdir):
+    # set up gpgdir
+    if not os.path.isdir(gpgdir):
+        log.debug("creating gpgdir %s", gpgdir)
+        os.makedirs(gpgdir, 0o700)
+    else:
+        os.chmod(gpgdir, 0o700)
+    os.environ['GNUPGHOME'] = gpgdir
+
+def import_key(keydata, hexkeyid, gpgdir):
+    log.debug("importing key %s", hexkeyid.lower())
+    yum.misc.import_key_to_pubring(keydata, hexkeyid,
+                                   gpgdir=gpgdir, make_ro_copy=False)
+
+def list_keyring(gpgdir):
+    return [yum.misc.keyIdToRPMVer(int(k, 16))
+            for k in yum.misc.return_keyids_from_pubring(gpgdir)]
+
+
 class UpgradeDownloader(yum.YumBase):
     '''Yum-based downloader class. Based roughly on AnacondaYum.'''
     def __init__(self, version=None, cachedir=cachedir, cacheonly=False):
@@ -496,23 +515,16 @@ class UpgradeDownloader(yum.YumBase):
         '''
         if self._override_sigchecks:
             return []
+
         # set up gpgdir
-        if not os.path.isdir(gpgdir):
-            log.debug("creating gpgdir %s", gpgdir)
-            os.makedirs(gpgdir, 0o700)
-        else:
-            os.chmod(gpgdir, 0o700)
-        os.environ['GNUPGHOME'] = gpgdir
+        init_keyring(gpgdir)
 
         # import trusted keys from rpmdb
         log.debug("checking rpmdb trusted keys")
-        pubring_keys = [yum.misc.keyIdToRPMVer(int(k, 16))
-                        for k in yum.misc.return_keyids_from_pubring(gpgdir)]
+        pubring_keys = list_keyring(gpgdir)
         for hdr in self.ts.dbMatch('name', 'gpg-pubkey'):
             if hdr.version not in pubring_keys:
-                log.debug("importing key %s", hdr.version)
-                yum.misc.import_key_to_pubring(hdr.description, hdr.version,
-                                            gpgdir=gpgdir, make_ro_copy=False)
+                import_key(hdr.description, hdr.version, gpgdir)
             else:
                 log.debug("key %s is already in keyring", hdr.version)
 
@@ -522,10 +534,7 @@ class UpgradeDownloader(yum.YumBase):
             if self.check_keyfile(k):
                 keys = self._retrievePublicKey(k) # XXX getSig?
                 for info in keys:
-                    log.debug("importing key %s", info['hexkeyid'].lower())
-                    yum.misc.import_key_to_pubring(info['raw_key'],
-                                                   info['hexkeyid'],
-                                                   gpgdir=gpgdir)
+                    import_key(info['raw_key'], info['hexkeyid'], gpgdir)
 
         # verify the signed file, writing plaintext to outfile
         with open(signedfile) as inf, open(outfile, 'w') as outf:
