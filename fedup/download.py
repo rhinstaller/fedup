@@ -344,6 +344,8 @@ class UpgradeDownloader(yum.YumBase):
                 raise yum.Errors.YumGPGCheckError(e.strerror)
             if errs:
                 raise yum.Errors.YumGPGCheckError(', '.join(errs))
+            else:
+                log.info(".treeinfo.signed was signed with a trusted key")
             return outfile
 
         else:
@@ -466,11 +468,12 @@ class UpgradeDownloader(yum.YumBase):
             keyfile = keyfile[7:]
         # did the key come from a package?
         keypkgs = self.rpmdb.searchFiles(keyfile)
+        log.info("checking keyfile %s", keyfile)
         if keypkgs:
             keypkg = sorted(keypkgs)[-1]
-            log.debug("%s is owned by %s", keyfile, keypkg.nevr)
+            log.debug("keyfile owned by package %s", keypkg.nevr)
         if not keypkgs:
-            log.info("%s does not belong to any package", keyfile)
+            log.info("REJECTED: %s does not belong to any package")
             return False
 
         # was that package signed?
@@ -480,22 +483,22 @@ class UpgradeDownloader(yum.YumBase):
             siginfo = yum.pgpmsg.decode(sigdata)[0]
             (keyid,) = struct.unpack('>Q', siginfo.key_id())
             hexkeyid = yum.misc.keyIdToRPMVer(keyid)
-            log.debug("%s is signed with key %s", keypkg.nevr, hexkeyid)
+            log.debug("package was signed with key %s", hexkeyid)
         else:
-            log.info("%s unsigned", keypkg.nevr)
+            log.info("REJECTED: %s was unsigned", keypkg.nevr)
             return False
 
         # do we trust the key that signed it?
         if yum.misc.keyInstalled(self.ts, keyid, 0):
-            log.debug("key %s is trusted by rpmdb", hexkeyid)
+            log.debug("key %s is trusted by rpm", hexkeyid)
         else:
-            log.info("key %s is not trusted", hexkeyid)
+            log.info("REJECTED: key %s is not trusted by rpm", hexkeyid)
             return False
 
         # has the key been tampered with?
         problems = keypkg.verify([keyfile]).get(keyfile, [])
         if problems:
-            log.info("%s does not match packaged file (%s)",
+            log.info("REJECTED: keyfile does not match packaged file (%s)",
                      keyfile, " ".join(p.type for p in problems))
             return False
 
