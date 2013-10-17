@@ -222,6 +222,7 @@ if __name__ == '__main__':
     log.info("%s starting at %s", sys.argv[0], time.asctime())
 
     try:
+        exittype = "cleanly"
         main(args)
     except KeyboardInterrupt as e:
         print
@@ -238,7 +239,7 @@ if __name__ == '__main__':
                 message("  %s" % p)
         else:
             message(_("Downloading failed: %s") % e)
-        log.debug("Exception:", exc_info=True)
+        log.debug("Traceback (for debugging purposes):", exc_info=True)
         raise SystemExit(2)
     except TransactionError as e:
         print
@@ -259,6 +260,7 @@ if __name__ == '__main__':
                       exc_info=True)
             raise SystemExit(1)
         log.info("Exception:", exc_info=True)
+        exittype = "with unhandled exception"
         raise
     finally:
-        log.info("%s exiting at %s", sys.argv[0], time.asctime())
+        log.info("%s exiting %s at %s", sys.argv[0], exittype, time.asctime())
