@@ -1,0 +1,19 @@
+#!/bin/sh
+# generator for SystemUpgrade.
+# TODO: rewrite in C and get into upstream systemd
+
+UPGRADE_UNIT_PATH='/etc/systemd/system'
+
+ready_for_upgrade() {
+    [ -L /system-upgrade -a -d /system-upgrade ] && \
+    [ -d /system-upgrade-root ] &&
+    [ -L /run/system-upgrade -o -f /run/initramfs/upgrade.conf ]
+}
+
+# Need to run under systemd >= v183 or we can't override /etc :/
+[ -d $2 ] || exit
+
+# If everything's in place, change the default target to system-upgrade.target
+if ready_for_upgrade; then
+    ln -sf $UPGRADE_UNIT_PATH/system-upgrade.target $2/default.target
+fi
