@@ -4,3 +4,6 @@ __pycache__
 build/
 fedup.log
 systemd/fedora-system-upgrade
+man/fedup.8
+po/fedup.pot
+po/en.po
