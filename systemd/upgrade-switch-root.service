@@ -2,17 +2,15 @@
 Description=Prepare Upgrade Image
 Documentation=man:upgrade-switch-root.service(8)
 DefaultDependencies=no
-ConditionPathExists=/run/initramfs/upgrade.conf
+ConditionPathIsMountPoint=/system-upgrade-root
 OnFailure=emergency.target
 OnFailureIsolate=yes
 After=upgrade-switch-root.target
 
 [Service]
 Type=oneshot
-EnvironmentFile=/run/initramfs/upgrade.conf
-ExecStartPre=-/usr/bin/plymouth update-root-fs --new-root-dir=${UPGRADEROOT}
-ExecStart=-/usr/bin/systemctl --no-block --force switch-root ${UPGRADEROOT}
-ExecStopPost=-/bin/rm -f /run/initramfs/upgrade.conf
+ExecStartPre=-/usr/bin/plymouth update-root-fs --new-root-dir=/system-upgrade-root
+ExecStart=-/usr/bin/systemctl --no-block --force switch-root /system-upgrade-root
 StandardInput=null
 StandardOutput=null
 StandardError=null

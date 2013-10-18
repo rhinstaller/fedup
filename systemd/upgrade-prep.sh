@@ -20,8 +20,8 @@
 
 die() { echo "$@"; exit 1; }
 
-. /run/initramfs/upgrade.conf || die "can't find /run/initramfs/upgrade.conf"
-[ -n "$UPGRADEROOT" ] || die "UPGRADEROOT is not set"
+UPGRADEROOT=/system-upgrade-root
+
 [ -d "$UPGRADEROOT" ] || die "$UPGRADEROOT does not exist"
 
 grep -qw 'upgrade.test' /proc/cmdline && UPGRADETEST=1 || UPGRADETEST=''
