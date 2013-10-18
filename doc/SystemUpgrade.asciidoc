@@ -1,0 +1,176 @@
+Implementing Offline System Upgrades
+====================================
+Will Woods <wwoods@redhat.com>
+v0.2, 16 Oct 2013: early draft
+:SystemUpdates: http://freedesktop.org/wiki/Software/systemd/SystemUpdates/[`SystemUpdates`]
+:fedup: https://github.com/wgwoods/fedup/[`fedup`]
+
+Here are some guidelines for implementing offline OS *upgrades* using systemd
+and dracut.
+
+This is similar to systemd's {SystemUpdates} concept, but it's
+designed for doing _major-version_ system upgrades with the system _completely
+offline_, with the upgrade running from inside an initrd or other RAM-based
+filesystem image.
+
+The process described here should work for any Linux distribution that uses
+systemd. Distro-specific details like the method for finding and downloading
+necessary packages are left to the distributions.
+
+.Upgrade vs. Update
+NOTE: This document uses "up**grade**" when talking about _major-version
+system upgrades_ but "up**date**" when talking about a _minor or partial
+system update_.
+
+Overview
+--------
+
+.Preparation
+The upgrade tool downloads necessary packages and boot images.
+When the user OKs the upgrade, the tool must do the following steps,
+in order:
+
+. create `/system-upgrade`, a symlink to the directory containing
+  downloaded upgrade data
+. create an empty directory, `/system-upgrade-root`
+. run executables in `/usr/lib/system-upgrade/preboot`
+  * if any of these return a non-zero exit code, the upgrade should halt.
+. copy boot images into place (typically in `/boot`)
+. inject files listed in `/usr/lib/system-upgrade/initrd-addon.d/*.conf`
+  into initrd
+. inject files under `/usr/lib/system-upgrade/initrd-addon/` into initrd
+  * TODO: versioning, e.g.: "these files are only needed for this image"
+. add a bootloader entry for the upgrade boot images
+. _optional_: make the new bootloader entry the default and reboot the system
+
+.Upgrade startup (initrd to root mount)
+. The system is booted as usual
+. The kernel and initrd find the root device as usual
+. _Before mounting the root device_, the initrd may run scripts for
+  filesystem migration (or other tasks that require offline disks)
+. The root device is mounted
+. The initrd makes a copy of `$NEWROOT/system-upgrade` at `/run/system-upgrade`
+. Control transfers to the old system
+
+.Upgrade startup (old system mounts other disks)
+. `system-upgrade-generator` changes the default target to
+  `system-upgrade.target` if the following conditions are met:
+  * `/system-upgrade` is a symbolic link to a directory
+  * `/system-upgrade-root` is a directory
+  * `/run/system-upgrade` exists (i.e. was created by special upgrade initrd)
+. Everything up to `sysinit.target` happens normally (mounting disks, &c)
+. The upgrade runtime image is copied into a tmpfs at `/system-upgrade-root`
+. (distro-dependent) sanity checks on the upgrade data, e.g. "files listed in
+  `/system-upgrade/package.list` must exist".
+  * If any of these checks fail, the upgrade should abort.
+. After `system-upgrade.target`, systemd pivots into `/system-upgrade-root`
+  and puts the old system root at `/sysroot`
+
+.Upgrade
+The upgrade image is responsible for upgrading the system in whatever
+system-specific manner is appropriate. The environment will be as follows:
+
+* The system is mounted at `/sysroot`
+* Upgrade data (packages etc.) can be found in `/sysroot/system-upgrade`
+  ** Note that the filesystem root has changed, so `/system-upgrade` should
+     be a relative symlink - or the upgrade tool should resolve the link
+     itself
+* The upgrade tool should remove the `/system-upgrade` link and
+  `/system-upgrade-root` directory if it finishes successfully.
+
+More detail
+-----------
+
+HERE IS MORE DETAILS ABOUT SOME THINGS OK.
+
+preboot scripts
+~~~~~~~~~~~~~~~
+After adding the boot entry, but _before_ reboot, the upgrade tool should run
+each executable file in the preboot dir (`/usr/libexec/system-upgrade/preboot`).
+
+If any of these commands returns a non-zero status, the output from the
+command should be shown to the user and the system should *not* proceed with
+the upgrade. The tool should remove the boot entry and other flag files to
+ensure the upgrade does not proceed.
+
+This lets packages provide scripts to do whatever system modifications might be
+necessary to get the new system to boot - e.g. migrating old boot arguments or
+configuration files to newer formats.
+
+FAQs
+----
+
+Why not just use SystemUpdates?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Despite what the page says, {SystemUpdates} is not fully offline; various
+parts of the system are in use when the update runs (udev and systemd are
+running, also maybe plymouth, various storage daemons, etc.).
+
+For most small, incremental updates this isn't a problem, but some changes are
+large enough that attempting to apply them as updates to a (partially) running
+system is either dangerous, unpredictable, or just plain impossible.
+
+For example, moving `/bin`, `/sbin`, and `/lib` to `/usr` while your system is
+running will probably cause some very odd, hard-to-diagnose problems. And
+migrating a system from `ext3` to `ext4` just isn't possible if the disk is
+already in use.
+
+Why the special initrd (`upgrade.img`)?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+As mentioned above, we definitely want to run upgrades from a seprate
+filesystem than your normal root, so your system is offline during the
+upgrade.
+
+Also, it's a good idea to run the upgrade using the new system's kernel,
+drivers, tools, SELinux policy, etc. It saves trouble fixing up problems after
+the upgrade, and in some cases it's necessary to make the upgrade work.
+
+For example: when Fedora switched to using XZ-compressed RPM payloads, there
+would be no way for the older version of `rpm` to unpack the newer RPMs. You
+need the newer (xz-capable) `rpm` to install the new (xz-compressed) RPMs.
+
+Why the double-switch-root? Why not let `upgrade.img` mount all the disks?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This is how `anaconda` used to try to set up the upgrade, but it turns out to
+be unreliable. First, there's quite a few ways to set up mounts:
+
+* `/etc/fstab`
+* systemd `.mount` units
+** could be generated dynamically from systemd generators!
+* manual mounting from init scripts and/or systemd services
+
+Even if we did force all mounts into `/etc/fstab` and/or static `.mount`
+units, we'd still have to make sure the initrd could find all the
+_configuration files_ that might be needed - `crypttab`, `lvm.conf`,
+`mdadm.conf`, etc. And what if something changes between versions? What if the
+new version wants to use `/etc/lvm/lvm3.conf`?
+
+On the other hand, your existing system knows how to do all of this already.
+It does it just fine every time your system boots, right?
+
+In short: the best way to make sure your system gets set up normally is to
+_let your system set itself up normally_.
+
+Which means the simplest, most reliable solution is to (roughly) `chroot()`
+into your old system, tell it to set up its disks, then exit the chroot and
+start the upgrade. It might seem complicated, but in practice the
+alternative is worse.
+
+Why do you need to use `/system-upgrade-root` for the upgrade root?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+In my testing, `pivot_root` and/or `switch_root` didn't work unless the new
+root was a subdirectory of `/`.
+
+Future topics
+-------------
+
+* Suggested behavior on failures?
+** Reboot vs. emergency shell vs. ...
+* Define location/use of upgrade state file?
+** We need a way to report failure to user if the upgrade reboots...
+** Hang with timeout, write message to state file...
+* Snapshot checkpoint?
+* Suggested time for cleanup?
