@@ -2,7 +2,7 @@
 # generator for SystemUpgrade.
 # TODO: rewrite in C and get into upstream systemd
 
-UPGRADE_UNIT_PATH='/etc/systemd/system'
+UPGRADE_UNIT_PATH='@UNITDIR@'
 
 ready_for_upgrade() {
     [ -L /system-upgrade -a -d /system-upgrade ] && \

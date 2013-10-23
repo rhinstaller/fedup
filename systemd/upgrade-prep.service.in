@@ -8,7 +8,7 @@ DefaultDependencies=no
 
 [Service]
 Type=oneshot
-ExecStart=/usr/libexec/upgrade-prep.sh
+ExecStart=@LIBEXECDIR@/upgrade-prep.sh
 ExecStopPost=-/usr/bin/systemctl --no-block isolate upgrade-switch-root.target
 StandardOutput=journal+console
 
