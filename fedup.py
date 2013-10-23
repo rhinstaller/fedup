@@ -176,6 +176,9 @@ def main(args):
     else:
         print _('Finished. Reboot to start upgrade.')
 
+    if args.skippkgs:
+        return
+
     # --- Here's where we summarize potential problems. ---
 
     # list packages without updates, if any
