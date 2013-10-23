@@ -37,7 +37,7 @@ cat /proc/mounts | while read dev mnt rest; do
     [ -f $mnt/.please-unmount ] && umount -l $mnt
 done
 
-# XXX backwards compatibility for F17->F18, drop for F18->F19
+# XXX backwards compatibility for upgrade.img from F18 and earlier
 # if /lib/modules/$(uname -r) is a mount, umount it
 moddir=$(readlink -eq /lib/modules/$(uname -r))
 grep -qw $moddir /proc/mounts && umount -l $moddir
@@ -56,10 +56,12 @@ tac /proc/mounts | while read dev mnt type opts x y; do
     fi
 done
 
-# XXX: we can drop this once there's a way to pass args to new init
-echo "switching upgraderoot default target to upgrade.target"
-# switch the upgrade chroot target to upgrade.target
-ln -sf upgrade.target $UPGRADEROOT/etc/systemd/system/default.target
-rm -f $UPGRADEROOT/usr/lib/systemd/system/default.target
+# XXX: backward compatibility with upgrade.img < 0.8.0
+if [ ! -f /run/system-upgrade ]; then
+    echo "switching upgraderoot default target to upgrade.target"
+    # switch the upgrade chroot target to upgrade.target
+    ln -sf upgrade.target $UPGRADEROOT/etc/systemd/system/default.target
+    rm -f $UPGRADEROOT/usr/lib/systemd/system/default.target
+fi
 
 echo "upgrade prep complete, switching root..."
