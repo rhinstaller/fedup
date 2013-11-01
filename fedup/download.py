@@ -340,7 +340,7 @@ class UpgradeDownloader(yum.YumBase):
                 log.info("verifying .treeinfo.signed")
                 # verify file and write plaintext to outfile
                 errs = self.check_signed_file(fn, outfile)
-            except gpgme.GpgmeError:
+            except gpgme.GpgmeError as e:
                 raise yum.Errors.YumGPGCheckError(e.strerror)
             if errs:
                 raise yum.Errors.YumGPGCheckError(', '.join(errs))
