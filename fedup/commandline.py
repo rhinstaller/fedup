@@ -94,8 +94,8 @@ def parse_args(gui=False):
     net.add_argument('--addrepo', metavar='REPOID=[@]URL',
         action=RepoAction, dest='repos',
         help=_('add the repo at URL (@URL for mirrorlist)'))
-    net.add_argument('--instrepo', metavar='REPOID', type=str,
-        help=_('get upgrader boot images from REPOID (default: auto)'))
+    net.add_argument('--instrepo', metavar='[@]URL', type=str,
+        help=_('get upgrader boot images from the given URL (default: auto)'))
     p.set_defaults(repos=[])
 
     if not gui:
@@ -116,10 +116,10 @@ def parse_args(gui=False):
     if not (gui or args.network or args.device or args.iso or args.clean):
         p.error(_('SOURCE is required (--network, --device, --iso)'))
 
-    # allow --instrepo URL as shorthand for --repourl REPO=URL --instrepo REPO
+    # handle --instrepo URL (default is to interpret it as a repoid)
     if args.instrepo and '://' in args.instrepo:
-        args.repos.append(('add', 'cmdline-instrepo=%s' % args.instrepo))
-        args.instrepo = 'cmdline-instrepo'
+        args.repos.append(('add', 'instrepo=%s' % args.instrepo))
+        args.instrepo = 'instrepo'
 
     if not gui:
         if args.clean:
