@@ -364,6 +364,8 @@ class UpgradeDownloader(yum.YumBase):
             self._treeinfo = Treeinfo(self._get_treeinfo())
             log.debug("validating .treeinfo")
             self._treeinfo.checkvalues()
+            if self._treeinfo.get("general", "arch") != self.arch.basearch:
+                raise TreeinfoError("arch doesn't match system")
         return self._treeinfo
 
     def download_boot_images(self, arch=None):
