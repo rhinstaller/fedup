@@ -29,6 +29,15 @@ grep -qw 'upgrade.test' /proc/cmdline && UPGRADETEST=1 || UPGRADETEST=''
 # remove our boot entry
 [ $UPGRADETEST ] || new-kernel-pkg --remove fedup
 
+# Sanity check: Are all the packages present?
+while read pkg; do
+    [ -f /system-upgrade/$pkg ] || missing="$missing $pkg"
+done < /system-upgrade/package.list
+if [ -n "$missing" ]; then
+    echo "missing packages:"; for pkg in $missing; do echo "  $pkg"; done
+    die "aborting upgrade due to missing packages."
+fi
+
 # make target dir for systemd's pivot_root
 mkdir -p $UPGRADEROOT/mnt
 

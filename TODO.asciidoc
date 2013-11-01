@@ -4,7 +4,6 @@ TODO
 _(ordered by priority, roughly)_
 
 Safety checks::
-  * Check to make sure packages in `package.list` all exist
   * If /etc/yum/vars/releasever exists, complain to user (#908017)
 
 Migration::
