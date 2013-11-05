@@ -5,7 +5,7 @@ UNITDIR=$(shell pkg-config systemd --variable systemdsystemunitdir)
 UTILDIR=$(shell pkg-config systemd --variable systemdutildir)
 LIBEXECDIR=/usr/libexec
 
-SERVICES=upgrade-prep.service upgrade-switch-root.service
+SERVICES=upgrade-prep.service upgrade-switch-root.service upgrade-plymouth-switch-root.service
 TARGETS=system-upgrade.target upgrade-switch-root.target
 
 unit_DATA=$(SERVICES) $(TARGETS)

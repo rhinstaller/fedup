@@ -48,6 +48,7 @@ mkdir -p $RPM_BUILD_ROOT/etc/fedup/update.img.d
 %{_unitdir}/upgrade-prep.service
 %{_unitdir}/upgrade-switch-root.service
 %{_unitdir}/upgrade-switch-root.target
+%{_unitdir}/upgrade-plymouth-switch-root.service
 %{_unitdir}/../system-generators/system-upgrade-generator
 # upgrade prep program
 %{_libexecdir}/upgrade-prep.sh

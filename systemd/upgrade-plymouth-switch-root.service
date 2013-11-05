@@ -1,0 +1,15 @@
+[Unit]
+Description=Plymouth switch root service
+DefaultDependencies=no
+ConditionPathIsMountPoint=/system-upgrade-root
+Before=upgrade-switch-root.service
+
+[Service]
+Type=oneshot
+ExecStart=-/usr/bin/plymouth update-root-fs --new-root-dir=/system-upgrade-root
+StandardInput=null
+StandardOutput=null
+StandardError=null
+
+[Install]
+WantedBy=upgrade-switch-root.target
