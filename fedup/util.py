@@ -94,3 +94,11 @@ def hrsize(size, si=False, use_ib=False):
                 return "%u%s%s" % (int(size)+1, p, suffix)
             else:
                 return "%.1f%s%s" % (size, p, suffix)
+
+def isxen():
+    '''True if this system is a xen host or guest.'''
+    try:
+        virttype = open("/sys/hypervisor/type").read().strip()
+    except (IOError, OSError):
+        virttype = "none"
+    return virttype == "xen"

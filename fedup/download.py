@@ -36,7 +36,7 @@ disabled_plugins = ['rpm-warm-cache', 'remove-with-leaves', 'presto',
 from . import _
 from . import cachedir, upgradeconf, kernelpath, initrdpath, defaultkey
 from . import mirrormanager
-from .util import listdir, mkdir_p, rm_rf
+from .util import listdir, mkdir_p, rm_rf, isxen
 from shutil import copy2
 
 log = logging.getLogger(__package__+".yum") # maybe I should rename this..
@@ -387,10 +387,18 @@ class UpgradeDownloader(yum.YumBase):
                                               reget=None,
                                               copy_local=True)
 
+        # handle special cases for downloading kernel images
+        def get_image_arch():
+            if isxen():
+                return "xen"
+            else:
+                return self.treeinfo.get("general", "arch")
+
         # download the images
         try:
-            if not arch:
-                arch = self.treeinfo.get('general', 'arch')
+            # pick which arch of image(s) to use
+            arch = arch or get_image_arch()
+            # grab the kernel
             kernel = grab_and_check(arch, 'kernel', kernelpath)
             # cache the initrd somewhere so we don't have to fetch it again
             # if it gets modified later.
