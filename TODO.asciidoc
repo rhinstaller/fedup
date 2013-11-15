@@ -6,18 +6,29 @@ _(ordered by priority, roughly)_
 Safety checks::
   * If /etc/yum/vars/releasever exists, complain to user (#908017)
 
+Docs::
+  * document boot args
+  * man pages for services/targets?
+
 Migration::
-  * Add a _fedup-before-upgrade_ scriptlet hook
+  * Add _preboot_ scriptlet hook
   ** Not technically a dracut hook, since it'll be run by fedup
   ** Example uses:
   *** https://bugzilla.redhat.com/show_bug.cgi?id=881624[Bug #881624]:
       Migrate `KEYTABLE=...` to `KEYMAP=...`
   *** https://bugzilla.redhat.com/show_bug.cgi?id=881670[Bug #881670]:
       Add x-systemd.device-timeout=0 for mounts that need it
+  ** See also http://www.freedesktop.org/software/systemd/man/kernel-install.html[kernel-install] and `*.install`
 
 Disk space handling::
   * Pad RPM diskspace check to require more disk
   * Add `--packagedir` and `--cachedir` flags
+  * Remove old/unneeded/expired files *before* downloading newer versions
+
+ISO/Device/"Offline" upgrades::
+  * This is related to disk space handling (lots of mount juggling)
+  * Handle ISO-on-USB-stick case
+  * Handle mount chains deeper than ISO-on-USB
 
 Crash handling::
   * Log state to a file
@@ -55,9 +66,15 @@ update-groups mode::
   * Reinstall each group that yum lists as installed (see yum.igroups)
   ** Extra argument for mandatory vs. default
 
-ISO/Device/"Offline" upgrades::
-  * Handle ISO-on-USB-stick case
-  * Handle mount chains deeper than ISO-on-USB
+Testing::
+  * Unit testing
+  ** blerg, yum/rpm do not lend themselves well to this
+  * Functional testing
+  ** need lots of tools
+  *** install a VM with a given Fedora version
+  *** apply updates and/or install fedup
+  *** generate updates/instrepos with packages with certain properties
+  *** run fedup and check logs/results
 
 Upstreaming::
   * systemd: get system-upgrade.target, system-upgrade-generator upstream
@@ -65,20 +82,10 @@ Upstreaming::
 
 Updates::
   * Scheme for associating updates images with upgrade.img vintages
+  ** Read `/etc/system-upgrade-release` from initrd to get version
 
 GUI::
   * Wire up the UI bits
   * Wire up progress callbacks
   ** yum in a subprocess
   *** use `multiprocessing.Queue` to send back progress data?
-
-Docs::
-  * man pages for services
-  * man pages for targets
-  * document boot args
-
-SELinux::
-  * Find a way to run upgrade with SELinux enforcing
-  . Start with new policy while in initramfs
-  . Enforce the old policy after switching to old system
-  . Use the new policy for writing files during upgrade
