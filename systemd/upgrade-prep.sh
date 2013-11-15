@@ -66,7 +66,7 @@ tac /proc/mounts | while read dev mnt type opts x y; do
 done
 
 # XXX: backward compatibility with upgrade.img < 0.8.0
-if [ ! -f /run/system-upgrade ]; then
+if [ ! -L /run/system-upgrade ]; then
     echo "switching upgraderoot default target to upgrade.target"
     # switch the upgrade chroot target to upgrade.target
     ln -sf upgrade.target $UPGRADEROOT/etc/systemd/system/default.target
