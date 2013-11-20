@@ -4,6 +4,7 @@ Will Woods <wwoods@redhat.com>
 v0.2, 16 Oct 2013: early draft
 :SystemUpdates: http://freedesktop.org/wiki/Software/systemd/SystemUpdates/[`SystemUpdates`]
 :fedup: https://github.com/wgwoods/fedup/[`fedup`]
+:os-release: http://www.freedesktop.org/software/systemd/man/os-release.html[`os-release`]
 
 Here are some guidelines for implementing offline OS *upgrades* using systemd
 and dracut.
@@ -25,25 +26,42 @@ system update_.
 Overview
 --------
 
-.Preparation
-The upgrade tool downloads necessary packages and boot images.
-When the user OKs the upgrade, the tool must do the following steps,
-in order:
+=== Download ===
+The upgrade tool examines the system and determines what data (packages, boot
+images, whatever) is needed to upgrade to the new version. (This part is very
+much distribution-specific, so details are left to the implementor.)
 
-. create `/system-upgrade`, a symlink to the directory containing
-  downloaded upgrade data
-. create an empty directory, `/system-upgrade-root`
-. run executables in `/usr/lib/system-upgrade/preboot`
-  * if any of these return a non-zero exit code, the upgrade should halt.
+You'll also need a kernel and initramfs for the upgrade. Whether these are
+downloaded or created locally is up to the implementation.
+
+The initramfs should contain a file named `etc/system-upgrade-release`, which
+follows the format of {os-release}.
+
+
+=== Preparation ===
+When the user decides to start the upgrade, the tool does the following steps
+*in order*.
+
 . copy boot images into place (typically in `/boot`)
-. inject files listed in `/usr/lib/system-upgrade/initrd-addon.d/*.conf`
-  into initrd
-. inject files under `/usr/lib/system-upgrade/initrd-addon/` into initrd
-  * TODO: versioning, e.g.: "these files are only needed for this image"
 . add a bootloader entry for the upgrade boot images
+. create directories and flag files:
+  * create an empty directory, `/system-upgrade-root`
+  * create `/system-upgrade`, a symlink to the directory containing
+    downloaded upgrade data
+  * create `/system-upgrade/vmlinuz`, a symlink to the new kernel
+  * create `/system-upgrade/initrd.img`, a symlink to the new initramfs
+  * create a temporary directory (`INITRD_TMPDIR`)
+. run executables in `/usr/lib/system-upgrade/preboot`
+  * the first argument is `INITRD_TMPDIR`
+  * the environment will contain:
+  ** `UPGRADE_KERNEL_VERSION`: new kernel version (eg "3.11.7-200.fc19.x86_64")
+  ** `UPGRADE_INITRD_VERSION`: `VERSION_ID` from `system-upgrade-release`
+  * if any of these return a non-zero exit code, the upgrade should halt
+. inject addon files into the initrd
+  * all files under `INITRD_TMPDIR` are copied into the initrd
 . _optional_: make the new bootloader entry the default and reboot the system
 
-.Upgrade startup (initrd to root mount)
+=== Upgrade startup (initrd to root mount) ===
 . The system is booted as usual
 . The kernel and initrd find the root device as usual
 . _Before mounting the root device_, the initrd may run scripts for
@@ -52,7 +70,7 @@ in order:
 . The initrd makes a copy of `$NEWROOT/system-upgrade` at `/run/system-upgrade`
 . Control transfers to the old system
 
-.Upgrade startup (old system mounts other disks)
+=== Upgrade startup (old system mounts other disks) ===
 . `system-upgrade-generator` changes the default target to
   `system-upgrade.target` if the following conditions are met:
   * `/system-upgrade` is a symbolic link to a directory
@@ -66,7 +84,7 @@ in order:
 . After `system-upgrade.target`, systemd pivots into `/system-upgrade-root`
   and puts the old system root at `/sysroot`
 
-.Upgrade
+=== Upgrade ===
 The upgrade image is responsible for upgrading the system in whatever
 system-specific manner is appropriate. The environment will be as follows:
 
@@ -83,19 +101,35 @@ More detail
 
 HERE IS MORE DETAILS ABOUT SOME THINGS OK.
 
-preboot scripts
-~~~~~~~~~~~~~~~
+=== preboot scripts ===
 After adding the boot entry, but _before_ reboot, the upgrade tool should run
-each executable file in the preboot dir (`/usr/libexec/system-upgrade/preboot`).
+each executable file in the preboot dir (`/usr/lib/system-upgrade/preboot`).
 
 If any of these commands returns a non-zero status, the output from the
 command should be shown to the user and the system should *not* proceed with
 the upgrade. The tool should remove the boot entry and other flag files to
 ensure the upgrade does not proceed.
 
-This lets packages provide scripts to do whatever system modifications might be
-necessary to get the new system to boot - e.g. migrating old boot arguments or
-configuration files to newer formats.
+Preboot scripts may also do whatever system modifications might be necessary
+to get the new system to boot - e.g. migrating old boot arguments, modifying
+configuration files, grabbing config files or kernel modules that might be
+needed in the initrd, etc.
+
+After the scripts run, any files that have been placed in `INITRD_TMPDIR` will
+be copied into the initramfs.
+
+==== preboot script environment ====
+
+The scripts will be executed with `INITRD_TMPDIR` as the first argument.
+
+The environment will contain (at least) these items:
+
+`UPGRADE_KERNEL_VERSION`::
+  The version string for `/system-upgrade/vmlinuz` (ex: 3.11.6-300.fc20.x86_64)
+`UPGRADE_INITRD_VERSION`::
+  The `VERSION_ID` for `/system-upgrade/initrd.img` (ex: 0.8.0)
+
+All other data needed for the upgrade will be available in `/system-upgrade`.
 
 FAQs
 ----
