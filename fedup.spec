@@ -1,5 +1,5 @@
 Name:           fedup
-Version:        0.7.3
+Version:        0.8.0
 Release:        0%{?dist}
 Summary:        The Fedora Upgrade tool
 
@@ -69,6 +69,20 @@ mkdir -p $RPM_BUILD_ROOT/etc/fedup/update.img.d
 #{_datadir}/fedup/ui
 
 %changelog
+* Wed Nov 20 2013 Will Woods <wwoods@redhat.com> 0.8.0-0
+- Check signatures on downloaded packages and images (#877623)
+- Added --nogpgcheck, --instrepokey, --enableplugin, --disableplugin
+- Improve error messages and warnings about transaction problems
+- Improve disk space error messages (#949963)
+- Clarify "instrepo not found" error (#980818)
+- Start upgrade using systemd generator instead of boot args (#964303)
+- Fix emergency shell on F17 upgrades (#958586)
+- Don't start upgrade if media/packages are missing (#984415)
+- Check for mismatched instrepo arch (#981180)
+- Fix traceback with deltarpm (#1005895)
+- Use the right kernel for Xen guests (#1023618)
+- Lots of other bugfixes
+
 * Fri Mar 15 2013 Will Woods <wwoods@redhat.com> 0.7.3-0
 - Write debuglog by default (/var/log/fedup.log)
 - Add support for applying updates to upgrade.img
