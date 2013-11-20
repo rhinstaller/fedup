@@ -12,7 +12,7 @@ Source0:        https://github.com/downloads/wgwoods/fedup/%{name}-%{version}.ta
 Requires:       systemd >= systemd-44-23.fc17
 Requires:       grubby
 
-BuildRequires:  python2-devel
+BuildRequires:  python-libs
 BuildRequires:  systemd-devel
 BuildRequires:  asciidoc
 BuildArch:      noarch
