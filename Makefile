@@ -28,7 +28,7 @@ clean: $(CLEAN_TARGETS)
 
 ARCHIVE = fedup-$(VERSION).tar.xz
 archive: $(ARCHIVE)
-fedup-$(VERSION).tar.xz:
+fedup-$(VERSION).tar.xz: $(shell git ls-tree -r --name-only HEAD)
 	git archive --format=tar --prefix=fedup-$(VERSION)/ HEAD \
 	  | xz -c > $@ || rm $@
 
