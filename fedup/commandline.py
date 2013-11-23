@@ -173,7 +173,7 @@ def isofile(arg):
         raise argparse.ArgumentTypeError(_("Not a regular file: %s") % arg)
     if not media.isiso(arg):
         raise argparse.ArgumentTypeError(_("Not an ISO 9660 image: %s") % arg)
-    if any(arg.startswith(d.mnt) for d in media.removable()):
+    if any(media.fileondev(arg, d.dev) for d in media.removable()):
         raise argparse.ArgumentTypeError(_("ISO image on removable media\n"
             "Sorry, but this isn't supported yet.\n"
             "Copy the image to your hard drive or burn it to a disk."))

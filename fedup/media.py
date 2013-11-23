@@ -68,6 +68,9 @@ def isloop(dev):
 def find():
     return [m for m in mounts() if isblock(m.dev) and ismedia(m.mnt)]
 
+def fileondev(path, dev):
+    return os.stat(path).st_dev == os.stat(dev).st_rdev
+
 def removable():
     '''Yield mounted block devices that don't have entries in /etc/fstab'''
     for m in mounts():
