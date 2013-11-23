@@ -23,6 +23,9 @@ from os.path import exists, join
 from subprocess import check_output, call, STDOUT, CalledProcessError
 from tempfile import mkdtemp
 
+import logging
+log = logging.getLogger(__package__+'.media')
+
 def check_call(cmd, stderr=STDOUT, *args, **kwargs):
     # Use stderr=STDOUT so CalledProcessError has mount output in e.output
     check_output(cmd, stderr=stderr, *args, **kwargs)
@@ -92,7 +95,7 @@ def fix_loop_entry(mnt):
 def umount(mntpoint):
     try:
         check_call(['umount', '-d', mntpoint])
-    except CalledProcessError:
+    except CalledProcessError as e:
         log.warn('umount %s failed: %s', mntpoint, e.output)
         log.warn('trying lazy umount')
         call(['umount', '-l', mntpoint])
