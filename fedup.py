@@ -19,7 +19,7 @@
 #
 # Author: Will Woods <wwoods@redhat.com>
 
-import os, sys, time
+import os, sys, time, atexit
 from subprocess import call
 
 from fedup.download import UpgradeDownloader, YumBaseError, yum_plugin_for_exc
@@ -98,6 +98,14 @@ def main(args):
     if args.device or args.iso:
         device_setup(args)
 
+        if args.iso:
+            log.debug("iso is %s", os.path.realpath(args.iso))
+            def isocleanup():
+                log.debug("unmounting %s", args.device.mnt)
+                media.umount(args.device.mnt)
+                os.rmdir(args.device.mnt)
+            atexit.register(isocleanup)
+
     # Get our packages set up where we can use 'em
     print _("setting up repos...")
     f = setup_downloader(version=args.network,
@@ -167,9 +175,6 @@ def main(args):
 
     if args.device:
         setup_media_mount(args.device)
-
-    if args.iso:
-        media.umount(args.device.mnt)
 
     if args.reboot:
         reboot()
