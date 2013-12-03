@@ -48,9 +48,11 @@ def setup_downloader(version, instrepo=None, cacheonly=False, repos=[],
     f.preconf.disabled_plugins += disable_plugins
     f.instrepoid = instrepo
     repo_cb = output.RepoCallback()
-    repo_prog = output.RepoProgress(fo=sys.stderr)
+    repo_prog = output.RepoProgress(fo=sys.stdout)
+    multi_prog = output.RepoMultiProgress(fo=sys.stdout)
     disabled_repos = f.setup_repos(callback=repo_cb,
                                    progressbar=repo_prog,
+                                   multi_progressbar=multi_prog,
                                    repos=repos)
     disabled_repos = filter(lambda id: id != f.instrepoid, disabled_repos)
     if disabled_repos:

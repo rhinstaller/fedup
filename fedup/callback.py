@@ -90,7 +90,7 @@ class RPMTsCallback(BaseTsCallback):
 class DownloadCallbackBase(ProcessTransBaseCallback):
     def __init__(self):
         ProcessTransBaseCallback.__init__(self)
-        self.log = logging.getLogger(__package__+".download")
+        self.logger = logging.getLogger(__package__+".download")
 
     # for Yum transaction callbacks (i.e. YumBase.processTransaction stuff)
     def event(self, state, data=None):
@@ -99,7 +99,7 @@ class DownloadCallbackBase(ProcessTransBaseCallback):
     # our 'verify' callback in download_packages (yum doesn't have one :/)
     def verify(self, amount, total, filename, data):
         shortname = filename.split('/')[-1]
-        self.log.debug("verifying %u/%u %s", amount, total, shortname)
+        self.logger.debug("verifying %u/%u %s", amount, total, shortname)
 
 # callback object for depsolving
 

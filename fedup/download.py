@@ -102,8 +102,8 @@ class UpgradeDownloader(yum.YumBase):
         self.instrepoid = None
         self.disabled_repos = []
         self._treeinfo = None
-        self.prerepoconf.failure_callback = raise_exception
         self._repoprogressbar = None
+        self._repomultiprogress = None
         # TODO: locking to prevent multiple instances
         self.verbose_logger = log
 
@@ -133,7 +133,8 @@ class UpgradeDownloader(yum.YumBase):
         r.base_persistdir = cachedir
         r.basecachedir = cachedir
         r.cache = self.cacheonly
-        r.callback = kwargs.get('callback') or self._repoprogressbar
+        r.callback = self._repoprogressbar
+        r.multi_callback = self._repomultiprogress
         r.failure_obj = raise_exception
         r.mirror_failure_obj = raise_exception
         r.failovermethod = 'priority'
@@ -143,12 +144,16 @@ class UpgradeDownloader(yum.YumBase):
         self._repos.add(r)
         self._repos.enableRepo(repoid)
 
-    def setup_repos(self, callback=None, progressbar=None, repos=[]):
+    def setup_repos(self, callback=None, progressbar=None, multi_progressbar=None, repos=[]):
         '''Return a list of repos that had problems setting up.'''
         # These will set up progressbar and callback when we actually do setup
         self.prerepoconf.progressbar = progressbar
+        self.prerepoconf.multi_progressbar = multi_progressbar
         self.prerepoconf.callback = callback
+        self.prerepoconf.failure_callback = raise_exception
+        # save these for when prerepoconf is gone
         self._repoprogressbar = progressbar
+        self._repomultiprogress = multi_progressbar
 
         # TODO invalidate cache if the version doesn't match previous version
         log.info("checking repos")
@@ -203,7 +208,10 @@ class UpgradeDownloader(yum.YumBase):
                 repo.disable()
                 self.disabled_repos.append(repo.id)
             else:
-                log.info("repo %s seems OK" % repo.id)
+                log.info("repo %s seems OK", repo.id)
+
+            # Enable async downloads, if possible (see yum/__init__.py)
+            repo._async = repo.async
 
             # Disable gpg key checking for the repos, if requested
             if self._override_sigchecks:
@@ -238,7 +246,7 @@ class UpgradeDownloader(yum.YumBase):
         # NOTE: we ignore errors, as anaconda did before us.
         self.dsCallback = None
         return [t.po for t in self.tsInfo.getMembers()
-                     if t.ts_state in ("i", "u")]
+                     if t.po and t.ts_state in ("i", "u")]
 
     def find_packages_without_updates(self):
         '''packages on the local system that aren't being updated/obsoleted'''

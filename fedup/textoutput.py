@@ -22,7 +22,7 @@ import os, sys, time
 
 import rpm
 sys.path.insert(0, '/usr/share/yum-cli')
-from output import YumTextMeter, CacheProgressCallback
+from output import YumTextMeter, YumTextMultiFileMeter, CacheProgressCallback
 
 from .callback import *
 from . import terminal as term
@@ -81,6 +81,9 @@ class SimpleProgress(object):
         self.tty.write("\n")
 
 class RepoProgress(YumTextMeter):
+    pass
+
+class RepoMultiProgress(YumTextMultiFileMeter):
     pass
 
 class RepoCallback(object):
