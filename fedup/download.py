@@ -19,6 +19,7 @@
 
 import os
 import yum
+import time
 import struct
 import logging
 from .callback import BaseTsCallback
@@ -103,6 +104,7 @@ class UpgradeDownloader(yum.YumBase):
         self.instrepoid = None
         self.disabled_repos = []
         self._treeinfo = None
+        self._lastinterrupt = 0
         # TODO: locking to prevent multiple instances
         self.verbose_logger = log
 
@@ -139,6 +141,21 @@ class UpgradeDownloader(yum.YumBase):
         self._repos.add(r)
         self._repos.enableRepo(repoid)
 
+    def interrupt_callback(self, cbobj):
+        '''Basically the same as YumOutput.interrupt_callback()'''
+        exit_time = 2
+        now = time.time()
+        # output a message the first time we get an interrupt
+        if not self._lastinterrupt:
+            print "\nCurrent download cancelled, "\
+                  "interrupt again within %d seconds to exit.\n" % exit_time
+
+        if now - self._lastinterrupt < exit_time:
+            raise KeyboardInterrupt
+        else:
+            self._lastinterrupt = now
+            raise URLGrabError(15, "user interrupt") # skip to next mirror
+
     def setup_repos(self, callback=None, progressbar=None, multi_progressbar=None, repos=[]):
         '''Return a list of repos that had problems setting up.'''
         # These will set up progressbar and callback when we actually do setup
@@ -146,6 +163,7 @@ class UpgradeDownloader(yum.YumBase):
         self.prerepoconf.multi_progressbar = multi_progressbar
         self.prerepoconf.callback = callback
         self.prerepoconf.failure_callback = log_grab_failure
+        self.prerepoconf.interrupt_callback = self.interrupt_callback
 
         # TODO invalidate cache if the version doesn't match previous version
         log.info("checking repos")
@@ -195,6 +213,7 @@ class UpgradeDownloader(yum.YumBase):
         self.repos.setProgressBar(progressbar, multi_progressbar)
         self.repos.callback = callback
         self.repos.setFailureCallback(log_grab_failure)
+        self.repos.setInterruptCallback(self.interrupt_callback)
 
         # check enabled repos
         for repo in self.repos.listEnabled():
