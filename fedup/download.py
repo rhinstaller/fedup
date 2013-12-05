@@ -47,7 +47,8 @@ log = logging.getLogger(__package__+".yum") # maybe I should rename this..
 def mirrorlist(repo, arch='$basearch'):
     return mirrormanager + '?repo=%s&arch=%s' % (repo, arch)
 
-def raise_exception(failobj):
+def log_grab_failure(failobj):
+    log.info("%s: %s", failobj.url, failobj.exception)
     raise failobj.exception
 
 pluginpath = []
@@ -135,7 +136,7 @@ class UpgradeDownloader(yum.YumBase):
         r.cache = self.cacheonly
         r.callback = self._repoprogressbar
         r.multi_callback = self._repomultiprogress
-        r.failure_obj = raise_exception
+        r.failure_obj = log_grab_failure
         r.failovermethod = 'priority'
         r.baseurl = [varReplace(u, self.conf.yumvar) for u in baseurls if u]
         if mirrorlist:
@@ -149,7 +150,7 @@ class UpgradeDownloader(yum.YumBase):
         self.prerepoconf.progressbar = progressbar
         self.prerepoconf.multi_progressbar = multi_progressbar
         self.prerepoconf.callback = callback
-        self.prerepoconf.failure_callback = raise_exception
+        self.prerepoconf.failure_callback = log_grab_failure
         # save these for when prerepoconf is gone
         self._repoprogressbar = progressbar
         self._repomultiprogress = multi_progressbar
