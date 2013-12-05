@@ -136,7 +136,6 @@ class UpgradeDownloader(yum.YumBase):
         r.callback = self._repoprogressbar
         r.multi_callback = self._repomultiprogress
         r.failure_obj = raise_exception
-        r.mirror_failure_obj = raise_exception
         r.failovermethod = 'priority'
         r.baseurl = [varReplace(u, self.conf.yumvar) for u in baseurls if u]
         if mirrorlist:
