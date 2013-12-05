@@ -70,7 +70,7 @@ mkdir -p $RPM_BUILD_ROOT/etc/fedup/update.img.d
 #{_datadir}/fedup/ui
 
 %changelog
-* Wed Nov 20 2013 Will Woods <wwoods@redhat.com> 0.8.0-0
+* Wed Dec 4 2013 Will Woods <wwoods@redhat.com> 0.8.0-0
 - Check signatures on downloaded packages and images (#877623)
 - Added --nogpgcheck, --instrepokey, --enableplugin, --disableplugin
 - Improve error messages and warnings about transaction problems
