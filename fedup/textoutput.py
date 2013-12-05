@@ -81,10 +81,14 @@ class SimpleProgress(object):
         self.tty.write("\n")
 
 class RepoProgress(YumTextMeter):
-    pass
+    def start(self, *args, **kwargs):
+        YumTextMeter.start(self, *args, **kwargs)
+        log.info("download %s" % self.text)
 
 class RepoMultiProgress(YumTextMultiFileMeter):
-    pass
+    def start_meter(self, meter, now):
+        YumTextMultiFileMeter.start_meter(self, meter, now)
+        log.info("download %s" % meter.text)
 
 class RepoCallback(object):
     def __init__(self, prefix="repodata", tty=sys.stderr):
