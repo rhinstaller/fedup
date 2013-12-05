@@ -64,7 +64,7 @@ class BuildScripts(build_scripts):
                 os.rename(outfile, newfile)
 
 setup(name="fedup",
-      version="0.7.3",
+      version="0.8.0",
       description="Fedora Upgrade",
       long_description="",
       author="Will Woods",

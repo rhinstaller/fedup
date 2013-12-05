@@ -82,6 +82,8 @@ mkdir -p $RPM_BUILD_ROOT/etc/fedup/update.img.d
 - Check for mismatched instrepo arch (#981180)
 - Fix traceback with deltarpm (#1005895)
 - Use the right kernel for Xen guests (#1023618)
+- Fix mirror failover for instrepo (#1027573)
+- Download multiple packages in parallel for extra speed
 - Lots of other bugfixes
 
 * Fri Mar 15 2013 Will Woods <wwoods@redhat.com> 0.7.3-0
