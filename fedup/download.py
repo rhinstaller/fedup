@@ -103,8 +103,6 @@ class UpgradeDownloader(yum.YumBase):
         self.instrepoid = None
         self.disabled_repos = []
         self._treeinfo = None
-        self._repoprogressbar = None
-        self._repomultiprogress = None
         # TODO: locking to prevent multiple instances
         self.verbose_logger = log
 
@@ -134,9 +132,6 @@ class UpgradeDownloader(yum.YumBase):
         r.base_persistdir = cachedir
         r.basecachedir = cachedir
         r.cache = self.cacheonly
-        r.callback = self._repoprogressbar
-        r.multi_callback = self._repomultiprogress
-        r.failure_obj = log_grab_failure
         r.failovermethod = 'priority'
         r.baseurl = [varReplace(u, self.conf.yumvar) for u in baseurls if u]
         if mirrorlist:
@@ -151,9 +146,6 @@ class UpgradeDownloader(yum.YumBase):
         self.prerepoconf.multi_progressbar = multi_progressbar
         self.prerepoconf.callback = callback
         self.prerepoconf.failure_callback = log_grab_failure
-        # save these for when prerepoconf is gone
-        self._repoprogressbar = progressbar
-        self._repomultiprogress = multi_progressbar
 
         # TODO invalidate cache if the version doesn't match previous version
         log.info("checking repos")
@@ -198,6 +190,11 @@ class UpgradeDownloader(yum.YumBase):
                 repo = self.repos.getRepo(repoid)
                 repo.gpgkey.append(varReplace(keyurl, self.conf.yumvar))
                 repo.gpgcheck = True
+
+        # set up callbacks for any newly-added repos
+        self.repos.setProgressBar(progressbar, multi_progressbar)
+        self.repos.callback = callback
+        self.repos.setFailureCallback(log_grab_failure)
 
         # check enabled repos
         for repo in self.repos.listEnabled():
