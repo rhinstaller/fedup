@@ -501,14 +501,21 @@ class UpgradeDownloader(yum.YumBase):
         '''
         if keyfile.startswith('file://'):
             keyfile = keyfile[7:]
+
+        log.info("checking keyfile %s", keyfile)
+
+        # does the key exist?
+        if not os.path.exists(keyfile):
+            log.info("ERROR: keyfile does not exist")
+            return False
+
         # did the key come from a package?
         keypkgs = self.rpmdb.searchFiles(keyfile)
-        log.info("checking keyfile %s", keyfile)
         if keypkgs:
             keypkg = sorted(keypkgs)[-1]
             log.debug("keyfile owned by package %s", keypkg.nevr)
         if not keypkgs:
-            log.info("REJECTED: %s does not belong to any package")
+            log.info("REJECTED: keyfile does not belong to any package")
             return False
 
         # was that package signed?
