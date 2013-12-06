@@ -154,7 +154,7 @@ class UpgradeDownloader(yum.YumBase):
             raise KeyboardInterrupt
         else:
             self._lastinterrupt = now
-            raise URLGrabError(15, "user interrupt") # skip to next mirror
+            raise yum.URLGrabError(15, "user interrupt") # skip to next mirror
 
     def setup_repos(self, callback=None, progressbar=None, multi_progressbar=None, repos=[]):
         '''Return a list of repos that had problems setting up.'''
