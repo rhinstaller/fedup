@@ -225,7 +225,8 @@ def device_setup(args):
     # treat --device like --repo REPO=file://$MOUNTPOINT
     if args.device:
         args.repos.append(('add', 'upgradedevice=file://%s' % args.device.mnt))
-        args.instrepo = 'upgradedevice'
+        if not args.instrepo:
+            args.instrepo = 'upgradedevice'
     elif args.iso:
         try:
             args.device = media.loopmount(args.iso)
@@ -235,4 +236,5 @@ def device_setup(args):
             raise SystemExit(2)
         else:
             args.repos.append(('add', 'upgradeiso=file://%s' % args.device.mnt))
-            args.instrepo = 'upgradeiso'
+            if not args.instrepo:
+                args.instrepo = 'upgradeiso'
