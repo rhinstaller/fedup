@@ -92,6 +92,9 @@ class ProblemSummary(object):
     def get_details(self):
         return None
 
+    def format_details(self):
+        raise NotImplementedError
+
     def _log_probs(self):
         for p in self.problems:
             log.debug('%s -> "%s"', prob2dict(p), p)
@@ -134,6 +137,12 @@ class DepProblemSummary(ProblemSummary):
         return [_("%s requires %s") % (pkg, ", ".join(pkgprob))
                  for (pkg, pkgprob) in self.details.iteritems()]
 
+# If there is no handler for a type of problem, just return the
+# rpmProblemString result for the problems
+class GenericProblemSummary(ProblemSummary):
+    def format_details(self):
+        return [str(p) for p in self.problems]
+
 probsummary = { rpm.RPMPROB_DISKSPACE: DiskspaceProblemSummary,
                 rpm.RPMPROB_REQUIRES:  DepProblemSummary,
               }
@@ -142,7 +151,7 @@ probsummary = { rpm.RPMPROB_DISKSPACE: DiskspaceProblemSummary,
 def summarize_problems(problems):
     summaries = []
     for t in set(p.type for p in problems):
-        summarize = probsummary.get(t, ProblemSummary) # get the summarizer
+        summarize = probsummary.get(t, GenericProblemSummary) # get the summarizer
         summaries.append(summarize(t, problems))       # summarize the problem
     return summaries
 
