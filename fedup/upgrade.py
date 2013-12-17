@@ -85,12 +85,15 @@ def prob2dict(p):
 class ProblemSummary(object):
     def __init__(self, probtype, problems):
         self.type = probtype
-        self.problems = [p for p in problems if p.type == self.type]
+        self.problems = problems
         self.desc = probtypes.get(probtype)
         self.details = self.get_details()
 
     def get_details(self):
         return None
+
+    def format_details(self):
+        raise NotImplementedError
 
     def _log_probs(self):
         for p in self.problems:
@@ -134,6 +137,12 @@ class DepProblemSummary(ProblemSummary):
         return [_("%s requires %s") % (pkg, ", ".join(pkgprob))
                  for (pkg, pkgprob) in self.details.iteritems()]
 
+# If there is no handler for a type of problem, just return the
+# rpmProblemString result for the problems
+class GenericProblemSummary(ProblemSummary):
+    def format_details(self):
+        return [str(p) for p in self.problems]
+
 probsummary = { rpm.RPMPROB_DISKSPACE: DiskspaceProblemSummary,
                 rpm.RPMPROB_REQUIRES:  DepProblemSummary,
               }
@@ -141,9 +150,13 @@ probsummary = { rpm.RPMPROB_DISKSPACE: DiskspaceProblemSummary,
 
 def summarize_problems(problems):
     summaries = []
-    for t in set(p.type for p in problems):
-        summarize = probsummary.get(t, ProblemSummary) # get the summarizer
-        summaries.append(summarize(t, problems))       # summarize the problem
+    # Tranform the problem list into a dictionary of the form
+    # {type1: [problem1, problem2, ...], type2: ...} and iterate over that
+    for (probtype, problemlist) in \
+            {t: [p for p in problems if p.type == t]
+                    for t in set(p.type for p in problems)}.iteritems():
+        summarize = probsummary.get(probtype, GenericProblemSummary) # get the summarizer
+        summaries.append(summarize(probtype, problemlist))           # summarize the problem
     return summaries
 
 class TransactionError(Exception):
