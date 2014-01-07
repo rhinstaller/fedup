@@ -485,7 +485,7 @@ class UpgradeDownloader(yum.YumBase):
             log.info("key was installed by signed, trusted package - importing")
             return True
         else:
-            log.info("no automatic trust for key %s")
+            log.info("no automatic trust for key %s", keyfile)
             return False
 
     def check_keyfile(self, keyfile):
