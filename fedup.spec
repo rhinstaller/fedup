@@ -1,5 +1,5 @@
 Name:           fedup
-Version:        0.8.0
+Version:        0.8.1
 Release:        0%{?dist}
 Summary:        The Fedora Upgrade tool
 
@@ -39,7 +39,12 @@ ln -sf fedup.8 $RPM_BUILD_ROOT/%{_mandir}/man8/fedup-cli.8
 # updates dir
 mkdir -p $RPM_BUILD_ROOT/etc/fedup/update.img.d
 
-
+%post
+for d in /var/tmp /var/lib; do
+    if [ -d $d/fedora-upgrade -a ! -e $d/system-upgrade ]; then
+        mv $d/fedora-upgrade $d/system-upgrade
+    fi
+done
 
 %files
 %doc README.asciidoc TODO.asciidoc COPYING
@@ -70,6 +75,11 @@ mkdir -p $RPM_BUILD_ROOT/etc/fedup/update.img.d
 #{_datadir}/fedup/ui
 
 %changelog
+* Fri Jan 17 2014 Will Woods <wwoods@redhat.com> 0.8.1-0
+- Fix crash with Ctrl-C on F18
+- Fix --instrepo with --device/--iso
+- Don't redownload everything if the user just upgraded from 0.7.x
+
 * Wed Dec 4 2013 Will Woods <wwoods@redhat.com> 0.8.0-0
 - Check signatures on downloaded packages and images (#877623)
 - Added --nogpgcheck, --instrepokey, --enableplugin, --disableplugin
