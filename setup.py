@@ -63,8 +63,10 @@ class BuildScripts(build_scripts):
                 log.info("renaming %s -> %s", outfile, basename(newfile))
                 os.rename(outfile, newfile)
 
+exec(open("fedup/version.py").read())
+
 setup(name="fedup",
-      version="0.8.0",
+      version=version,
       description="Fedora Upgrade",
       long_description="",
       author="Will Woods",

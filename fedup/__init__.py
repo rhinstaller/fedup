@@ -39,6 +39,8 @@ import gettext
 t = gettext.translation(__package__, "/usr/share/locale", fallback=True)
 _ = t.lgettext
 
+from .version import version
+
 kernel_id = __package__
 # NOTE: new-kernel-pkg requires this kernel name/path
 kernelpath = '/boot/vmlinuz-%s' % kernel_id

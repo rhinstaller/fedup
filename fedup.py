@@ -229,7 +229,7 @@ if __name__ == '__main__':
     if args.debuglog:
         logutils.debuglog(args.debuglog)
     logutils.consolelog(level=args.loglevel)
-    log.info("%s starting at %s", sys.argv[0], time.asctime())
+    log.info("%s %s starting at %s", sys.argv[0], fedup.version, time.asctime())
 
     try:
         exittype = "cleanly"

@@ -1,5 +1,5 @@
 PYTHON=python
-VERSION=0.8.0
+VERSION=0.8.1
 
 all: build
 
@@ -26,11 +26,16 @@ clean: $(CLEAN_TARGETS)
 	rm -rf build
 	rm -f $(ARCHIVE)
 
+version:
+	echo 'version="$(VERSION)"' > fedup/version.py
+	sed -ri 's/(Version:\s*)\S*/\1$(VERSION)/' fedup.spec
+
+
 ARCHIVE = fedup-$(VERSION).tar.xz
 archive: $(ARCHIVE)
 fedup-$(VERSION).tar.xz: $(shell git ls-tree -r --name-only HEAD)
 	git archive --format=tar --prefix=fedup-$(VERSION)/ HEAD \
 	  | xz -c > $@ || rm $@
 
-.PHONY: all archive install clean
+.PHONY: all archive install clean version
 .PHONY: $(SUBDIRS) $(INSTALL_TARGETS) $(CLEAN_TARGETS)
