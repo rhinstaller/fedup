@@ -42,7 +42,8 @@ fi
 mkdir -p $UPGRADEROOT/mnt
 
 # unmount any temporary mounts set up by the initramfs
-cat /proc/mounts | while read dev mnt rest; do
+cat /proc/mounts | while read dev mnt type rest; do
+    [ "$type" == "autofs" ] && continue
     [ -f $mnt/.please-unmount ] && umount -l $mnt
 done
 
