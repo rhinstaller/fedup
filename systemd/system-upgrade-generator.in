@@ -5,7 +5,7 @@
 UPGRADE_UNIT_PATH='@UNITDIR@'
 
 ready_for_upgrade() {
-    [ -L /system-upgrade -a -d /system-upgrade ] && \
+    [ -L /system-upgrade ] && \
     [ -d /system-upgrade-root ] &&
     [ -L /run/system-upgrade -o -f /run/initramfs/upgrade.conf ]
 }
