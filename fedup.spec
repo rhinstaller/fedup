@@ -7,9 +7,7 @@ License:        GPLv2+
 URL:            https://github.com/wgwoods/fedup
 Source0:        https://github.com/downloads/wgwoods/fedup/%{name}-%{version}.tar.xz
 
-# Require updates to various packages where necessary to fix bugs.
-# Bug #910326
-Requires:       systemd >= 44-23.fc17
+Requires:       systemd >= 183
 Requires:       grubby
 
 BuildRequires:  python-libs
