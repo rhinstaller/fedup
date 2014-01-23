@@ -39,6 +39,7 @@ def message(m):
     log.info(m)
 
 from fedup import _, kernelpath, initrdpath
+from fedup import version as fedupversion
 
 def setup_downloader(version, instrepo=None, cacheonly=False, repos=[],
                      enable_plugins=[], disable_plugins=[]):
@@ -69,6 +70,7 @@ def download_packages(f):
         print _('Finished. Nothing to do.')
         raise SystemExit(0)
     # print dependency problems before we start the upgrade
+    # TODO: let users skip this with --force
     transprobs = f.describe_transaction_problems()
     if transprobs:
         print "WARNING: potential problems with upgrade"
@@ -229,7 +231,7 @@ if __name__ == '__main__':
     if args.debuglog:
         logutils.debuglog(args.debuglog)
     logutils.consolelog(level=args.loglevel)
-    log.info("%s %s starting at %s", sys.argv[0], fedup.version, time.asctime())
+    log.info("%s %s starting at %s", sys.argv[0], fedupversion, time.asctime())
 
     try:
         exittype = "cleanly"
