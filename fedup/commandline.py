@@ -56,6 +56,8 @@ def parse_args(gui=False):
         help=argparse.SUPPRESS)
     p.add_argument('-C', '--cacheonly', action='store_true', default=False,
         help=argparse.SUPPRESS)
+    p.add_argument('--logtraceback', action='store_true', default=False,
+        help=argparse.SUPPRESS)
 
 
     # === yum options ===

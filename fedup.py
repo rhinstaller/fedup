@@ -243,6 +243,8 @@ if __name__ == '__main__':
         log.info("exiting on keyboard interrupt")
         if e.message:
             message(_("Exiting on keyboard interrupt (%s)") % e.message)
+        if args.logtraceback:
+            log.debug("Traceback (for debugging purposes):", exc_info=True)
         raise SystemExit(1)
     except YumBaseError as e:
         print
@@ -264,6 +266,8 @@ if __name__ == '__main__':
         for p in e.problems:
             log.debug(p)
         log.error(_("Upgrade test failed."))
+        if args.logtraceback:
+            log.debug("Traceback (for debugging purposes):", exc_info=True)
         raise SystemExit(3)
     except Exception as e:
         pluginfile = yum_plugin_for_exc()
