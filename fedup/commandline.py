@@ -235,9 +235,9 @@ def device_setup(args):
             args.device = media.loopmount(args.iso)
         except media.CalledProcessError as e:
             log.info("mount failure: %s", e.output)
-            message('--iso: '+_('Unable to open %s') % args.iso)
-            raise SystemExit(2)
+            return
         else:
             args.repos.append(('add', 'upgradeiso=file://%s' % args.device.mnt))
             if not args.instrepo:
                 args.instrepo = 'upgradeiso'
+    return args.device.mnt

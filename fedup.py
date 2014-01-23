@@ -100,9 +100,12 @@ def main(args):
         return
 
     if args.device or args.iso:
-        device_setup(args)
+        mnt = device_setup(args)
 
         if args.iso:
+            if not mnt:
+                message('--iso: '+_('Unable to open %s') % args.iso)
+                raise SystemExit(2)
             log.debug("iso is %s", os.path.realpath(args.iso))
             def isocleanup():
                 log.debug("unmounting %s", args.device.mnt)
@@ -140,7 +143,6 @@ def main(args):
             print _("The '%s' repo was rejected by yum as invalid.") % args.instrepo
             if args.iso:
                 print _("The given ISO probably isn't an install DVD image.")
-                media.umount(args.device.mnt)
             elif args.device:
                 print _("The media doesn't contain a valid install DVD image.")
         else:
