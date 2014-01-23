@@ -296,10 +296,15 @@ class UpgradeDownloader(yum.YumBase):
 
         done = set()
         for pkg1, pkg2, err in self.po_with_problems:
-            if (pkg1,pkg2) not in done:
+            if (pkg1,pkg2) in done:
+                continue
+            if pkg2 is not None:
                 problems.append("%s requires %s" % (format_replacement(pkg1),
                                                     format_replacement(pkg2)))
-                done.add((pkg1,pkg2))
+            else:
+                problems.append("%s has depsolving problems" % \
+                                                    format_replacement(pkg1))
+            done.add((pkg1,pkg2))
 
         return problems
 
