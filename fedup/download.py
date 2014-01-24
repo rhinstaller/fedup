@@ -27,7 +27,7 @@ from .treeinfo import Treeinfo, TreeinfoError
 from .conf import Config
 from yum.Errors import YumBaseError
 from yum.parser import varReplace
-from yum.constants import TS_REMOVE_STATES
+from yum.constants import TS_REMOVE_STATES, TS_TRUEINSTALL
 from yum.misc import gpgme
 
 enabled_plugins = ['blacklist', 'whiteout']
@@ -267,7 +267,10 @@ class UpgradeDownloader(yum.YumBase):
     def find_packages_without_updates(self):
         '''packages on the local system that aren't being updated/obsoleted'''
         remove = self.tsInfo.getMembersWithState(output_states=TS_REMOVE_STATES)
-        return set(p for p in self.rpmdb if p not in remove)
+        inst = self.tsInfo.getMembersWithState(output_states=[TS_TRUEINSTALL])
+        instnames = [p.name for p in inst]
+        return set(p for p in self.rpmdb \
+                     if p not in remove and p.name not in instnames)
 
     def describe_transaction_problems(self):
         problems = []
