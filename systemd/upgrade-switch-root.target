@@ -5,4 +5,3 @@ Requires=upgrade-switch-root.service
 Before=upgrade-switch-root.service
 After=cryptsetup.target
 AllowIsolate=yes
-ConditionPathExists=/run/initramfs/upgrade.conf
