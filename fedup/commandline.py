@@ -202,7 +202,8 @@ def VERSION(arg):
     if arg.lower() == 'rawhide':
         return 'rawhide'
 
-    distro, version, id = platform.linux_distribution()
+    _distros=('fedora', 'redhat', 'centos')
+    distro, version, id = platform.linux_distribution(supported_dists=_distros)
     version = int(version)
 
     if int(arg) >= version:
