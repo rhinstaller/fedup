@@ -199,6 +199,9 @@ def main(args):
         for p in missing:
             message("  %s" % p)
 
+    if not any(p.name in f.conf.kernelpkgnames for p in pkgs):
+        message(_('WARNING: no new kernel will be installed during upgrade'))
+
     # warn if the "important" repos are disabled
     if f.disabled_repos:
         # NOTE: I hate having a hardcoded list of Important Repos here.
