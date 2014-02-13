@@ -23,9 +23,9 @@ import os, sys, time
 import rpm
 sys.path.insert(0, '/usr/share/yum-cli')
 from output import YumTextMeter, YumTextMultiFileMeter, CacheProgressCallback
+from urlgrabber.progress import terminal_width_cached
 
 from .callback import *
-from . import terminal as term
 
 from . import _
 
@@ -48,7 +48,7 @@ class SimpleProgress(object):
 
     @property
     def width(self):
-        return term.size.cols or 80 # fallback for stupid terminals
+        return terminal_width_cached(self.tty.fileno())
 
     @property
     def percent(self):
