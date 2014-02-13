@@ -204,9 +204,8 @@ def VERSION(arg):
 
     _distros=('fedora', 'redhat', 'centos')
     distro, version, id = platform.linux_distribution(supported_dists=_distros)
-    version = int(version)
 
-    if int(arg) >= version:
+    if float(arg) > float(version):
         return arg
     else:
         msg = _("version must be greater than %i") % version
