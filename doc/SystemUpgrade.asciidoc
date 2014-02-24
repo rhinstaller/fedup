@@ -151,7 +151,7 @@ migrating a system from `ext3` to `ext4` just isn't possible if the disk is
 already in use.
 
 Why the special initrd (`upgrade.img`)?
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 As mentioned above, we definitely want to run upgrades from a seprate
 filesystem than your normal root, so your system is offline during the
 upgrade.
