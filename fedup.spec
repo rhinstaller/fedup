@@ -9,6 +9,7 @@ Source0:        https://github.com/downloads/wgwoods/fedup/%{name}-%{version}.ta
 
 Requires:       systemd >= 183
 Requires:       grubby
+Requires:       yum
 
 BuildRequires:  python-libs
 BuildRequires:  systemd-devel
