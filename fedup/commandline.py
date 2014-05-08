@@ -156,6 +156,9 @@ def device_or_mnt(arg):
     if arg == 'auto':
         localmedia = media.find()
     else:
+        # Canonicalize the device or mountpoint argument
+        arg = os.path.realpath(arg)
+
         localmedia = [m for m in media.find() if arg in (m.dev, m.mnt)]
 
     if len(localmedia) == 1:
