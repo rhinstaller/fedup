@@ -19,6 +19,7 @@
 
 import os, struct
 from shutil import rmtree
+from tempfile import mkdtemp
 
 import logging
 log = logging.getLogger(__package__+".util")
@@ -116,3 +117,20 @@ def isxen():
     except (IOError, OSError):
         virttype = "none"
     return virttype == "xen"
+
+class TemporaryDirectory(object):
+    def __init__(self, suffix="", prefix="tmp", dir=None):
+        self._closed = False
+        self.name = None # if mkdtemp raises an exception we'll hit __exit__
+        self.name = mkdtemp(suffix, prefix, dir)
+
+    def __enter__(self):
+        return self.name
+
+    def __exit__(self, exc, value, tb):
+        self.cleanup()
+
+    def cleanup(self):
+        if self.name and not self._closed:
+            rmtree(self.name)
+            self._closed = True
