@@ -95,6 +95,20 @@ def hrsize(size, si=False, use_ib=False):
             else:
                 return "%.1f%s%s" % (size, p, suffix)
 
+compmagic = {
+    'xz':    '\xfd7zXZ',
+    'lz4':   '\x02\x21',
+    'gzip':  '\x1f\x8b',
+    'bzip2': 'BZh',
+}
+
+def decomp_cmd(filename):
+    header = open(filename, 'rb').read(6)
+    for comp, magic in compmagic.items():
+        if header.startswith(magic):
+            return [comp, "-dc", filename]
+    return ["cat", filename]
+
 def isxen():
     '''True if this system is a xen host or guest.'''
     try:
