@@ -17,7 +17,7 @@
 #
 # Author: Will Woods <wwoods@redhat.com>
 
-import os
+import os, fnmatch
 from shutil import copy2
 
 from . import _
@@ -25,6 +25,7 @@ from . import cachedir, packagedir, packagelist, update_img_dir
 from . import upgradeconf, upgradelink, upgraderoot
 from .media import write_systemd_unit
 from .util import listdir, mkdir_p, rm_f, rm_rf, is_selinux_enabled, kernelver
+from .util import TemporaryDirectory
 from .conf import Config
 from . import boot
 
@@ -129,11 +130,25 @@ def modify_bootloader(kernel, initrd):
     log.info("adding new boot entry")
     boot.add_entry(kernel, initrd, banner=_("System Upgrade"))
 
-def prep_boot(kernel, initrd):
-    # check for systems that need mdadm.conf
-    if boot.need_mdadmconf():
-        log.info("appending /etc/mdadm.conf to initrd")
-        boot.initramfs_append_files(initrd, "/etc/mdadm.conf")
+def customize_initrd(initrd):
+    log.info("preparing boot image...")
+    curimg = boot.Initramfs(boot.current_initramfs())
+    newimg = boot.Initramfs(initrd)
+
+    # locate all the config files
+    wantfiles = fnmatch.filter(curimg, "etc/*")
+    # ...except os-release/initrd-release/etc.
+    wantfiles = filter(lambda f: not f.endswith("-release"), wantfiles)
+    # also any zoneinfo files ('cuz now we have etc/localtime)
+    wantfiles += fnmatch.filter(curimg, "usr/share/zoneinfo/*")
+
+    if wantfiles:
+        log.debug("copying %i files from %s to %s:",
+                  len(wantfiles), curimg.img, newimg.img)
+        for f in wantfiles: log.debug("%s",f)
+        with TemporaryDirectory(prefix="fedup.initramfs.") as tmpdir:
+            curimg.extract(wantfiles, root=tmpdir)
+            newimg.append(wantfiles, root=tmpdir)
 
     # look for updates, and add them to initrd if found
     updates = []
@@ -143,7 +158,12 @@ def prep_boot(kernel, initrd):
         log.info("can't list update img dir %s: %s", update_img_dir, e.strerror)
     if updates:
         log.info("found updates in %s, appending to initrd", update_img_dir)
-        boot.initramfs_append_images(initrd, updates)
+        newimg.append_images(updates)
+
+def prep_boot(kernel, initrd):
+    """Set things up so we can successfully boot the given kernel/initrd."""
+    # add updates / configs to initrd
+    customize_initrd(initrd)
 
     # make a dir in /lib/modules to hold a copy of the new kernel's modules
     # (the initramfs will copy/bind them into place when we reboot)
