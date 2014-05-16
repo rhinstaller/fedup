@@ -130,39 +130,3 @@ def find_initramfs(kernel_ver):
 def current_initramfs():
     """Return the path to the initramfs for the running kernel."""
     return find_initramfs(os.uname()[2])
-
-def initramfs_append_files(initramfs, files):
-    '''Append the given files to the named initramfs.
-       Raises IOError if the files can't be read/written.
-       Raises CalledProcessError if cpio returns a non-zero exit code.'''
-    if isinstance(files, basestring):
-        files = [files]
-    filelist = ''.join(f+'\n' for f in files if open(f))
-    with open(initramfs, 'ab') as outfd:
-        cmd = ["cpio", "-co"]
-        cpio = Popen(cmd, stdin=PIPE, stdout=outfd, stderr=PIPE)
-        (out, err) = cpio.communicate(input=filelist)
-        if cpio.returncode:
-            raise CalledProcessError(cpio.returncode, cmd, err)
-
-def initramfs_append_images(initramfs, images):
-    '''Append the given images to the named initramfs.
-       Raises IOError if the files can't be read/written.'''
-    with open(initramfs, 'ab') as outfd:
-        for i in images:
-            with open(i, 'rb') as infd:
-                copyfileobj(infd, outfd)
-
-def need_mdadmconf():
-    '''Does this system need /etc/mdadm.conf to boot?'''
-    # NOTE: there are probably systems that have mdadm.conf but don't require
-    # it to boot, but I don't know how you tell the difference, so...
-    try:
-        for line in open("/etc/mdadm.conf"):
-            line = line.strip()
-            if line and not line.startswith("#"):
-                # Hey there's actual *data* in here! WE MIGHT NEED THIS!!
-                return True
-    except IOError:
-        pass
-    return False
