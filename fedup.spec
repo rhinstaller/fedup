@@ -75,6 +75,11 @@ done
 
 %changelog
 * Fri Jan 17 2014 Will Woods <wwoods@redhat.com> 0.8.1-0
+- Warn the user when there is no kernel package in the upgrade
+- Fix crash when resizing terminal window (#1044987)
+- Fix crashes with bad arguments to --repo and --iso (#1045090, #1044083)
+- Fix some crashes during transaction test (#1043981, #1047005)
+- Fix upgrade hang if packagedir isn't on root partition (#1045168)
 - Fix crash with Ctrl-C on F18
 - Fix --instrepo with --device/--iso
 - Don't redownload everything if the user just upgraded from 0.7.x
