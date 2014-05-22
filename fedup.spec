@@ -1,5 +1,5 @@
 Name:           fedup
-Version:        0.8.1
+Version:        0.9.0
 Release:        0%{?dist}
 Summary:        The Fedora Upgrade tool
 
