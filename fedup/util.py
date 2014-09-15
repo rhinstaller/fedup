@@ -37,7 +37,7 @@ def listdir(d):
         yield os.path.join(d, f)
 
 def rlistdir(d):
-    for root, files, dirs in os.walk(d):
+    for root, dirs, files in os.walk(d):
         for f in files:
             yield os.path.join(root, f)
 
