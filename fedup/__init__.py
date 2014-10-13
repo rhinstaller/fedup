@@ -46,7 +46,7 @@ kernel_id = __package__
 kernelpath = '/boot/vmlinuz-%s' % kernel_id
 initrdpath = '/boot/initramfs-%s.img' % kernel_id
 
-cachedir = '/var/tmp/system-upgrade'
+cachedir = '/var/cache/system-upgrade'
 packagedir = '/var/lib/system-upgrade'
 packagelist = packagedir + '/package.list'
 upgradeconf = packagedir + '/upgrade.conf'
