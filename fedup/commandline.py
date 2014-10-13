@@ -73,6 +73,8 @@ def parse_args(gui=False):
     yumopts.add_argument('--add-install', metavar='PKG-OR-GROUP',
         action='append', dest='add_install', default=[],
         help=_('add extra item to be installed during upgrade'))
+    yumopts.add_argument('--product',
+        help=_('Fedora product to install (for upgrades to F21+)'))
 
 
     # === <SOURCE> options ===
@@ -132,6 +134,9 @@ def parse_args(gui=False):
     if not gui:
         if args.clean:
             args.resetbootloader = True
+
+    if args.product:
+        args.add_install.append("@^%s-product-environment" % args.product)
 
     return args
 
