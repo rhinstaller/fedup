@@ -70,6 +70,9 @@ def parse_args(gui=False):
         help=_('disable yum plugins by name'))
     yumopts.add_argument('--nogpgcheck', action='store_true', default=False,
         help=_('disable GPG signature checking'))
+    yumopts.add_argument('--add-install', metavar='PKG-OR-GROUP',
+        action='append', dest='add_install', default=[],
+        help=_('add extra item to be installed during upgrade'))
 
 
     # === <SOURCE> options ===

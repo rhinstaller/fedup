@@ -62,8 +62,9 @@ def setup_downloader(version, instrepo=None, cacheonly=False, repos=[],
         log.info("disabled repos: " + " ".join(disabled_repos))
     return f
 
-def download_packages(f):
-    updates = f.build_update_transaction(callback=output.DepsolveCallback(f))
+def download_packages(f, add_install=[]):
+    updates = f.build_update_transaction(callback=output.DepsolveCallback(f),
+                                         add_install=add_install)
     # check for empty upgrade transaction
     if not updates:
         print _('Your system is already upgraded!')
@@ -160,7 +161,7 @@ def main(args):
         if len(f.pkgSack) == 0:
             print("no updates available in configured repos!")
             raise SystemExit(1)
-        pkgs = download_packages(f)
+        pkgs = download_packages(f, add_install=args.add_install)
         # Run a test transaction
         probs, rv = transaction_test(pkgs)
 

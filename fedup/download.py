@@ -25,7 +25,7 @@ import logging
 from .callback import BaseTsCallback
 from .treeinfo import Treeinfo, TreeinfoError
 from .conf import Config
-from yum.Errors import YumBaseError
+from yum.Errors import YumBaseError, InstallError
 from yum.parser import varReplace
 from yum.constants import TS_REMOVE_STATES, TS_TRUEINSTALL
 from yum.misc import gpgme
@@ -250,10 +250,24 @@ class UpgradeDownloader(yum.YumBase):
                 log.warn("couldn't write repofile for %s: %s", repo.id, str(e))
 
     # NOTE: could raise RepoError if metadata is missing/busted
-    def build_update_transaction(self, callback=None):
+    def build_update_transaction(self, callback=None, add_install=[]):
         log.info("looking for updates")
         self.dsCallback = callback
+        # get updates for everything on the system
         self.update()
+        # add some extra things to the upgrade transaction
+        for pat in add_install:
+            log.info("adding '%s' to upgrade", pat)
+            try:
+                tx = self.install(pattern=pat)
+            except InstallError as e:
+                log.warn("couldn't add '%s': %s", pat, e)
+            if len(tx) > 1:
+                log.info("added %i items for %s: %s", len(tx), pat,
+                         ' '.join(t.po.name for t in tx))
+            elif not tx:
+                log.warn("nothing added for %s", pat)
+        # build the actual transaction
         (rv, msgs) = self.buildTransaction(unfinished_transactions_check=False)
         # NOTE: self.po_with_problems is now a list of (po1, po2, errmsg) tuples
         log.info("buildTransaction returned %i", rv)
@@ -494,6 +508,7 @@ class UpgradeDownloader(yum.YumBase):
             return True
         else:
             log.info("no automatic trust for key %s", keyfile)
+            # XXX TODO: fall back to parent's GPG import callback
             return False
 
     def check_keyfile(self, keyfile):
