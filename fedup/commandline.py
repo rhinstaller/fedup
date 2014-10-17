@@ -73,8 +73,16 @@ def parse_args(gui=False):
     yumopts.add_argument('--add-install', metavar='PKG-OR-GROUP',
         action='append', dest='add_install', default=[],
         help=_('add extra item to be installed during upgrade'))
-    yumopts.add_argument('--product',
-        help=_('Fedora product to install (for upgrades to F21+)'))
+
+
+    # Magical --product option only used for upgrading to Fedora 21
+    legacy_fedora = False
+    distro, version, id = platform.linux_distribution(supported_dists='fedora')
+    if distro.lower() == 'fedora' and int(version) < 21:
+        legacy_fedora = True
+        yumopts.add_argument('--product', metavar='PRODUCTNAME', default=None,
+            choices=('server','cloud','workstation','nonproduct'),
+            help=_('Fedora product to install (for upgrades to F21)'))
 
 
     # === <SOURCE> options ===
@@ -135,8 +143,19 @@ def parse_args(gui=False):
         if args.clean:
             args.resetbootloader = True
 
-    if args.product:
-        args.add_install.append("@^%s-product-environment" % args.product)
+    # Fedora.next: upgrades to F21 require --product
+    if legacy_fedora:
+        if args.product is None:
+            # fail early if we can detect that you need a product
+            if int(version) == 20 or args.network in ('21', '22', 'rawhide'):
+                p.error(fedora_next_error)
+        elif args.product == 'nonproduct':
+            args.add_install.append('fedora-release-standard')
+        else:
+            args.add_install.append('@^%s-product-environment' % args.product)
+
+    # save this so we can check it later
+    args.legacy_fedora = legacy_fedora
 
     return args
 
@@ -254,3 +273,18 @@ def device_setup(args):
             if not args.instrepo:
                 args.instrepo = 'upgradeiso'
     return args.device.mnt
+
+# special Fedora-21-specific error message
+fedora_next_error = '\n' + _('''
+This installation of Fedora does not belong to a product, so you
+must provide the --product=PRODUCTNAME option to specify what product
+you want to upgrade to. PRODUCTNAME should be one of:
+
+ workstation: the default Fedora experience for laptops and desktops
+ server: the default Fedora experience for servers
+ cloud: a base image for use on public and private clouds
+ nonproduct: choose this if none of the above apply; in particular,
+   choose this if you are using an alternate-desktop spin of Fedora
+
+See https://fedoraproject.org/wiki/Upgrading for more information.
+''')

@@ -84,6 +84,41 @@ def download_packages(f, add_install=[]):
 
     return updates
 
+def need_product(f):
+    '''Special check for upgrading "legacy" Fedora systems that don't have a
+    product (F<=20) to the new-style productized Fedora (F>=21)'''
+    # lil helper for checking package sacks and logging results
+    def check_for_product(pkgsack, logmsg=None):
+        products = pkgsack.searchProvides('system-release-product')
+        if not products:
+            return False
+        if logmsg:
+            log.info("%s: %s", logmsg, products)
+        return True
+
+    # Does this system already have a product?
+    if check_for_product(f.rpmdb, "system is productized"):
+        return False
+    else:
+        log.info("system does not have a product")
+
+    # Are we already installing a product?
+    if check_for_product(f.tsInfo.pkgSack, "product is in upgrade set"):
+        return False
+    else:
+        log.info("no product in upgrade set")
+
+    # Are there any products available?
+    if not check_for_product(f.pkgSack):
+        # Maybe it's F18->F19, maybe this is a Fedora variant.. who knows?
+        log.info("no products in the repos - skipping")
+        return False
+
+    # If we get here, the system is not productized, we aren't already
+    # installing a product, and there are products available, so:
+    log.info("--product is needed")
+    return True
+
 def transaction_test(pkgs):
     print _("testing upgrade transaction")
     pkgfiles = set(po.localPkg() for po in pkgs)
@@ -162,6 +197,13 @@ def main(args):
             print("no updates available in configured repos!")
             raise SystemExit(1)
         pkgs = download_packages(f, add_install=args.add_install)
+
+        # Special check to be sure upgrades to F21 have a product
+        if args.legacy_fedora and need_product(f):
+            from fedup.commandline import fedora_next_error
+            print(fedora_next_error)
+            raise SystemExit(1)
+
         # Run a test transaction
         probs, rv = transaction_test(pkgs)
 
