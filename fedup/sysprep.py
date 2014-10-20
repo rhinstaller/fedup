@@ -139,7 +139,9 @@ def customize_initrd(initrd):
     wantfiles = fnmatch.filter(curimg, "etc/*")
     # ...except os-release/initrd-release/etc.
     wantfiles = filter(lambda f: not f.endswith("-release"), wantfiles)
-    # also any zoneinfo files ('cuz now we have etc/localtime)
+    # ...and remove plymouthd.conf - we'll use whatever the initrd says
+    wantfiles = filter(lambda f: not f.endswith("plymouthd.conf"), wantfiles)
+    # also add zoneinfo files ('cuz now we have etc/localtime)
     wantfiles += fnmatch.filter(curimg, "usr/share/zoneinfo/*")
 
     if wantfiles:
