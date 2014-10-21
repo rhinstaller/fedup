@@ -41,6 +41,9 @@ fi
 # make target dir for systemd's pivot_root
 mkdir -p $UPGRADEROOT/mnt
 
+# make journal keep going to disk
+ln -sf /sysroot/var/log $UPGRADEROOT/var/log
+
 # unmount any temporary mounts set up by the initramfs
 cat /proc/mounts | while read dev mnt type rest; do
     [ "$type" == "autofs" ] && continue
