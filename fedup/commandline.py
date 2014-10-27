@@ -150,7 +150,7 @@ def parse_args(gui=False):
             if int(version) == 20 or args.network in ('21', '22', 'rawhide'):
                 p.error(fedora_next_error)
         elif args.product == 'nonproduct':
-            args.add_install.append('fedora-release-standard')
+            args.add_install.append('fedora-release-nonproduct')
         else:
             args.add_install.append('@^%s-product-environment' % args.product)
 
