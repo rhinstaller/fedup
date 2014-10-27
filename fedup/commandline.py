@@ -280,11 +280,16 @@ This installation of Fedora does not belong to a product, so you
 must provide the --product=PRODUCTNAME option to specify what product
 you want to upgrade to. PRODUCTNAME should be one of:
 
- workstation: the default Fedora experience for laptops and desktops
+ workstation: the default Fedora experience for laptops and desktops,
+   powered by GNOME.
  server: the default Fedora experience for servers
  cloud: a base image for use on public and private clouds
  nonproduct: choose this if none of the above apply; in particular,
    choose this if you are using an alternate-desktop spin of Fedora
+
+Selecting a product will also install its standard package-set in
+addition to upgrading the packages already on your system. If you
+prefer to maintain your current set of packages, select 'nonproduct'.
 
 See https://fedoraproject.org/wiki/Upgrading for more information.
 ''')
