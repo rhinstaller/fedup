@@ -1,6 +1,6 @@
 Name:           fedup
 Version:        0.9.0
-Release:        0%{?dist}
+Release:        1%{?dist}
 Summary:        The Fedora Upgrade tool
 
 License:        GPLv2+
@@ -74,15 +74,34 @@ done
 #{_datadir}/fedup/ui
 
 %changelog
-* Fri Jan 17 2014 Will Woods <wwoods@redhat.com> 0.8.1-0
+* Wed Oct 29 2014 Will Woods <wwoods@redhat.com> 0.9.0-1
+- Add --product=PRODUCT flag for upgrades to F21
+- Use host's config files in upgrade.img
+- Fix logging during upgrade - upgrade logs will appear in system journal
+- Fix keymap problems during upgrade (#1038413)
+- Move cache to /var/cache (#1066679, CVE-2013-6494)
+
+* Sat Jun 07 2014 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 0.8.1-2
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_21_Mass_Rebuild
+
+* Thu May 22 2014 Will Woods <wwoods@redhat.com> 0.8.1-1
 - Warn the user when there is no kernel package in the upgrade
 - Fix crash when resizing terminal window (#1044987)
 - Fix crashes with bad arguments to --repo and --iso (#1045090, #1044083)
 - Fix some crashes during transaction test (#1043981, #1047005)
 - Fix upgrade hang if packagedir isn't on root partition (#1045168)
+- Don't redownload everything if the user just upgraded from 0.7.x
+
+* Fri Feb 28 2014 Adam Williamson <awilliam@redhat.com> 0.8.0-4
+- backport a few more bugfixes from git master:
+  + fix upgrade startup when packagedir isn't on root (#1045168)
+  + Fix --network VERSION if /etc/debian_release exists (#1057817)
+  + Warn the user if upgrade contains no kernels
+- bump the required systemd version (also a 'backport' from git)
+
+* Tue Dec 10 2013 Will Woods <wwoods@redhat.com> 0.8.0-3
 - Fix crash with Ctrl-C on F18
 - Fix --instrepo with --device/--iso
-- Don't redownload everything if the user just upgraded from 0.7.x
 
 * Wed Dec 4 2013 Will Woods <wwoods@redhat.com> 0.8.0-0
 - Check signatures on downloaded packages and images (#877623)
