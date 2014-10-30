@@ -128,6 +128,10 @@ def parse_args(gui=False):
 
     args = p.parse_args()
 
+    if args.clean:
+        args.resetbootloader = True
+        return args
+
     if not (gui or args.network or args.device or args.iso or args.clean):
         p.error(_('SOURCE is required (--network, --device, --iso)'))
 
@@ -138,10 +142,6 @@ def parse_args(gui=False):
 
     if args.instrepo and args.instrepokey:
         args.repos.append(('gpgkey', 'instrepo=%s' % args.instrepokey))
-
-    if not gui:
-        if args.clean:
-            args.resetbootloader = True
 
     # Fedora.next: upgrades to F21 require --product
     if legacy_fedora:
