@@ -7,7 +7,7 @@ OnFailureIsolate=true
 DefaultDependencies=no
 
 [Service]
-Type=oneshot
+Type=idle
 ExecStart=@LIBEXECDIR@/upgrade-prep.sh
 ExecStopPost=-/usr/bin/systemctl --no-block isolate upgrade-switch-root.target
 StandardOutput=journal+console
