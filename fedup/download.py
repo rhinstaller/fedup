@@ -262,11 +262,12 @@ class UpgradeDownloader(yum.YumBase):
                 tx = self.install(pattern=pat)
             except InstallError as e:
                 log.warn("couldn't add '%s': %s", pat, e)
-            if len(tx) > 1:
-                log.info("added %i items for %s: %s", len(tx), pat,
-                         ' '.join(t.po.name for t in tx))
-            elif not tx:
-                log.warn("nothing added for %s", pat)
+            else:
+                if len(tx) > 1:
+                    log.info("added %i items for %s: %s", len(tx), pat,
+                             ' '.join(t.po.name for t in tx))
+                else:
+                    log.warn("nothing added for %s", pat)
         # build the actual transaction
         (rv, msgs) = self.buildTransaction(unfinished_transactions_check=False)
         # NOTE: self.po_with_problems is now a list of (po1, po2, errmsg) tuples
