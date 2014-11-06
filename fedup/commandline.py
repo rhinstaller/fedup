@@ -235,11 +235,14 @@ def VERSION(arg):
     _distros=('fedora', 'redhat', 'centos')
     distro, version, id = platform.linux_distribution(supported_dists=_distros)
 
-    if float(arg) > float(version):
-        return arg
-    else:
-        msg = _("version must be greater than %i") % version
-        raise argparse.ArgumentTypeError(msg)
+    try:
+        floatver = float(version)
+    except ValueError:
+        raise argparse.ArgumentTypeError(_("can't determine system version?"))
+    if float(arg) <= floatver:
+        raise argparse.ArgumentTypeError(_("version must be higher than %s")
+                                         % version)
+    return arg
 
 def do_cleanup(args):
     if not args.skipbootloader:
