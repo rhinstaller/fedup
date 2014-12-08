@@ -1,5 +1,5 @@
 Name:           fedup
-Version:        0.9.0
+Version:        0.9.1
 Release:        1%{?dist}
 Summary:        The Fedora Upgrade tool
 
@@ -74,6 +74,14 @@ done
 #{_datadir}/fedup/ui
 
 %changelog
+* Mon Dec 08 2014 Will Woods <wwoods@redhat.com> 0.9.1-1
+- Fix traceback if --product/--add-install is misspelled/missing (#1167971)
+- Make sure fedup --clean doesn't require --product (#1158766)
+- Give clearer error messages about invalid '--network' values
+
+* Mon Nov 03 2014 Will Woods <wwoods@redhat.com> 0.9.0-2
+- Make systemd consider startup finished before starting upgrade (#1159292)
+
 * Wed Oct 29 2014 Will Woods <wwoods@redhat.com> 0.9.0-1
 - Add --product=PRODUCT flag for upgrades to F21
 - Use host's config files in upgrade.img
