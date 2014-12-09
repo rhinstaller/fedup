@@ -3,6 +3,8 @@ fedup - the Fedora Upgrader
 Will Woods <wwoods@redhat.com>
 :fedup_dracut: https://github.com/wgwoods/fedup-dracut/
 :fedup_fedora: http://fedoraproject.org/wiki/FedUp
+:fedup_treeinfo: https://github.com/wgwoods/fedup/blob/master/fedup/treeinfo.py
+:example_treeinfo: http://download.fedoraproject.org/pub/fedora/linux/releases/20/Fedora/x86_64/os/.treeinfo
 
 This is 'fedup', the Fedora Upgrade tool. This repo/package has the following
 contents:
@@ -88,14 +90,20 @@ Upgrading old system using `fedup`
 How network upgrades work
 -------------------------
 
-There's two simple rules that control where `fedup` looks for packages when
-doing network upgrades.
+There's two simple rules that control where `fedup` looks for packages and
+boot images when doing network upgrades.
 
 Given `fedup --network $VERSION`, fedup will:
 
 1. Use the existing repo configuration, with `$releasever` set to `$VERSION`
 2. Add an extra 'instrepo' for fetching boot images; this repo defaults to
-   https://mirrors.fedoraproject.org/metalink/repo=fedora-install-$releasever&arch=$basearch
+   roughly the following config:
+
+ [instrepo]
+ name=instrepo
+ metalink=https://mirrors.fedoraproject.org/metalink/repo=fedora-install-$releasever&arch=$basearch
+ gpgcheck=1
+ gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-fedora-$releasever-$basearch
 
 `$VERSION` could be any string; currently `fedup` accepts "rawhide" or numbers
 greater than the current system version. No explicit validation of `$VERSION`
@@ -108,15 +116,70 @@ rejected.
 
 For repo maintainers
 ~~~~~~~~~~~~~~~~~~~~
-If you are a repo maintainer and you want upgrades to work, you should ensure
-that the URLs in your `.repo` file will work for any valid `$releasever`,
-including "rawhide".
+There's two basic requirements for your repos to work with `fedup`:
 
-If you change the layout of your repos, set up symlinks/redirects for the old
-URL schemes.
+. The URLs in your `.repo` file must work for any valid `$releasever`, and
+. The GPG key for the _new_ `$releasever` needs to be in your `-release`
+  package.
+
+Details on these requirements are below.
+
+Upgradable URLs
+^^^^^^^^^^^^^^^
+For fedup to be able to find the new version of your repo, the URLs in your
+`.repo` file must work for any valid `$releasever` (including "rawhide", if
+that's a release you care about.)
 
 Conversely, you should also ensure that the URLs _don't_ work for _invalid_
-versions. So you should avoid wildcard redirects or URLs without
-`$releasever`.
+versions - avoid wildcard redirects, or URLs without `$releasever`. This is
+needed to make `fedup` reject invalid `$releasever` values.
 
+This also means that if you change the layout of your repos, you should set up
+symlinks/redirects for the old URL schemes, or push out an update that moves
+existing `.repo` files to the new scheme.
+
+Signature checking and GPG keys
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+When `fedup` encounters a package that was signed with an untrusted key, it
+will automatically import the `gpgkey` listed in the associated `.repo` file
+if _all_ the following conditions are met:
+
+* The key exists on the local disk (i.e. `gpgkey=file:///.../gpgkey-$releasever`
+  exists),
+* the keyfile belongs to an installed package,
+* that package was signed by a key that is trusted by RPM, and
+* the keyfile has not been modified since being installed.
+
+For example, Fedora 19's `fedora.repo` file has
+
+  gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-fedora-$releasever-$basearch
+
+and the `fedora-release-19` packages also contain GPG keys for Fedora 20.
+
+The `fedora-release-19` package is signed with the Fedora 19 key, so if the
+system administrator has "trusted" that key, we can assume that the Fedora 20
+key provided by that package is equally trustworthy, and automatically import
+it.
+
+This lets fedup verify the authenticity of all the _packages_ shipped in the
+new repos.
+
+Verifying boot images
+^^^^^^^^^^^^^^^^^^^^^
+// Apologies for the weird formatting in the next paragraph but
+// mixing footnotes and backticks makes some asciidoc formatters weird :/
+
++fedup+ finds the boot images inside +instrepo+ by reading the +.treeinfo+ file
+and downloading the appropriate +kernel+ and +upgrade+ images.
+footnote:[See {example_treeinfo}[this example file] or
+          {fedup_treeinfo}[the fedup source] for more information.]
+
+To ensure the boot images are authentic, `fedup` downloads
+`$INSTREPO/.treeinfo.signed`, and verifies it using `instrepo`'s GPG key. If
+the signature is OK, and the boot images match the checksums in that file,
+the boot images are considered authentic. Otherwise `fedup` refuses to proceed
+with the upgrade.
+
+So: if you're responsible for creating your own `instrepo`, you'll need to
+make sure it has a signed copy of `.treeinfo` at `.treeinfo.signed`.
 // vim: syntax=asciidoc tw=78:
