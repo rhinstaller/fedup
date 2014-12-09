@@ -30,6 +30,10 @@ How to test (for Fedora users)
 
   fedup --network 18
 
+NOTE: if you're upgrading to Fedora 21, you'll need to add an appropriate
+`--product` option. See https://fedoraproject.org/wiki/Upgrading for more
+information.
+
 If you want to use upgrade images from a test tree that's not in the Fedora
 mirror system, do:
 
