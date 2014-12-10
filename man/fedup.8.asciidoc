@@ -30,6 +30,11 @@ When the upgrade finishes, it reboots the system into the newly-upgraded OS.
 
 OPTIONS
 -------
+Required Arguments
+~~~~~~~~~~~~~~~~~~
+*--product* ['cloud','server','workstation','nonproduct']::
+Specify the Fedora flavor to target for upgrades. Required for updating
+pre-F21 systems.
 
 Optional arguments
 ~~~~~~~~~~~~~~~~~~
@@ -51,7 +56,6 @@ Automatically reboot to start the upgrade when ready.
 
 SOURCE
 ~~~~~~
-
 These options tell *fedup* where to look for the packages and boot images
 needed to run the upgrade. At least one of these options is required.
 
