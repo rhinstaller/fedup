@@ -16,7 +16,7 @@ CLEAN_TARGETS = $(SUBDIRS:%=clean-%)
 $(CLEAN_TARGETS):
 	$(MAKE) -C $(@:clean-%=%) clean
 
-build: $(SUBDIRS)
+build: $(SUBDIRS) fedup/version.py
 	$(PYTHON) setup.py build
 
 install: all $(INSTALL_TARGETS)
@@ -27,10 +27,8 @@ clean: $(CLEAN_TARGETS)
 	rm -rf build
 	rm -f $(ARCHIVE)
 
-version:
+fedup/version.py: Makefile
 	echo 'version="$(VERSION)"' > fedup/version.py
-	sed -ri 's/(Version:\s*)\S*/\1$(VERSION)/' fedup.spec
-
 
 ARCHIVE = fedup-$(RELEASE_TAG).tar.xz
 archive: $(ARCHIVE)
