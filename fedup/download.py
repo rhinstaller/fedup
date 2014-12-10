@@ -509,7 +509,8 @@ class UpgradeDownloader(yum.YumBase):
             return True
         else:
             log.info("no automatic trust for key %s", keyfile)
-            # XXX TODO: fall back to parent's GPG import callback
+            if hasattr(callback, "userconfirm"):
+                return callback.userconfirm()
             return False
 
     def check_keyfile(self, keyfile):
