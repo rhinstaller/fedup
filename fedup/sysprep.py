@@ -28,6 +28,7 @@ from .util import listdir, mkdir_p, rm_f, rm_rf, is_selinux_enabled, kernelver
 from .util import TemporaryDirectory
 from .conf import Config
 from . import boot
+from .initramfs import Initramfs, current_initramfs
 
 import logging
 log = logging.getLogger(__package__+".sysprep")
@@ -132,8 +133,8 @@ def modify_bootloader(kernel, initrd):
 
 def customize_initrd(initrd):
     log.info("preparing boot image...")
-    curimg = boot.Initramfs(boot.current_initramfs())
-    newimg = boot.Initramfs(initrd)
+    curimg = Initramfs(current_initramfs())
+    newimg = Initramfs(initrd)
 
     # locate all the config files
     wantfiles = fnmatch.filter(curimg, "etc/*")
