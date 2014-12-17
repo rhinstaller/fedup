@@ -43,10 +43,6 @@ def parse_args(gui=False):
     p.add_argument('--debuglog', default='/var/log/%s.log' % __package__,
         help=_('write lots of debugging output to the given file'))
 
-    p.add_argument('--reboot', action='store_true', default=False,
-        help=_('automatically reboot to start the upgrade when ready'))
-
-
     # === hidden options. FOR DEBUGGING ONLY. ===
     p.add_argument('--skippkgs', action='store_true', default=False,
         help=argparse.SUPPRESS)

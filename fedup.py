@@ -225,11 +225,6 @@ def main(args):
     if args.device:
         setup_media_mount(args.device)
 
-    if args.reboot:
-        reboot()
-    else:
-        print _('Finished. Reboot to start upgrade.')
-
     if args.skippkgs:
         return
 
@@ -242,8 +237,9 @@ def main(args):
         for p in missing:
             message("  %s" % p)
 
+    # warn if there's no kernel being installed
     if not any(p.name in f.conf.kernelpkgnames for p in pkgs):
-        message(_('WARNING: no new kernel will be installed during upgrade'))
+        message(_('WARNING: no new kernel will be installed during upgrade.'))
 
     # warn if the "important" repos are disabled
     if f.disabled_repos:
@@ -265,7 +261,9 @@ def main(args):
             print "  "+s.desc
             for line in s.format_details():
                 print "    "+line
-        print _("Continue with the upgrade at your own risk.")
+        print _("These packages may have problems after the upgrade.")
+
+    print _("Finished. Reboot to start the upgrade, or 'fedup --resetbootloader' to abort.")
 
 if __name__ == '__main__':
     args = parse_args()

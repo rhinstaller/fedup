@@ -50,9 +50,6 @@ Print lots of debugging info.
 *--debuglog* 'DEBUGLOG'::
 Write debugging output to the given file. Defaults to '/var/log/fedup.log'.
 
-*--reboot*::
-Automatically reboot to start the upgrade when ready.
-
 
 SOURCE
 ~~~~~~
