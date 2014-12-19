@@ -277,7 +277,11 @@ if __name__ == '__main__':
 
     # set up logging
     if args.debuglog:
-        logutils.debuglog(args.debuglog)
+        try:
+            logutils.debuglog(args.debuglog)
+        except IOError as e:
+            print _("Can't open logfile '%s': %s") % (args.debuglog, e)
+            raise SystemExit(1)
     logutils.consolelog(level=args.loglevel)
     log.info("%s %s starting at %s", sys.argv[0], fedupversion, time.asctime())
 
