@@ -99,6 +99,7 @@ def hrsize(size, si=False, use_ib=False):
 compmagic = {
     'xz':    '\xfd7zXZ',
     'lz4':   '\x02\x21',
+    'lzop':  '\x89LZO\0',
     'gzip':  '\x1f\x8b',
     'bzip2': 'BZh',
 }
