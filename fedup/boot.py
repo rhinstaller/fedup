@@ -32,7 +32,7 @@ def kernelver(kernel):
         raise ValueError("kernel name must start with '%s'" % kernelprefix)
 
 def add_entry(kernel, initrd, banner=None, kargs=[], makedefault=True):
-    cmd = ["new-kernel-pkg", "--initrdfile", initrd]
+    cmd = ["/sbin/new-kernel-pkg", "--initrdfile", initrd]
     if banner:
         cmd += ["--banner", banner]
     if kargs:
@@ -43,7 +43,7 @@ def add_entry(kernel, initrd, banner=None, kargs=[], makedefault=True):
     return check_output(cmd, stderr=PIPE)
 
 def remove_entry(kernel):
-    cmd = ["new-kernel-pkg", "--remove", kernelver(kernel)]
+    cmd = ["/sbin/new-kernel-pkg", "--remove", kernelver(kernel)]
     return check_output(cmd, stderr=PIPE)
 
 class Initramfs(object):
