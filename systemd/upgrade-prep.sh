@@ -30,9 +30,13 @@ grep -qw 'upgrade.test' /proc/cmdline && UPGRADETEST=1 || UPGRADETEST=''
 [ $UPGRADETEST ] || new-kernel-pkg --remove fedup
 
 # Sanity check: Are all the packages present?
+packagelist=/system-upgrade/package.list
+if [ ! -f "$packagelist" ]; then
+    die "aborting upgrade: can't find $packagelist"
+fi
 while read pkg; do
     [ -f /system-upgrade/$pkg ] || missing="$missing $pkg"
-done < /system-upgrade/package.list
+done < "$packagelist"
 if [ -n "$missing" ]; then
     echo "missing packages:"; for pkg in $missing; do echo "  $pkg"; done
     die "aborting upgrade due to missing packages."
