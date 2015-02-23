@@ -72,6 +72,7 @@ def download_packages(f, add_install=[]):
         raise SystemExit(0)
     # print dependency problems before we start the upgrade
     # TODO: let users skip this with --force
+    # FIXME: print these after download finishes
     transprobs = f.describe_transaction_problems()
     if transprobs:
         print "WARNING: potential problems with upgrade"
@@ -79,6 +80,7 @@ def download_packages(f, add_install=[]):
             print "  " + p
     # clean out any unneeded packages from the cache
     f.clean_cache(keepfiles=(p.localPkg() for p in updates))
+    # TODO: check disk space > sum(p.size for p in updates)
     # download packages
     f.download_packages(updates, callback=output.DownloadCallback())
 
@@ -233,6 +235,7 @@ def main(args):
     # list packages without updates, if any
     missing = sorted(f.find_packages_without_updates(), key=lambda p:p.envra)
     if missing:
+        # TODO: distinguish refused-downgrade vs. actually missing
         message(_('Packages without updates:'))
         for p in missing:
             message("  %s" % p)

@@ -26,10 +26,17 @@ system update_.
 Overview
 --------
 
+NOTE: Items in this section marked _fedup_ are implemented in `fedup`, and
+items marked _future_ are new
+
 === Download ===
 The upgrade tool examines the system and determines what data (packages, boot
 images, whatever) is needed to upgrade to the new version. (This part is very
 much distribution-specific, so details are left to the implementor.)
+
+The downloaded data should all be collected under a single directory
+(typically `/var/lib/system-upgrade`), if possible. This directory will be
+symlinked to `/system-upgrade` before the upgrade begins.
 
 You'll also need a kernel and initramfs for the upgrade. Whether these are
 downloaded or created locally is up to the implementation.
@@ -37,12 +44,11 @@ downloaded or created locally is up to the implementation.
 The initramfs should contain a file named `etc/system-upgrade-release`, which
 follows the format of {os-release}.
 
-
 === Preparation ===
-When the user decides to start the upgrade, the tool does the following steps
-*in order*.
+When the user decides to start the upgrade, the tool does the following
+steps, *in order*.
 
-. copy boot images into place (typically in `/boot`)
+. copy boot images into place (typically into `/boot`)
 . add a bootloader entry for the upgrade boot images
 . create directories and flag files:
   * create an empty directory, `/system-upgrade-root`
