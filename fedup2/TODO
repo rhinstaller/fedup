@@ -1,0 +1,27 @@
+== upgrade-from-dev ==
+* verify device
+* set up mount unit
+
+== download ==
+* FedupCliKeyImport magic
+* merge package download and image download
+* sanity checks
+  * need_product()
+  * missing kernel
+  * missing "important repos"
+* test transaction
+* problem summary
+
+.Possibly in librepo:
+* GPG keyring stuff to verify `.treeinfo.signed`
+* retry kernel/initrd download if checksum fails
+
+== `reboot` ==
+. copy kernel/initrd
+. update bootloader
+. create symlinks
+  * including mount unit if needed
+. reboot
+
+== `clean` ==
+* various things to clean up
