@@ -21,7 +21,6 @@ import os, sys, time, argparse, platform
 
 from . import logutils
 from .version import version as fedupversion
-from .sysinfo import detect_releasever
 from .state import get_upgrade_state
 from .i18n import _
 
@@ -126,7 +125,7 @@ def parse_args():
 
     # Backward-compatibility: 'fedup --clean' --> 'fedup clean all'
     argv = sys.argv[1:]
-    if argv[0] == '--clean':
+    if argv and argv[0] == '--clean':
         argv[0] = 'clean'
         if len(argv) == 1:
             argv.append("all")
@@ -139,7 +138,7 @@ def parse_args():
     if not args.action:
         p.error(_('no action given.'))
 
-    # Save these so we can use them elsewhere
+    # Save this so we can use it elsewhere
     args.legacy_fedora = legacy_fedora
 
     # Everything after this just checks 'download' args; exit early otherwise
