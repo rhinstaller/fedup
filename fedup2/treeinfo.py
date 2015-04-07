@@ -136,6 +136,21 @@ def hexdigest(filename, algo, blocksize=8192):
             hasher.update(data)
     return hasher.hexdigest()
 
+try:
+    hash_algorithms = hashlib.algorithms_available
+except AttributeError:
+    hash_algorithms = hashlib.algorithms
+
+def checkdigest(filename, val, blocksize=8192):
+    algo, colon, checksum = val.partition(':')
+    if colon != ':':
+        raise TreeinfoError("Malformed checksum line: %r" % val)
+    if algo not in hash_algorithms:
+        raise TreeinfoError("Unsupported hash algorithm %r" % algo)
+    if len(checksum) != 2*hashlib.new(algo).digest_size:
+        raise TreeinfoError("Invalid %s checksum %r" % (algo, checksum))
+    return checksum == hexdigest(filename, algo, blocksize)
+
 __all__ = ['Treeinfo', 'TreeinfoError']
 
 # Base class for Treeinfo errors.
@@ -190,24 +205,28 @@ class Treeinfo(RawConfigParser):
     def checkvalues(self):
         '''Check the .treeinfo to make sure it has all required elements.'''
         for f in ('version', 'arch'):
-            self.get('general', f)
+            try:
+                self.get('general', f)
+            except ConfigParser.Error as e:
+                raise TreeinfoError("[general] section missing %s" % f)
         # TODO check for checksums for all images
 
     def checkfile(self, filename, relpath):
         '''
-        Check the given file against the info in [checksum].
+        Check the given file against the info in [checksums].
 
         filename must be a full path to the file to be checked.
         relpath is the relative path that was used to fetch the file,
         i.e. the value from the [images-*] section (and the key in the
         [checksums] section)
+
+        raises TreeinfoError if there is no item in [checksum] that matches
+        relpath, or if value is malformed (bad algorithm, short checksum).
+
+        raises IOError/OSError if there are problems opening the file.
         '''
-        val = self.get('checksums', relpath)
-        algo, checksum = val.split(':',1)
-        try:
-            return checksum == hexdigest(filename, algo)
-        except IOError:
-            return False
+        log.debug("checking %s against checksum for %s", filename, relpath)
+        return checkdigest(filename, self.get('checksums', relpath))
 
     def add_image(self, arch, imgtype, relpath, topdir=None, algo='sha256'):
         '''
@@ -250,12 +269,9 @@ class Treeinfo(RawConfigParser):
         if not (topdir or self.topdir):
             raise TypeError("writetreeinfo() requires topdir")
         if strict:
-            self.checkvals()
+            self.checkvalues()
         if add_timestamp:
             self.add_timestamp()
         # TODO sort checksums to end
         with open(self._path('.treeinfo'), 'w') as fp:
-            RawConfigParser.write(fp)
-
-
-# TODO: unit tests
+            self.write(fp)
