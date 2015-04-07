@@ -2,7 +2,7 @@
 
 statefile = '/var/lib/system-upgrade/upgrade.conf'
 
-import os
+import os, json
 from .conf import Config
 from .i18n import _
 
@@ -15,9 +15,28 @@ class State(Config):
     def __init__(self):
         Config.__init__(self, statefile)
 
-    @property
-    def summary(self):
-        return _("No upgrade in progress.")
+    def summarize(self):
+        # XXX STUB
+        return "No upgrade in progress."
 
-def get_upgrade_state():
+    def save_args(self, args, section="args", key="args_json"):
+        '''Save an argparse.Namespace object into the config.'''
+        nsdict = vars(args)               # get dict from Namespace
+        jsonstr = json.dumps(nsdict)      # convert dict to json string
+        self.set(section, key, jsonstr)   # write to config
+
+    def get_args(self, section="args", key="args_json"):
+        '''Load a Namespace object from the config.
+           NOTE: in Python 2.x any string value will be a unicode object!'''
+        jsonstr = self.get(section, key)  # read from config
+        nsdict = json.loads(jsonstr)      # convert json string to dict
+        return Namespace(**nsdict)        # put dict in Namespace
+
+    def remove_args(self, section="args", key="args_json"):
+        return self.remove(section, key)
+
+    def __str__(self):
+        return self.summarize()
+
+def getstate():
     return State()

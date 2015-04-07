@@ -21,13 +21,18 @@ import os, sys, time, argparse, platform
 
 from . import logutils
 from .version import version as fedupversion
-from .state import get_upgrade_state
+from .state import State
+from .lock import PidLock, PidLockError
 from .i18n import _
 
 import logging
-log = logging.getLogger("fedup.cli")
+log = logging.getLogger("fedup")
 
-def parse_args():
+def is_legacy_fedora():
+    distro, version, id = platform.linux_distribution(supported_dists='fedora')
+    return bool(distro.lower() == 'fedora' and int(version) < 21)
+
+def init_parser():
     # === toplevel parser ===
     p = argparse.ArgumentParser(
         usage='%(prog)s <status|download|media|reboot|clean> [OPTIONS]',
@@ -50,6 +55,10 @@ def parse_args():
     # === hidden options. FOR DEBUGGING ONLY. ===
     p.add_argument('--logtraceback', action='store_true', default=False,
         help=argparse.SUPPRESS)
+    p.add_argument('--legacy-fedora',action='store_true', default=False,
+        help=argparse.SUPPRESS)
+    p.add_argument('--sleep-forever',action='store_const', const='sleep',
+        dest='action', help=argparse.SUPPRESS)
 
     # === subparsers for commands ===
     cmds = p.add_subparsers(dest='action',
@@ -77,6 +86,7 @@ def parse_args():
     # Translators: This is for '--network [VERSION]' in --help output
     d.add_argument("version", metavar=_('VERSION'), type=VERSION,
         help=_('version to upgrade to (a number or "rawhide")'))
+
     d.add_argument('--enablerepo', metavar='REPOID', action=RepoAction,
         dest='repos', help=_('enable one or more repos (wildcards allowed)'))
     d.add_argument('--disablerepo', metavar='REPOID', action=RepoAction,
@@ -84,10 +94,12 @@ def parse_args():
     d.add_argument('--addrepo', metavar='REPOID=URL',
         action=RepoAction, dest='repos',
         help=_('add the repo at URL (use @URL for mirrorlists)'))
-    d.add_argument('--instrepo', metavar='URL', type=str,
-        help=_('get boot images from this repo (default: automatic)'))
+    d.add_argument('--instrepoid', metavar='REPOID', action=RepoAction,
+        dest='repos', help=_('get boot images from repo with id REPOID'))
+    d.add_argument('--instrepo', metavar='URL', action=RepoAction,
+        dest='repos', help=_('get boot images from the repo at this URL'))
     d.add_argument('--instrepokey', metavar='GPGKEY', type=gpgkeyfile,
-        help=_('use this GPG key to verify upgrader boot images'))
+        help=_('use this GPG key to verify boot images'))
     d.set_defaults(repos=[])
 
     # === DNF plugin options ===
@@ -107,11 +119,10 @@ def parse_args():
         help=_('extra item to be installed during upgrade'))
 
     # Magical --product option only used for upgrading to Fedora 21
-    legacy_fedora = False
-    distro, version, id = platform.linux_distribution(supported_dists='fedora')
-    if distro.lower() == 'fedora' and int(version) < 21:
-        legacy_fedora = True
-        pkgopts.add_argument('--product', default=None,
+    if is_legacy_fedora():
+        p.set_defaults(legacy_fedora=True)
+        pkgopts.add_argument('--product',
+            action='append', dest='add_install', type=PRODUCT,
             choices=('server','cloud','workstation','nonproduct'),
             help=_('Fedora product to install (for upgrades to F21)'))
 
@@ -120,52 +131,7 @@ def parse_args():
         help=_('what to clean up')+' (%(choices)s)',
         choices=('packages','bootloader','metadata','misc','all'),
     )
-
-    # === PARSER READY!! BEGIN THE PARSING!! ===
-
-    # Backward-compatibility: 'fedup --clean' --> 'fedup clean all'
-    argv = sys.argv[1:]
-    if argv and argv[0] == '--clean':
-        argv[0] = 'clean'
-        if len(argv) == 1:
-            argv.append("all")
-        print(_("WARNING: --clean is deprecated; doing '%s'") % ' '.join(argv))
-
-    # PARSE IT UP
-    args = p.parse_args(argv)
-
-    # An action is required
-    if not args.action:
-        p.error(_('no action given.'))
-
-    # Save this so we can use it elsewhere
-    args.legacy_fedora = legacy_fedora
-
-    # Everything after this just checks 'download' args; exit early otherwise
-    if args.action != 'download':
-        return args
-
-    # handle --instrepo URL (default is to interpret it as a repoid)
-    if args.instrepo and '://' in args.instrepo:
-        args.repos.append(('add', 'instrepo=%s' % args.instrepo))
-        args.instrepo = 'instrepo'
-
-    if args.instrepo and args.instrepokey:
-        args.repos.append(('gpgkey', 'instrepo=%s' % args.instrepokey))
-
-    # Fedora.next: upgrades to F21 require --product
-    # FIXME split this more sensibly from above junk
-    if args.legacy_fedora:
-        if args.product is None:
-            # fail early if we can detect that you need a product
-            if int(version) == 20 or args.network in ('21', '22', 'rawhide'):
-                p.error(fedora_next_error)
-        elif args.product == 'nonproduct':
-            args.add_install.append('fedora-release-nonproduct')
-        else:
-            args.add_install.append('@^%s-product-environment' % args.product)
-
-    return args
+    return p
 
 class RepoAction(argparse.Action):
     '''Hold a list of repo actions so we can apply them in the order given.'''
@@ -178,6 +144,13 @@ class RepoAction(argparse.Action):
             action = 'disable'
         elif opt.startswith('--addrepo'):
             action = 'add'
+        elif opt.startswith('--instrepokey'):
+            action = 'gpgkey'
+            value = 'instrepo='+value # XXX is that the right repo name?
+        elif opt.startswith('--instrepo'):
+            action = 'add'
+            value = "cli_instrepo="+value
+        if action == 'add':
             # validate the argument
             repoid, eq, url = value.partition("=")
             if not (repoid and eq and "://" in url):
@@ -236,52 +209,129 @@ prefer to maintain your current set of packages, select 'nonproduct'.
 See https://fedoraproject.org/wiki/Upgrading for more information.
 ''')
 
-def sanity_check(args):
-    if os.getuid() != 0:
-        print(_("you must be root to do this."))
-        raise SystemExit(1)
+class Cli(object):
+    """The main fedup CLI object."""
+    def __init__(self):
+        self.parser = init_parser()
+        self.args = None
+        self.state = None
+        self.exittype = "cleanly"
+        self.reboot_at_exit = False
 
-def open_logs(args):
-    try:
-        logutils.debuglog(args.log)
-    except IOError as e:
-        print(_("Can't open logfile '%s': %s") % (args.log, e))
-        raise SystemExit(1)
-    logutils.consolelog(level=args.loglevel)
+    def error(self, msg, *args):
+        log.error(msg, *args)
+        raise SystemExit(2)
 
-def status():
-    distro, version, id = platform.linux_distribution(supported_dists='fedora')
-    print("Current system: %s %s" % (distro.capitalize(), version))
-    state = get_upgrade_state()
-    print(state.summary)
+    def parse_args(self):
+        self.args = self.parser.parse_args()
 
-def download(args):
-    print('DOWNLOAD!!!! FIXME!! YESSS')
-    print(args)
+    def read_state(self):
+        self.state = State()
 
-def main():
-    args = parse_args()
+    def check_args(self):
+        """Check (and fix up) the args we got from parse_args."""
+        # An action is required
+        if not self.args.action:
+            self.parser.error(_('no action given.'))
 
-    if args.action == 'status':
-        status()
-        return
+        if self.args.legacy_fedora:
+            if self.args.product:
+                self.fix_product()
+            elif self.need_product():
+                self.error(fedora_next_error)
 
-    sanity_check(args)
-    open_logs(args)
-    exittype = "cleanly"
+    def need_product(self):
+        if self.args.version == 'rawhide' or int(self.args.version) >= 21:
+            if self.args.legacy_fedora and not has_product_installed():
+                return True
 
-    try:
+    def fix_product(self):
+        if product == 'nonproduct':
+            self.args.add_install.append('fedora-release-nonproduct')
+        else:
+            self.args.add_install.append('@^%s-product-environment' % product)
+
+    def check_perms(self):
+        if os.getuid() != 0:
+            self.error(_("you must be root to do this."))
+
+    def open_logs(self):
+        try:
+            logutils.log_setup(self.args.log, self.args.loglevel)
+        except IOError as e:
+            self.error(_("Can't open logfile '%s': %s"), self.args.log, e)
         log.info("fedup %s starting at %s", fedupversion, time.asctime())
         log.info("argv: %s", str(sys.argv))
-        if args.action == 'download':
-            download(args)
-        elif args.action == 'clean':
-            clean(args)
-        elif args.action == 'reboot':
-            reboot(args)
-    except KeyboardInterrupt as e:
-        log.info("exiting on keyboard interrupt")
-        if args.logtraceback:
-            log.debug("Traceback (for debugging purposes):", exc_info=True)
-    finally:
-        log.info("fedup %s exiting %s at %s", fedupversion, exittype, time.asctime())
+
+    def get_lock(self):
+        try:
+            self.pidfile = PidLock("/var/run/fedup.pid")
+        except PidLockError as e:
+            self.error(_("already running as PID %s") % e.pid)
+
+    def free_lock(self):
+        self.pidfile.remove()
+
+    def status(self):
+        distro, ver, id = platform.linux_distribution(supported_dists='fedora')
+        print("Current system: %s %s" % (distro.capitalize(), ver))
+        print(self.state.summarize())
+
+    def download(self):
+        # write initial state
+        # grab metadata
+        # find updates
+        # update state (num packages, download size)
+        # download packages
+        # update state
+        # download boot images
+        # update state
+        pass
+
+    def reboot(self):
+        # check self.state to find boot images
+        # copy boot images into place
+        # modify bootloader
+        # signal for reboot
+        self.reboot_at_exit = True
+
+    def clean(self):
+        print("FIXME STUB CLEANUP: %s" % self.args.clean)
+        # update state appropriately
+
+    def sleep(self):
+        print("pid %u, now going to sleep forever!" % os.getpid())
+        while True:
+            time.sleep(31337)
+
+    def main(self):
+        self.parse_args()
+        self.check_args()
+        self.read_state()
+        # TODO: check state & force --continue/--abort if download in progress
+
+        if self.args.action == 'status':
+            self.status()
+            return
+
+        self.check_perms()
+        self.open_logs()
+        self.get_lock()
+
+        try:
+            if self.args.action == 'download':
+                self.download()
+            elif self.args.action == 'clean':
+                self.clean()
+            elif self.args.action == 'reboot':
+                self.reboot()
+            elif self.args.action == 'sleep':
+                self.sleep()
+        except KeyboardInterrupt as e:
+            log.info(_("exiting on keyboard interrupt"))
+        finally:
+            log.info("fedup %s exiting %s at %s",
+                     fedupversion, self.exittype, time.asctime())
+            self.free_lock()
+            if self.reboot_at_exit:
+                reboot()
