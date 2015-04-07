@@ -1,6 +1,6 @@
 # logutils.py - logging utility functions
 #
-# Copyright (C) 2012 Red Hat Inc.
+# Copyright (C) 2015 Red Hat Inc.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -17,45 +17,64 @@
 #
 # Author: Will Woods <wwoods@redhat.com>
 
-import logging
+import logging, logging.config
 
-class Formatter(logging.Formatter):
-    levelsyms = {
-        logging.DEBUG:   '(DD)',
-        logging.INFO:    '(II)',
-        logging.WARNING: '(WW)',
-        logging.ERROR:   '(EE)',
-        logging.CRITICAL:'(CC)',
-        logging.FATAL:   '(FF)',
-    }
+levelsyms = {
+    logging.DEBUG:   '(DD)',
+    logging.INFO:    '(II)',
+    logging.WARNING: '(WW)',
+    logging.ERROR:   '(EE)',
+    logging.CRITICAL:'(CC)',
+    logging.FATAL:   '(FF)',
+}
 
-    defaultfmt="[%(reltime)10.3f] %(levelsym)s %(name)s:%(funcName)s() %(message)s"
-    def __init__(self, fmt=None, datefmt=None):
-        if fmt is None:
-            fmt = self.defaultfmt
-        logging.Formatter.__init__(self, fmt, datefmt)
+class FedupFilter(logging.Filter):
+    '''Add "reltime" and "levelsym" attributes to log records.'''
+    def filter(self, record):
+        record.reltime = float(record.relativeCreated)/1000
+        record.levelsym = levelsyms.get(record.levelno, '(--)')
+        return True
 
-    def format(self, record):
-        record.reltime = float(record.relativeCreated / 1000)
-        record.levelsym = self.levelsyms.get(record.levelno, '(--)')
-        if record.levelno < logging.DEBUG:
-            record.levelsym = '(D%d)' % (10-record.levelno)
-        return logging.Formatter.format(self, record)
-
-def debuglog(filename, level=logging.DEBUG, loggername="fedup"):
-    h = logging.FileHandler(filename)
-    h.setLevel(level)
-    h.setFormatter(Formatter())
-    logger = logging.getLogger(loggername)
-    logger.setLevel(level)
-    logger.addHandler(h)
-
-def consolelog(tty=None, level=logging.WARNING, loggername="fedup"):
-    h = logging.StreamHandler(tty)
-    h.setLevel(level)
-    formatter = logging.Formatter('%(name)s %(levelname)s: %(message)s')
-    h.setFormatter(formatter)
-    logger = logging.getLogger(loggername)
-    if level < logger.getEffectiveLevel():
-        logger.setLevel(level)
-    logger.addHandler(h)
+def log_setup(debug_log="/var/log/fedup.log", console_level='WARNING'):
+    '''Set up fedup logging:
+        - Send copious debugging information to debug_log (/var/log/fedup.log)
+        - Messages of console_level (WARNING) or higher go to the console
+    '''
+    # TODO: do all output via logging? Like:
+    #   if level==INFO -> console w/format "%(message)s"
+    #   elif level>INFO -> console w/format "%(name)s %(levelname)s"
+    logging.config.dictConfig({
+        'version':1,
+        'loggers':{
+          'fedup':{
+            'level':'DEBUG',
+            'filters':['fedup'],
+            'handlers':['debuglog','console'],
+          }
+        },
+        'filters':{
+            'fedup':{'()':FedupFilter},
+        },
+        'handlers':{
+          'debuglog':{
+            'class':'logging.FileHandler',
+            'level':'DEBUG',
+            'formatter':'debuglog',
+            'filename':debug_log,
+          },
+          'console':{
+            'class':'logging.StreamHandler',
+            'level': console_level,
+            'formatter':'console',
+          },
+        },
+        'formatters': {
+          'debuglog': {
+            'format':"[%(reltime)10.3f] %(levelsym)s %(name)s:%(funcName)s() "
+                     "%(message)s"
+          },
+          'console':{
+            'format':"%(name)s %(levelname)s: %(message)s"
+          },
+        },
+    })
