@@ -66,3 +66,9 @@ class Config(RawConfigParser):
         except (NoSectionError, NoOptionError):
             pass
         return value
+
+    def remove(self, section, option):
+        '''Remove an option, removing the section if it is now empty'''
+        self.remove_option(section, option)
+        if not self.items(section):
+            self.remove_section(section)
