@@ -32,6 +32,9 @@ def is_legacy_fedora():
     distro, version, id = platform.linux_distribution(supported_dists='fedora')
     return bool(distro.lower() == 'fedora' and int(version) < 21)
 
+def reboot():
+    print("FIXME: reboot not implemented, please reboot manually")
+
 def init_parser():
     # === toplevel parser ===
     p = argparse.ArgumentParser(
@@ -59,6 +62,7 @@ def init_parser():
         help=argparse.SUPPRESS)
     p.add_argument('--sleep-forever',action='store_const', const='sleep',
         dest='action', help=argparse.SUPPRESS)
+    p.add_argument('--cachedir', help=argparse.SUPPRESS)
 
     # === subparsers for commands ===
     cmds = p.add_subparsers(dest='action',
@@ -216,6 +220,7 @@ class Cli(object):
         self.args = None
         self.state = None
         self.exittype = "cleanly"
+        self.continued = False
         self.reboot_at_exit = False
 
     def error(self, msg, *args):
@@ -223,6 +228,7 @@ class Cli(object):
         raise SystemExit(2)
 
     def parse_args(self):
+        assert self.parser
         self.args = self.parser.parse_args()
 
     def read_state(self):
@@ -230,15 +236,43 @@ class Cli(object):
 
     def check_args(self):
         """Check (and fix up) the args we got from parse_args."""
+        assert self.args
+
         # An action is required
         if not self.args.action:
             self.parser.error(_('no action given.'))
 
+        # If we need --product, make sure it was supplied
         if self.args.legacy_fedora:
             if self.args.product:
                 self.fix_product()
             elif self.need_product():
                 self.error(fedora_next_error)
+
+    def check_state(self):
+        """Check the saved state to see if it's compatible with this action"""
+        assert self.args
+        assert self.state
+
+        # Can't reboot if we're not actually ready to upgrade
+        if self.args.action == 'reboot' and not self.state.upgrade_ready:
+            if self.state.args:
+                self.error(_("download incomplete"))
+            else:
+                self.error(_("system not prepared for upgrade"))
+
+        # If we have a previously-interrupted download
+        if self.args.action == 'download' and self.state.args:
+            if self.args._continue:
+                self.args = self.state.args
+                self.continued = True
+            elif self.args.abort:
+                pass # we'll handle this after we get the lock.
+            else:
+                log.error(_("interrupted download detected!"))
+                log.error(_("use `fedup download --continue` to continue it."))
+                log.error(_("use `fedup download --abort` to start over."))
+                raise SystemExit(2)
 
     def need_product(self):
         if self.args.version == 'rawhide' or int(self.args.version) >= 21:
@@ -270,7 +304,13 @@ class Cli(object):
             self.error(_("already running as PID %s") % e.pid)
 
     def free_lock(self):
+        assert self.pidfile
         self.pidfile.remove()
+
+    def write_packagelist(self, packagepaths):
+        with open(os.path.join(self.args.datadir, "packages.list"),'w') as outf:
+            for p in packagepaths:
+                outf.write(os.path.relpath(p, self.args.datadir)+'\n')
 
     def status(self):
         distro, ver, id = platform.linux_distribution(supported_dists='fedora')
@@ -278,20 +318,46 @@ class Cli(object):
         print(self.state.summarize())
 
     def download(self):
-        # write initial state
-        # grab metadata
-        # find updates
-        # update state (num packages, download size)
-        # download packages
-        # update state
+        # special case for `fedup download --abort`
+        if self.args.abort:
+            with self.state:
+                self.state.clear()
+            return
+        # write initial state, if needed
+        if not self.continued:
+            with self.state as state:
+                state.upgrade_target = args.version
+                state.pkgdir = args.datadir
+                state.args = args
+        # set up downloader
+        dl = Downloader(args)
+        dl.setup()
+        dl.read_metadata()
         # download boot images
-        # update state
-        pass
+        kernel, initrd = dl.download_images()
+        with self.state as state:
+            state.kernel = kernel
+            state.initrd = initrd
+        # find updates
+        pkglist = dl.find_upgrade_packages()
+        with self.state as state:
+            state.pkgs_total = len(pkglist)
+            state.size_total = sum(p.size for p in pkglist)
+        # TODO: sanity-check pkglist
+        # download packages
+        dl.download_packages(pkglist)
+        # TODO: run a test transaction
+        self.write_packagelist(p.localPkg() for p in pkglist)
+        # we're done! mark it, dude!
+        with self.state as state:
+            state.upgrade_ready = 1
 
     def reboot(self):
         # check self.state to find boot images
-        # copy boot images into place
-        # modify bootloader
+        kernel = self.state.kernel
+        initrd = self.state.initrd
+        # TODO: copy boot images into place
+        # TODO: modify bootloader
         # signal for reboot
         self.reboot_at_exit = True
 
@@ -308,7 +374,7 @@ class Cli(object):
         self.parse_args()
         self.check_args()
         self.read_state()
-        # TODO: check state & force --continue/--abort if download in progress
+        self.check_state()
 
         if self.args.action == 'status':
             self.status()
@@ -329,6 +395,11 @@ class Cli(object):
                 self.sleep()
         except KeyboardInterrupt as e:
             log.info(_("exiting on keyboard interrupt"))
+            raise SystemExit(1)
+        except Exception as e:
+            log.info("Exception:", exc_info=True)
+            exittype = "with unhandled exception"
+            raise
         finally:
             log.info("fedup %s exiting %s at %s",
                      fedupversion, self.exittype, time.asctime())
