@@ -17,19 +17,21 @@
 #
 # Author: Will Woods <wwoods@redhat.com>
 
-import os, sys, time, argparse, platform
+import os, sys, time, argparse
 
 from . import logutils
 from .version import version as fedupversion
 from .state import State
 from .lock import PidLock, PidLockError
+from .sysinfo import get_distro
+
 from .i18n import _
 
 import logging
 log = logging.getLogger("fedup")
 
 def is_legacy_fedora():
-    distro, version, id = platform.linux_distribution(supported_dists='fedora')
+    distro, version = get_distro()
     return bool(distro.lower() == 'fedora' and int(version) < 21)
 
 def reboot():
@@ -181,9 +183,7 @@ def VERSION(arg):
     if arg.lower() == 'rawhide':
         return 'rawhide'
 
-    _distros=('fedora', 'redhat', 'centos')
-    distro, version, id = platform.linux_distribution(supported_dists=_distros)
-
+    distro, version = get_distro()
     try:
         floatver = float(version)
     except ValueError:
@@ -313,8 +313,7 @@ class Cli(object):
                 outf.write(os.path.relpath(p, self.args.datadir)+'\n')
 
     def status(self):
-        distro, ver, id = platform.linux_distribution(supported_dists='fedora')
-        print("Current system: %s %s" % (distro.capitalize(), ver))
+        print("Current system: %s %s" % (get_distro()))
         print(self.state.summarize())
 
     def download(self):

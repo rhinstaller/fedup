@@ -3,6 +3,7 @@
 from dnf.rpm import detect_releasever
 
 import rpm
+import platform
 
 def has_product_installed():
     """
@@ -12,3 +13,8 @@ def has_product_installed():
     """
     ts = rpm.ts()
     return list(ts.dbMatch('provides','system-release-product'))
+
+def get_distro():
+    dists = ('fedora',)
+    distro, version, ident = platform.linux_distribution(supported_dists=dists)
+    return distro, version
