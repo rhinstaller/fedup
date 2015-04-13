@@ -24,6 +24,7 @@ from .version import version as fedupversion
 from .state import State
 from .lock import PidLock, PidLockError
 from .sysinfo import get_distro
+from .clean import Cleaner
 
 from .i18n import _
 
@@ -364,8 +365,23 @@ class Cli(object):
         self.reboot_at_exit = True
 
     def clean(self):
-        print("FIXME STUB CLEANUP: %s" % self.args.clean)
-        # update state appropriately
+        cleaner = Cleaner(self)
+        if self.args.clean == 'all':
+            cleaner.clean_bootloader()
+            cleaner.clean_packages()
+            cleaner.clean_metadata()
+            cleaner.clean_misc()
+        elif self.args.clean == 'bootloader':
+            cleaner.clean_bootloader()
+        elif self.args.clean == 'packages':
+            cleaner.clean_packages()
+        elif self.args.clean == 'metadata':
+            cleaner.clean_metadata()
+        elif self.args.clean == 'misc':
+            cleaner.clean_misc()
+        else:
+            raise AssertionError("invalid 'clean' arg")
+
 
     def sleep(self):
         print("pid %u, now going to sleep forever!" % os.getpid())
