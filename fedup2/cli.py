@@ -220,6 +220,7 @@ class Cli(object):
         self.args = None
         self.state = None
         self.exittype = "cleanly"
+        self.has_lock = False
         self.continued = False
         self.reboot_at_exit = False
 
@@ -300,12 +301,14 @@ class Cli(object):
     def get_lock(self):
         try:
             self.pidfile = PidLock("/var/run/fedup.pid")
+            self.has_lock = True
         except PidLockError as e:
             self.error(_("already running as PID %s") % e.pid)
 
     def free_lock(self):
         assert self.pidfile
         self.pidfile.remove()
+        self.has_lock = False
 
     def write_packagelist(self, packagepaths):
         with open(os.path.join(self.args.datadir, "packages.list"),'w') as outf:
