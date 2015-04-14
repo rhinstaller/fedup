@@ -24,6 +24,7 @@ from .version import version as fedupversion
 from .state import State
 from .lock import PidLock, PidLockError
 from .sysinfo import get_distro
+from .download import Downloader
 from .clean import Cleaner
 from .reboot import Bootprep, reboot
 
@@ -63,7 +64,6 @@ def init_parser():
         help=argparse.SUPPRESS)
     p.add_argument('--sleep-forever',action='store_const', const='sleep',
         dest='action', help=argparse.SUPPRESS)
-    p.add_argument('--cachedir', help=argparse.SUPPRESS)
 
     # === subparsers for commands ===
     cmds = p.add_subparsers(dest='action',
@@ -77,6 +77,14 @@ def init_parser():
         usage='%(prog)s <VERSION> [OPTIONS]',
         help='download data for upgrade',
         description='Download data and boot images for upgrade.',
+    )
+    cmds.add_parser('resume',
+        help='resume download',
+        description='Resume a previously-started download.',
+    )
+    cmds.add_parser('cancel',
+        help='cancel download',
+        description='Cancel a previously-started download.',
     )
     r = cmds.add_parser('reboot',
         help='reboot and start upgrade',
@@ -154,7 +162,7 @@ class RepoAction(argparse.Action):
             value = 'instrepo='+value # XXX is that the right repo name?
         elif opt.startswith('--instrepo'):
             action = 'add'
-            value = "cli_instrepo="+value
+            value = "instrepo="+value
         if action == 'add':
             # validate the argument
             repoid, eq, url = value.partition("=")
@@ -192,6 +200,11 @@ def VERSION(arg):
                                          % version)
     return arg
 
+# TODO: validation for datadir:
+# - not on tmpfs (obvy)
+# - not on network (until we figure out how to support that sanely)
+# - etc?
+
 # special Fedora-21-specific error message
 fedora_next_error = '\n' + _('''
 This installation of Fedora does not belong to a product, so you
@@ -220,7 +233,7 @@ class Cli(object):
         self.state = None
         self.exittype = "cleanly"
         self.has_lock = False
-        self.continued = False
+        self.resumed = False
         self.reboot_at_exit = False
 
     def error(self, msg, *args):
@@ -255,29 +268,36 @@ class Cli(object):
                 self.error(fedora_next_error)
 
     def check_state(self):
-        """Check the saved state to see if it's compatible with this action"""
+        """Check the system state to see if it's compatible with this action"""
         assert self.args
         assert self.state
 
+        # Just to be sure...
+        distro, version = get_distro()
+        if not distro:
+            self.error(_("unsupported distribution %r"), distro)
+
         # Can't reboot if we're not actually ready to upgrade
         if self.args.action == 'reboot' and not self.state.upgrade_ready:
-            if self.state.args:
+            if self.state.upgrade_target:
                 self.error(_("download incomplete"))
             else:
                 self.error(_("system not prepared for upgrade"))
 
-        # If we have a previously-interrupted download
-        if self.args.action == 'download' and self.state.args:
-            if self.args._continue:
-                self.args = self.state.args
-                self.continued = True
-            elif self.args.abort:
-                pass # we'll handle this after we get the lock.
-            else:
-                log.error(_("interrupted download detected!"))
-                log.error(_("use `fedup download --continue` to continue it."))
-                log.error(_("use `fedup download --abort` to start over."))
-                raise SystemExit(2)
+        # Can't resume/cancel unless something is in progress
+        if self.args.action == 'resume' and not self.state.cmdline:
+            self.parser.error(_("no upgrade to resume"))
+        if self.args.action == 'cancel' and not self.state.cmdline:
+            self.parser.error(_("no upgrade to cancel"))
+
+        # Can't start a new download if there's one in progress
+        if self.args.action == 'download' and self.state.cmdline:
+            log.error(_("interrupted upgrade detected!"))
+            log.error(self.state.summarize())
+            log.error(_("use `fedup resume` to resume downloading."))
+            log.error(_("use `fedup cancel` to start over."))
+            raise SystemExit(2)
+
 
     def need_product(self):
         if self.args.version == 'rawhide' or int(self.args.version) >= 21:
@@ -324,21 +344,21 @@ class Cli(object):
         print(self.state.summarize())
 
     def download(self):
-        # special case for `fedup download --abort`
-        if self.args.abort:
-            with self.state:
-                self.state.clear()
-            return
-        # write initial state, if needed
-        if not self.continued:
+        if not self.resumed:
+            # new run - write initial state
             with self.state as state:
-                state.upgrade_target = args.version
-                state.pkgdir = args.datadir
-                state.args = args
+                distro, version = get_distro()
+                state.current_system = "%s %s" % (distro, version)
+                state.upgrade_target = "%s %s" % (distro, self.args.version)
+                state.datadir = self.args.datadir
+                state.cmdline = sys.argv[1:]
+
         # set up downloader
-        dl = Downloader(args)
+        dl = Downloader(self)
         dl.setup()
         dl.read_metadata()
+        # sanity check
+        dl.check_repos()
         # download boot images
         kernel, initrd = dl.download_images()
         with self.state as state:
@@ -365,20 +385,20 @@ class Cli(object):
         # signal for reboot
         self.reboot_at_exit = True
 
-    def clean(self):
+    def clean(self, what):
         cleaner = Cleaner(self)
-        if self.args.clean == 'all':
+        if what == 'all':
             cleaner.clean_bootloader()
             cleaner.clean_packages()
-            cleaner.clean_metadata()
+            # NOTE: metadata is system-owned, so leave it alone
             cleaner.clean_misc()
-        elif self.args.clean == 'bootloader':
+        elif what == 'bootloader':
             cleaner.clean_bootloader()
-        elif self.args.clean == 'packages':
+        elif what == 'packages':
             cleaner.clean_packages()
-        elif self.args.clean == 'metadata':
+        elif what == 'metadata':
             cleaner.clean_metadata()
-        elif self.args.clean == 'misc':
+        elif what == 'misc':
             cleaner.clean_misc()
         else:
             raise AssertionError("invalid 'clean' arg")
@@ -388,6 +408,19 @@ class Cli(object):
         print("pid %u, now going to sleep forever!" % os.getpid())
         while True:
             time.sleep(31337)
+
+    def cancel(self):
+        log.info("cancelling upgrade")
+        self.clean('bootloader')
+        self.clean('misc')
+        with self.state as state:
+            state.clear()
+        self.state = None
+
+    def resume(self):
+        log.info("resuming with argv: %s", self.state.cmdline)
+        self.args = self.parser.parse_args(self.state.cmdline)
+        self.resumed = True
 
     def main(self):
         self.parse_args()
@@ -404,6 +437,8 @@ class Cli(object):
         self.get_lock()
 
         try:
+            if self.args.action == 'resume':
+                self.resume() # updates self.args
             if self.args.action == 'download':
                 self.download()
             elif self.args.action == 'clean':
@@ -412,8 +447,11 @@ class Cli(object):
                 self.reboot()
             elif self.args.action == 'sleep':
                 self.sleep()
+            elif self.args.action == 'cancel':
+                self.cancel()
         except KeyboardInterrupt as e:
             log.info(_("exiting on keyboard interrupt"))
+            self.message(_("exiting. use `fedup resume` to resume."))
             raise SystemExit(1)
         except Exception as e:
             log.info("Exception:", exc_info=True)
