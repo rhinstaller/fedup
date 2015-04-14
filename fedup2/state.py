@@ -17,21 +17,38 @@
 #
 # Author: Will Woods <wwoods@redhat.com>
 
-import os, json
+import os
 try:
     from configparser import *
 except ImportError:
     from ConfigParser import *
 
+import shlex
+try:
+    from shlex import quote as _quote
+except ImportError:
+    from pipes import quote as _quote
+
 from .i18n import _
 from argparse import Namespace
 
-statefile = '/var/lib/system-upgrade/upgrade.conf'
+import logging
+log = logging.getLogger("fedup.state")
+
+__all__ = ['State']
+
+def shelljoin(argv):
+    return ' '.join(_quote(a) for a in argv)
+
+def shellsplit(cmdstr):
+    return shlex.split(cmdstr or '')
 
 class State(object):
+    statefile = '/var/lib/system-upgrade/upgrade.conf'
     def __init__(self):
         self._conf = RawConfigParser()
-        self._conf.read(statefile)
+        self._conf.read(self.statefile)
+        self.args = None
 
     def _get(self, section, option):
         try:
@@ -45,20 +62,21 @@ class State(object):
         except DuplicateSectionError:
             pass
         self._conf.set(section, option, value)
+        log.debug("set %s.%s=%s", section, option, value)
 
     def _del(self, section, option):
         try:
             self._conf.remove_option(section, option)
+            log.debug("del %s.%s", section, option)
         except NoSectionError:
             pass
 
     def write(self):
-        with open(statefile, 'w') as outf:
+        with open(self.statefile, 'w') as outf:
             self._conf.write(outf)
 
     def clear(self):
-        with open(statefile, 'w') as outf:
-            pass
+        self._conf = RawConfigParser()
 
     def __enter__(self):
         return self
@@ -81,18 +99,26 @@ class State(object):
             self._del(section, option)
         return property(getprop, setprop, delprop, doc)
 
-    kernel = _configprop("boot", "kernel")
-    initrd = _configprop("boot", "initrd")
+    # cached/local boot images
+    kernel = _configprop("upgrade", "kernel")
+    initrd = _configprop("upgrade", "initrd")
+
+    # boot images, in situ
+    boot_name = _configprop("boot", "name")
+    boot_kernel = _configprop("boot", "kernel")
+    boot_initrd = _configprop("boot", "initrd")
+
+    current_system = _configprop("system", "distro")
 
     upgrade_target = _configprop("upgrade", "target")
     upgrade_ready = _configprop("upgrade", "ready")
 
     pkgs_total = _configprop("download", "pkgs_total")
     size_total = _configprop("download", "size_total")
-    pkgdir = _configprop("download", "pkgdir")
-    args = _configprop("download", "args_json",
-                       encode=lambda a: json.dumps(vars(a)),
-                       decode=lambda s: Namespace(**json.loads(s)))
+    datadir = _configprop("download", "datadir")
+    cmdline = _configprop("download", "cmdline",
+                          encode=shelljoin,
+                          decode=shellsplit)
 
     def summarize(self):
         if not self.upgrade_target:
