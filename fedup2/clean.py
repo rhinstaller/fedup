@@ -21,6 +21,8 @@ import os, errno, shutil
 import logging
 log = logging.getLogger("fedup.clean")
 
+from .reboot import remove_boot_entry
+
 def _remove(path, rmfunc=os.unlink):
     try:
         # this is for cleanup - if something else deleted it, that's fine
@@ -55,10 +57,9 @@ class Cleaner(object):
 
     def clean_bootloader(self):
         '''Remove our boot entry and images'''
-        if self.cli.state.kernel:
-            boot.remove_entry(self.cli.state.kernel)
-        remove(self.cli.state.kernel)
-        remove(self.cli.state.initrd)
+        remove_boot_entry(self.cli.state.boot_name)
+        remove(self.cli.state.boot_kernel)
+        remove(self.cli.state.boot_initrd)
 
     def clean_misc(self):
         '''Remove miscellaneous files.'''
