@@ -25,6 +25,7 @@ from .state import State
 from .lock import PidLock, PidLockError
 from .sysinfo import get_distro
 from .clean import Cleaner
+from .reboot import Bootprep, reboot
 
 from .i18n import _
 
@@ -34,9 +35,6 @@ log = logging.getLogger("fedup")
 def is_legacy_fedora():
     distro, version = get_distro()
     return bool(distro.lower() == 'fedora' and int(version) < 21)
-
-def reboot():
-    print("FIXME: reboot not implemented, please reboot manually")
 
 def init_parser():
     # === toplevel parser ===
@@ -356,11 +354,9 @@ class Cli(object):
             state.upgrade_ready = 1
 
     def reboot(self):
-        # check self.state to find boot images
-        kernel = self.state.kernel
-        initrd = self.state.initrd
-        # TODO: copy boot images into place
-        # TODO: modify bootloader
+        r = Bootprep(self)
+        r.copy_boot_images()
+        r.prep_boot()
         # signal for reboot
         self.reboot_at_exit = True
 
