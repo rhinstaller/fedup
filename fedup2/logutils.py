@@ -40,9 +40,6 @@ def log_setup(debug_log="/var/log/fedup.log", console_level='WARNING'):
         - Send copious debugging information to debug_log (/var/log/fedup.log)
         - Messages of console_level (WARNING) or higher go to the console
     '''
-    # TODO: do all output via logging? Like:
-    #   if level==INFO -> console w/format "%(message)s"
-    #   elif level>INFO -> console w/format "%(name)s %(levelname)s"
     logging.config.dictConfig({
         'version':1,
         'loggers':{

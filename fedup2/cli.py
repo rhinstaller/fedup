@@ -227,6 +227,11 @@ class Cli(object):
         log.error(msg, *args)
         raise SystemExit(2)
 
+    def message(self, msg, *args):
+        log.info(msg, *args)
+        if self.args and self.args.loglevel > logging.INFO:
+            print(msg % args)
+
     def parse_args(self):
         assert self.parser
         self.args = self.parser.parse_args()
