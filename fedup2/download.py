@@ -23,9 +23,24 @@ import dnf
 import dnf.cli
 
 class Downloader(object):
-    def __init__(self, args):
-        self.args = args
+    def __init__(self, cli):
+        self.cli = cli
         self.base = None
+
+    def subst(self, rawstr):
+        return dnf.conf.parser.substitute(rawstr, self.base.conf.substitutions)
+
+    def add_repo(self, repoid, url):
+        repo = dnf.repo.Repo(repoid, base.conf.cachedir)
+        repo.substitutions.update(base.conf.substitutions)
+        # NOTE: the progressbar will trace back if you don't set name
+        if repoid == 'instrepo':
+            repo.name = self._subst("Install Repo - $basearch/$releasever")
+        if url.startswith('@'):
+            repo.metalink = self._subst(url[1:])
+        else:
+            repo.baseurl = [self._subst(url)]
+        self.base.repos.add(repo)
 
     def setup(self):
         # create dnf object. XXX: not public API
@@ -33,36 +48,35 @@ class Downloader(object):
         # prepare progress callbacks
         repobar, base.ds_callback = base.output.setup_progress_callbacks()
         # set releasever before we do anything else
-        base.conf.substitutions['releasever'] = self.args.version
-        # set cachedir before we start messing with repos
-        if args.cachedir is not None:
-            base.conf.cachedir = args.cachedir
-        # ..add CACHEDIR_SUFFIX (e.g. "x86_64/21")
+        base.conf.substitutions['releasever'] = self.cli.args.version
+        # set up and activate cachedir (see dnf.cli.Cli.configure())
         # (note: the two return values are the same if you're root - if you're a
         #  regular user the first one is the user's personal cachedir)
         base.conf.cachedir, sys_cachedir = dnf.cli.cli.cachedir_fit(base.conf)
+        base.activate_persistor()
         # read repo config
         base.read_all_repos()
-        # also create instrepo and add it to the repo config
-        instrepo = dnf.repo.Repo('instrepo', base.conf.cachedir)
-        instrepo.substitutions.update(base.conf.substitutions)
-        def subst(rawstr):
-            return dnf.conf.parser.substitute(rawstr, base.conf.substitutions)
-        # NOTE: the progressbar will trace back if you don't set name
-        instrepo.name = subst("Install Image Repo - $releasever - $basearch")
-        if args.instrepo.startswith('@'):
-            instrepo.metalink = subst(self.args.instrepo[1:])
-        else:
-            instrepo.baseurl = [subst(self.args.instrepo)]
-        base.repos.add(instrepo)
+        # add repos from commandline
+        for action, value in self.cli.args.repos:
+            if action == 'add':
+                repoid, url = value.split("=", 1)
+                self.add_repo(repoid, url)
+            # FIXME: enable, disable, gpgkey
         # change pkgdir to our target dir
-        base.repos.all().pkgdir = args.datadir
+        base.repos.all().pkgdir = self.cli.args.datadir
         # add progress callback
         base.repos.all().set_progress_bar(repobar)
         # TODO: subclass dnf.cli.output.CliKeyImport to handle our key behavior
         #key_import = FedupCliKeyImport()
         #base.repos.all().set_key_import(key_import)
         self.base = base
+
+    def check_repos(self):
+        # TODO: check for other Important Repos, list disabled repos, etc.
+        try:
+            self.base.repos['instrepo']
+        except KeyError:
+            self.cli.error("no instrepo??")
 
     def read_metadata(self):
         '''read rpmdb to find installed packages, get metadata for new pkgs.'''
@@ -83,7 +97,7 @@ class Downloader(object):
     @staticmethod
     def _get_handle(self, repo):
         h = repo.get_handle()
-        h.destdir = self.args.datadir
+        h.destdir = self.cli.args.datadir
         h.fetchmirrors = True
         h.yumdlist = []
         h.perform()
@@ -102,8 +116,8 @@ class Downloader(object):
     def download_images(self):
         '''Download boot images from the 'instrepo' repo.
         returns two file paths: (kernel, initrd)'''
-        instrepo = self.repos['instrepo']
-        if self.args.nogpgcheck:
+        instrepo = self.base.repos['instrepo']
+        if self.cli.args.nogpgcheck:
             treeinfo_file = self._fetch_file(instrepo, ".treeinfo")
         else:
             treeinfo_signed = self._fetch_file(instrepo, ".treeinfo.signed")
