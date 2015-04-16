@@ -21,39 +21,59 @@ import os
 import sys
 import dnf
 import dnf.cli
+import dnf.util
+
+import logging
+log = logging.getLogger("fedup.download")
 
 class Downloader(object):
     def __init__(self, cli):
         self.cli = cli
         self.base = None
 
+    @property
+    def cachedir(self):
+        return self.base.conf.cachedir
+
     def subst(self, rawstr):
         return dnf.conf.parser.substitute(rawstr, self.base.conf.substitutions)
 
+    def fix_cachedir(self):
+        conf = self.base.conf
+        log.debug("before: conf.cachedir=%s", conf.cachedir)
+        # This comes from dnf.base.Base._setup_default_conf()
+        suffix = self.subst(dnf.const.CACHEDIR_SUFFIX)
+        cache_dirs = dnf.conf.CliCache(conf.cachedir, suffix)
+        conf.cachedir = cache_dirs.cachedir
+        log.debug("after: conf.cachedir=%s", conf.cachedir)
+
     def add_repo(self, repoid, url):
-        repo = dnf.repo.Repo(repoid, base.conf.cachedir)
-        repo.substitutions.update(base.conf.substitutions)
+        repo = dnf.repo.Repo(repoid, self.base.conf.cachedir)
+        repo.substitutions.update(self.base.conf.substitutions)
         # NOTE: the progressbar will trace back if you don't set name
         if repoid == 'instrepo':
             repo.name = self._subst("Install Repo - $basearch/$releasever")
         if url.startswith('@'):
-            repo.metalink = self._subst(url[1:])
+            repo.metalink = self.subst(url[1:])
         else:
-            repo.baseurl = [self._subst(url)]
+            repo.baseurl = [self.subst(url)]
         self.base.repos.add(repo)
 
     def setup(self):
-        # create dnf object. XXX: not public API
-        base = dnf.cli.cli.BaseCli()
+        # start with empty Conf or else dnf sets up cachedir wrong
+        conf = dnf.conf.Conf()
+        # set releasever before we do anything else
+        conf.releasever = self.cli.args.version
+        # create dnf object. XXX: BaseCli is not part of the public API..
+        base = dnf.cli.cli.BaseCli(conf)
+        self.base = base
+        # set up and activate cachedir
+        self.fix_cachedir()
+        base.activate_persistor()
+        # make sure datadir exists too
+        dnf.util.ensure_dir(self.cli.args.datadir)
         # prepare progress callbacks
         repobar, base.ds_callback = base.output.setup_progress_callbacks()
-        # set releasever before we do anything else
-        base.conf.substitutions['releasever'] = self.cli.args.version
-        # set up and activate cachedir (see dnf.cli.Cli.configure())
-        # (note: the two return values are the same if you're root - if you're a
-        #  regular user the first one is the user's personal cachedir)
-        base.conf.cachedir, sys_cachedir = dnf.cli.cli.cachedir_fit(base.conf)
-        base.activate_persistor()
         # read repo config
         base.read_all_repos()
         # add repos from commandline
@@ -68,8 +88,7 @@ class Downloader(object):
         base.repos.all().set_progress_bar(repobar)
         # TODO: subclass dnf.cli.output.CliKeyImport to handle our key behavior
         #key_import = FedupCliKeyImport()
-        #base.repos.all().set_key_import(key_import)
-        self.base = base
+        #self.base.repos.all().set_key_import(key_import)
 
     def check_repos(self):
         # TODO: check for other Important Repos, list disabled repos, etc.
