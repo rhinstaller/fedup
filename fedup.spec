@@ -1,5 +1,5 @@
 Name:           fedup
-Version:        0.9.1
+Version:        0.9.2
 Release:        1%{?dist}
 Summary:        The Fedora Upgrade tool
 
@@ -74,6 +74,15 @@ done
 #{_datadir}/fedup/ui
 
 %changelog
+* Thu Apr 16 2015 Will Woods <wwoods@redhat.com> 0.9.2-1
+- Improved feedback about possible upgrade problems
+- Prompt user to import key if we can't auto-trust it
+- Handle early_cpio initrds so we get your keyboard locale etc. (#1207251)
+- Handle lzo-compressed initrd (#1177862)
+- Fix crash with --debuglog=<badfile> (#1175480)
+- Remove --reboot (use fedup [args] && reboot if you want to do that)
+- Fix crash for people who use `su` wrong (tip: do `su -`; see su(1))
+
 * Mon Dec 08 2014 Will Woods <wwoods@redhat.com> 0.9.1-1
 - Fix traceback if --product/--add-install is misspelled/missing (#1167971)
 - Make sure fedup --clean doesn't require --product (#1158766)

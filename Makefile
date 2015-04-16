@@ -1,6 +1,6 @@
 PYTHON=python
-VERSION=0.9.1
-RELEASE_TAG=0.9.1
+VERSION=0.9.2
+RELEASE_TAG=0.9.2
 
 all: build
 
