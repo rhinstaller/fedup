@@ -241,9 +241,11 @@ class Cli(object):
         raise SystemExit(2)
 
     def message(self, msg, *args):
-        log.info(msg, *args)
-        if self.args and self.args.loglevel > logging.INFO:
-            print(msg % args)
+        log.info("message:"+msg, *args)
+        if self.args and log.isEnabledFor(self.args.loglevel):
+            return
+        if args: msg = msg % args
+        print(msg)
 
     def parse_args(self):
         assert self.parser
@@ -292,12 +294,8 @@ class Cli(object):
 
         # Can't start a new download if there's one in progress
         if self.args.action == 'download' and self.state.cmdline:
-            log.error(_("interrupted upgrade detected!"))
-            log.error(self.state.summarize())
-            log.error(_("use `fedup resume` to resume downloading."))
-            log.error(_("use `fedup cancel` to start over."))
+            log.error(_("interrupted download detected!"))
             raise SystemExit(2)
-
 
     def need_product(self):
         if self.args.version == 'rawhide' or int(self.args.version) >= 21:
@@ -340,8 +338,7 @@ class Cli(object):
                 outf.write(os.path.relpath(p, self.args.datadir)+'\n')
 
     def status(self):
-        print("Current system: %s %s" % (get_distro()))
-        print(self.state.summarize())
+        self.message(self.state.summarize())
 
     def download(self):
         if not self.resumed:
@@ -403,7 +400,6 @@ class Cli(object):
         else:
             raise AssertionError("invalid 'clean' arg")
 
-
     def sleep(self):
         print("pid %u, now going to sleep forever!" % os.getpid())
         while True:
@@ -437,6 +433,7 @@ class Cli(object):
         self.get_lock()
 
         try:
+            log.info("doing action %r", self.args.action)
             if self.args.action == 'resume':
                 self.resume() # updates self.args
             if self.args.action == 'download':
@@ -450,14 +447,14 @@ class Cli(object):
             elif self.args.action == 'cancel':
                 self.cancel()
         except KeyboardInterrupt as e:
-            log.info(_("exiting on keyboard interrupt"))
-            self.message(_("exiting. use `fedup resume` to resume."))
+            self.message(_("exiting on keyboard interrupt"))
             raise SystemExit(1)
         except Exception as e:
             log.info("Exception:", exc_info=True)
             exittype = "with unhandled exception"
             raise
         finally:
+            self.status()
             log.info("fedup %s exiting %s at %s",
                      fedupversion, self.exittype, time.asctime())
             self.free_lock()
