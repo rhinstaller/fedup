@@ -23,23 +23,26 @@ log = logging.getLogger("fedup.clean")
 
 from .reboot import remove_boot_entry
 
-def _remove(path, rmfunc=os.unlink):
+def _remove(path, filedesc='path', rmfunc=os.unlink):
     try:
         # this is for cleanup - if something else deleted it, that's fine
         if path and os.path.lexists(path):
+            log.info("removing %s %s", filedesc, path)
             rmfunc(path)
+        elif path:
+            log.info("%s %s already removed", filedesc, path)
     except (IOError, OSError) as e:
         if e.errno != errno.ENOENT:
             log.warn("failed to remove %s: %s", path, str(e))
 
-def remove(path):
-    _remove(path, rmfunc=os.unlink)
+def remove(path, filedesc='file'):
+    _remove(path, filedesc, rmfunc=os.unlink)
 
-def remove_dir(path):
-    _remove(path, rmfunc=os.rmdir)
+def remove_dir(path, filedesc='dir'):
+    _remove(path, filedesc, rmfunc=os.rmdir)
 
-def remove_tree(path):
-    _remove(path, rmfunc=shutil.rmtree)
+def remove_tree(path, filedesc='tree'):
+    _remove(path, filedesc, rmfunc=shutil.rmtree)
 
 class Cleaner(object):
     def __init__(self, cli):
@@ -49,17 +52,29 @@ class Cleaner(object):
 
     def clean_packages(self):
         '''Remove downloaded packages/images/etc.'''
-        remove_tree(self.cli.state.datadir)
+        datadir = self.cli.state.datadir
+        remove_tree(datadir, "datadir")
+        with self.cli.state as state:
+            del state.upgrade_ready
+            del state.kernel
+            del state.initrd
+            del state.datadir
 
     def clean_metadata(self):
         '''Remove cached metadata'''
-        remove_tree(self.cli.state.cachedir)
+        remove_tree(self.cli.state.cachedir, "cachedir")
+        with self.cli.state as state:
+            del state.cachedir
 
     def clean_bootloader(self):
         '''Remove our boot entry and images'''
         remove_boot_entry(self.cli.state.boot_name)
-        remove(self.cli.state.boot_kernel)
-        remove(self.cli.state.boot_initrd)
+        remove(self.cli.state.boot_kernel, "kernel")
+        remove(self.cli.state.boot_initrd, "initrd")
+        with self.cli.state as state:
+            del state.boot_name
+            del state.boot_kernel
+            del state.boot_initrd
 
     def clean_misc(self):
         '''Remove miscellaneous files.'''
