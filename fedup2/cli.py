@@ -332,11 +332,6 @@ class Cli(object):
         self.pidfile.remove()
         self.has_lock = False
 
-    def write_packagelist(self, packagepaths):
-        with open(os.path.join(self.args.datadir, "packages.list"),'w') as outf:
-            for p in packagepaths:
-                outf.write(os.path.relpath(p, self.args.datadir)+'\n')
-
     def status(self):
         self.message(self.state.summarize())
 
@@ -353,6 +348,8 @@ class Cli(object):
         # set up downloader
         dl = Downloader(self)
         dl.setup()
+        with self.state as state:
+            state.cachedir = dl.cachedir
         dl.read_metadata()
         # sanity check
         dl.check_repos()
@@ -366,11 +363,11 @@ class Cli(object):
         with self.state as state:
             state.pkgs_total = len(pkglist)
             state.size_total = sum(p.size for p in pkglist)
+            state.packagelist = [p.localPkg() for p in pkglist]
         # TODO: sanity-check pkglist
         # download packages
         dl.download_packages(pkglist)
         # TODO: run a test transaction
-        self.write_packagelist(p.localPkg() for p in pkglist)
         # we're done! mark it, dude!
         with self.state as state:
             state.upgrade_ready = 1
@@ -411,7 +408,6 @@ class Cli(object):
         self.clean('misc')
         with self.state as state:
             state.clear()
-        self.state = None
 
     def resume(self):
         log.info("resuming with argv: %s", self.state.cmdline)
