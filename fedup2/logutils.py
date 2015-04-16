@@ -28,12 +28,11 @@ levelsyms = {
     logging.FATAL:   '(FF)',
 }
 
-class FedupFilter(logging.Filter):
-    '''Add "reltime" and "levelsym" attributes to log records.'''
-    def filter(self, record):
+class FedupFormatter(logging.Formatter):
+    def format(self, record):
         record.reltime = float(record.relativeCreated)/1000
         record.levelsym = levelsyms.get(record.levelno, '(--)')
-        return True
+        return logging.Formatter.format(self, record)
 
 def log_setup(debug_log="/var/log/fedup.log", console_level='WARNING'):
     '''Set up fedup logging:
@@ -45,12 +44,8 @@ def log_setup(debug_log="/var/log/fedup.log", console_level='WARNING'):
         'loggers':{
           'fedup':{
             'level':'DEBUG',
-            'filters':['fedup'],
             'handlers':['debuglog','console'],
           }
-        },
-        'filters':{
-            'fedup':{'()':FedupFilter},
         },
         'handlers':{
           'debuglog':{
@@ -67,6 +62,7 @@ def log_setup(debug_log="/var/log/fedup.log", console_level='WARNING'):
         },
         'formatters': {
           'debuglog': {
+            '()':FedupFormatter,
             'format':"[%(reltime)10.3f] %(levelsym)s %(name)s:%(funcName)s() "
                      "%(message)s"
           },
