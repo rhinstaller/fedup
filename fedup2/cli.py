@@ -52,10 +52,7 @@ def init_parser():
     p.set_defaults(loglevel=logging.WARNING)
 
     p.add_argument('--log', default='/var/log/fedup.log',
-        help=_('where to write log output (default: %(default)s)'))
-
-    p.add_argument('--datadir', default='/var/cache/system-upgrade',
-        help=_('where to save data (default: %(default)s)'))
+        help=_('where to write detailed logs (default: %(default)s)'))
 
     # === hidden options. FOR DEBUGGING ONLY. ===
     p.add_argument('--logtraceback', action='store_true', default=False,
@@ -79,7 +76,7 @@ def init_parser():
         description='Download data and boot images for upgrade.',
     )
     cmds.add_parser('resume',
-        help='resume download',
+        help='resume or retry download',
         description='Resume a previously-started download.',
     )
     cmds.add_parser('cancel',
@@ -99,6 +96,9 @@ def init_parser():
     # Translators: This is for '--network [VERSION]' in --help output
     d.add_argument("version", metavar=_('VERSION'), type=VERSION,
         help=_('version to upgrade to (a number or "rawhide")'))
+    d.add_argument('--datadir', default='/var/cache/system-upgrade',
+        help=_('set download dir (default: %(default)s)'))
+
 
     d.add_argument('--enablerepo', metavar='REPOID', action=RepoAction,
         dest='repos', help=_('enable one or more repos (wildcards allowed)'))
@@ -140,7 +140,7 @@ def init_parser():
             help=_('Fedora product to install (for upgrades to F21)'))
 
     # === options for 'fedup clean' ===
-    c.add_argument('clean', metavar='CLEAN_ARG',
+    c.add_argument('clean',
         help=_('what to clean up')+' (%(choices)s)',
         choices=('packages','bootloader','metadata','misc','all'),
     )
