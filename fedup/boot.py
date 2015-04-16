@@ -21,7 +21,7 @@ import os
 
 from subprocess import check_output, PIPE, Popen, CalledProcessError
 from shutil import copyfileobj
-from util import decomp_cmd
+from util import detect_compression
 
 kernelprefix = "/boot/vmlinuz-"
 
@@ -47,18 +47,33 @@ def remove_entry(kernel):
     return check_output(cmd, stderr=PIPE)
 
 class Initramfs(object):
-    """Utility class for working with initramfs images (or, really, any cpio)"""
+    """Utility class for working with initramfs images"""
     def __init__(self, img):
         self.img = img
         self._files = None
-        self._decomp = None
+        self._early_cpio = None
+        self._compression = None
+        # detect compression and/or early_cpio
+        self._compression = detect_compression(self.open())
+        if not self._compression:
+            early = self.cpio("--extract","--to-stdout","--","early_cpio")
+            if bool(early.strip()):
+                self._early_cpio = True
+                self._compression = detect_compression(self.open())
 
-    def decomp(self):
-        """Return a subprocess.Popen instance that decompresses the image to
-           its stdout."""
-        if self._decomp is None:
-            self._decomp = decomp_cmd(self.img)
-        return Popen(self._decomp, stdout=PIPE, stderr=PIPE)
+    def open(self):
+        """Return a file-like object that provides uncompressed cpio data."""
+        if self._early_cpio:
+            cmd = ["/usr/lib/dracut/skipcpio", self.img]
+            fobj = Popen(cmd, stdout=PIPE, stderr=PIPE).stdout
+        else:
+            fobj = open(self.img, 'rb')
+
+        if self._compression:
+            cmd = [self._compression, "-dc"]
+            return Popen(cmd, stdin=fobj, stdout=PIPE, stderr=PIPE).stdout
+        else:
+            return fobj
 
     def cpio(self, *args, **kwargs):
         """Run cpio on the img with the given arguments, transparently
@@ -66,7 +81,7 @@ class Initramfs(object):
            If cwd is not None, chdir to that dir before running cpio."""
         cwd = kwargs.get("cwd")
         return check_output(("cpio", "--quiet") + args, cwd=cwd,
-                            stdin=self.decomp().stdout)
+                            stdin=self.open())
 
     def listfiles(self):
         """List the contents of the image."""

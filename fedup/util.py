@@ -104,12 +104,11 @@ compmagic = {
     'bzip2': 'BZh',
 }
 
-def decomp_cmd(filename):
-    header = open(filename, 'rb').read(6)
+def detect_compression(fileobj):
+    header = fileobj.read(6)
     for comp, magic in compmagic.items():
         if header.startswith(magic):
-            return [comp, "-dc", filename]
-    return ["cat", filename]
+            return comp
 
 def isxen():
     '''True if this system is a xen host or guest.'''
