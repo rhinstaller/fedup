@@ -433,7 +433,7 @@ class Cli(object):
             if self.args.action == 'download':
                 self.download()
             elif self.args.action == 'clean':
-                self.clean()
+                self.clean(self.args.clean)
             elif self.args.action == 'reboot':
                 self.reboot()
             elif self.args.action == 'sleep':
