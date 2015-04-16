@@ -21,6 +21,8 @@ from dnf.util import ensure_dir
 from subprocess import check_output, PIPE
 
 from .i18n import _
+import logging
+log = logging.getLogger("fedup.reboot")
 
 kernelname = 'fedup'
 
@@ -30,6 +32,7 @@ def get_initrd_path(kver=kernelname):
     return '/boot/initramfs-%s.img' % kver
 
 def add_boot_entry(kver):
+    log.info("adding %r boot entry", kver)
     cmd = ["/sbin/new-kernel-pkg", "--initrdfile", get_initrd_path(kver),
                                    "--banner", _("System Upgrade"),
                                    "--make-default",
@@ -37,10 +40,14 @@ def add_boot_entry(kver):
     return check_output(cmd, stderr=PIPE)
 
 def remove_boot_entry(kver):
+    if not kver:
+        return
+    log.info("removing %r boot entry", kver)
     cmd = ["/sbin/new-kernel-pkg", "--remove", get_kernel_path(kver)]
     return check_output(cmd, stderr=PIPE)
 
 def reboot():
+    log.info("initiating reboot")
     cmd = ["systemctl","reboot"]
     return check_output(cmd, stderr=PIPE)
 
