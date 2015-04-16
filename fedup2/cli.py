@@ -234,7 +234,6 @@ class Cli(object):
         self.exittype = "cleanly"
         self.has_lock = False
         self.resumed = False
-        self.reboot_at_exit = False
 
     def error(self, msg, *args):
         log.error(msg, *args)
@@ -376,8 +375,7 @@ class Cli(object):
         r = Bootprep(self)
         r.copy_boot_images()
         r.prep_boot()
-        # signal for reboot
-        self.reboot_at_exit = True
+        reboot()
 
     def clean(self, what):
         cleaner = Cleaner(self)
@@ -454,5 +452,3 @@ class Cli(object):
             log.info("fedup %s exiting %s at %s",
                      fedupversion, self.exittype, time.asctime())
             self.free_lock()
-            if self.reboot_at_exit:
-                reboot()
