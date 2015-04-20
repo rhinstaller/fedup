@@ -27,6 +27,7 @@ from .sysinfo import get_distro
 from .download import Downloader
 from .clean import Cleaner
 from .reboot import Bootprep, reboot
+from .output import progressbar
 
 from .i18n import _
 
@@ -245,6 +246,9 @@ class Cli(object):
             return
         if args: msg = msg % args
         print(msg)
+
+    def progressbar(self, count, total, name=None):
+        progressbar(count, total, name)
 
     def parse_args(self):
         assert self.parser
