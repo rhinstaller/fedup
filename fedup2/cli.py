@@ -192,6 +192,8 @@ def VERSION(arg):
         return 'rawhide'
 
     distro, version = get_distro()
+    if not distro:
+        raise argparse.ArgumentTypeError(_("unsupported distro %r") % distro)
     try:
         floatver = float(version)
     except ValueError:
@@ -276,11 +278,6 @@ class Cli(object):
         """Check the system state to see if it's compatible with this action"""
         assert self.args
         assert self.state
-
-        # Just to be sure...
-        distro, version = get_distro()
-        if not distro:
-            self.error(_("unsupported distribution %r"), distro)
 
         # Can't reboot if we're not actually ready to upgrade
         if self.args.action == 'reboot' and not self.state.upgrade_ready:
