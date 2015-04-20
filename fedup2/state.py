@@ -164,7 +164,7 @@ class State(object):
             ]
         else:
             msg = [
-                _("Ready to start upgrade to %s.") % self.upgrade_target,
+                _("Ready for upgrade to %s.") % self.upgrade_target,
                 _("Use 'fedup reboot' to start the upgrade."),
             ]
         return "\n".join(msg)
