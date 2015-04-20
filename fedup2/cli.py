@@ -19,7 +19,7 @@
 
 import os, sys, time, argparse
 
-from . import logutils
+from .logutils import log_setup, console_is_enabled_for
 from .version import version as fedupversion
 from .state import State
 from .lock import PidLock, PidLockError
@@ -241,7 +241,7 @@ class Cli(object):
 
     def message(self, msg, *args):
         log.info("message:"+msg, *args)
-        if self.args and log.isEnabledFor(self.args.loglevel):
+        if console_is_enabled_for(logging.INFO):
             return
         if args: msg = msg % args
         print(msg)
@@ -313,7 +313,7 @@ class Cli(object):
 
     def open_logs(self):
         try:
-            logutils.log_setup(self.args.log, self.args.loglevel)
+            log_setup(self.args.log, self.args.loglevel)
         except IOError as e:
             self.error(_("Can't open logfile '%s': %s"), self.args.log, e)
         log.info("fedup %s starting at %s", fedupversion, time.asctime())
@@ -349,24 +349,31 @@ class Cli(object):
         dl.setup()
         with self.state as state:
             state.cachedir = dl.cachedir
+
+        self.message(_("setting up package repos..."))
         dl.read_metadata()
         # sanity check
         dl.check_repos()
-        # download boot images
+
+        self.message(_("downloading boot images..."))
         kernel, initrd = dl.download_images()
         with self.state as state:
             state.kernel = kernel
             state.initrd = initrd
-        # find updates
+
+        self.message(_("looking for upgrades..."))
         pkglist = dl.find_upgrade_packages()
         with self.state as state:
             state.pkgs_total = len(pkglist)
             state.size_total = sum(p.size for p in pkglist)
             state.packagelist = [p.localPkg() for p in pkglist]
         # TODO: sanity-check pkglist
-        # download packages
+        # TODO: remove any existing packages that we don't need
+
+        self.message(_("downloading packages..."))
         dl.download_packages(pkglist)
         # TODO: run a test transaction
+
         # we're done! mark it, dude!
         with self.state as state:
             state.upgrade_ready = 1
