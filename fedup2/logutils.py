@@ -28,11 +28,20 @@ levelsyms = {
     logging.FATAL:   '(FF)',
 }
 
+from dnf.logging import DDEBUG
+
 class FedupFormatter(logging.Formatter):
     def format(self, record):
         record.reltime = float(record.relativeCreated)/1000
         record.levelsym = levelsyms.get(record.levelno, '(--)')
         return logging.Formatter.format(self, record)
+
+def console_is_enabled_for(level):
+    log = logging.getLogger("fedup")
+    for h in log.handlers:
+        if h.name == 'console':
+            return h.level <= level
+    return False
 
 def log_setup(debug_log="/var/log/fedup.log", console_level='WARNING'):
     '''Set up fedup logging:
@@ -45,12 +54,16 @@ def log_setup(debug_log="/var/log/fedup.log", console_level='WARNING'):
           'fedup':{
             'level':'DEBUG',
             'handlers':['debuglog','console'],
+          },
+          'dnf':{
+            'level':DDEBUG,
+            'handlers':['debuglog'],
           }
         },
         'handlers':{
           'debuglog':{
             'class':'logging.FileHandler',
-            'level':'DEBUG',
+            'level':DDEBUG,
             'formatter':'debuglog',
             'filename':debug_log,
           },
