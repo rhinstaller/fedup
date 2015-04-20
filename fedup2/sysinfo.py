@@ -1,6 +1,6 @@
 # fedup.sysinfo - get information about the host system
 
-from dnf.rpm import detect_releasever
+from dnf.rpm import detect_releasever # pylint: disable=unused-import
 
 import rpm
 import platform
@@ -12,9 +12,10 @@ def has_product_installed():
     or not.
     """
     ts = rpm.ts()
+    # the rpm module doesn't introspect well, so.. pylint: disable=no-member
     return list(ts.dbMatch('provides','system-release-product'))
 
 def get_distro():
     dists = ('fedora',)
-    distro, version, ident = platform.linux_distribution(supported_dists=dists)
+    distro, version, _ = platform.linux_distribution(supported_dists=dists)
     return distro, version

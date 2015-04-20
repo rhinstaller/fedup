@@ -23,7 +23,7 @@ from .logutils import log_setup, console_is_enabled_for
 from .version import version as fedupversion
 from .state import State
 from .lock import PidLock, PidLockError
-from .sysinfo import get_distro
+from .sysinfo import get_distro, has_product_installed
 from .download import Downloader
 from .clean import Cleaner
 from .reboot import Bootprep, reboot
@@ -67,7 +67,7 @@ def init_parser():
     cmds = p.add_subparsers(dest='action',
         title='Actions', metavar='', prog='fedup',
     )
-    s = cmds.add_parser('status',
+    cmds.add_parser('status',
         help='show upgrade status',
         description='Show the upgrade preparation status.',
     )
@@ -84,7 +84,7 @@ def init_parser():
         help='cancel download',
         description='Cancel a previously-started download.',
     )
-    r = cmds.add_parser('reboot',
+    cmds.add_parser('reboot',
         help='reboot and start upgrade',
         description='Reboot system and start upgrade.',
     )
@@ -136,7 +136,6 @@ def init_parser():
     if is_legacy_fedora():
         p.set_defaults(legacy_fedora=True)
         pkgopts.add_argument('--product',
-            action='append', dest='add_install', type=PRODUCT,
             choices=('server','cloud','workstation','nonproduct'),
             help=_('Fedora product to install (for upgrades to F21)'))
 
@@ -232,6 +231,7 @@ class Cli(object):
     """The main fedup CLI object."""
     def __init__(self):
         self.parser = init_parser()
+        self.pidfile = None
         self.args = None
         self.state = None
         self.exittype = "cleanly"
@@ -303,6 +303,7 @@ class Cli(object):
                 return True
 
     def fix_product(self):
+        product = self.args.product
         if product == 'nonproduct':
             self.args.add_install.append('fedora-release-nonproduct')
         else:
@@ -448,12 +449,12 @@ class Cli(object):
                 self.sleep()
             elif self.args.action == 'cancel':
                 self.cancel()
-        except KeyboardInterrupt as e:
+        except KeyboardInterrupt:
             self.message(_("exiting on keyboard interrupt"))
             raise SystemExit(1)
-        except Exception as e:
+        except Exception:
             log.info("Exception:", exc_info=True)
-            exittype = "with unhandled exception"
+            self.exittype = "with unhandled exception"
             raise
         finally:
             self.status()

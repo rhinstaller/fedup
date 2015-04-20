@@ -21,10 +21,18 @@ import os, struct
 
 from dnf.util import ensure_dir
 from subprocess import check_output, PIPE
+from shutil import copy2
 
 from .i18n import _
 import logging
 log = logging.getLogger("fedup.reboot")
+
+__all__ = (
+    'Bootprep',
+    'add_boot_entry',
+    'remove_boot_entry',
+    'reboot',
+)
 
 kernelname = 'fedup'
 
