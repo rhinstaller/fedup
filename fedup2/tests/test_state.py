@@ -18,12 +18,14 @@
 # Author: Will Woods <wwoods@redhat.com>
 
 import unittest
-from ..state import *
+from ..state import State
 
 from tempfile import mkstemp
 import os
 
+
 class TestStateBasic(unittest.TestCase):
+    # pylint: disable=protected-access
     def setUp(self):
         State.statefile = ''
         self.state = State()
@@ -95,12 +97,12 @@ class TestStateWithFile(unittest.TestCase):
         self.state.datadir = "/data"
         self.state.write()
         data = self._read_data()
-        self.assertEqual(data.strip(), '[download]\ndatadir = /data')
+        self.assertEqual(data.strip(), '[persist]\ndatadir = /data')
 
     def test_context(self):
         '''state: test State as context manager'''
         target = "TacOS 4u"
-        with self.state as state:
+        with self.state:
             self.state.upgrade_target = target
         newstate = State()
         self.assertEqual(newstate.upgrade_target, target)
@@ -114,5 +116,4 @@ class TestStateWithFile(unittest.TestCase):
         self.assertEqual(self.state.boot_name, kernelname)
         with self.state as state:
             state.clear()
-        newstate = State()
         self.assertEqual(self._read_data(), '')

@@ -17,6 +17,8 @@
 #
 # Author: Will Woods <wwoods@redhat.com>
 
+# pylint: disable=wildcard-import,unused-wildcard-import
+
 import os
 try:
     from configparser import *
@@ -30,7 +32,6 @@ except ImportError:
     from pipes import quote as _quote
 
 from .i18n import _
-from argparse import Namespace
 
 import logging
 log = logging.getLogger("fedup.state")
@@ -42,6 +43,21 @@ def shelljoin(argv):
 
 def shellsplit(cmdstr):
     return shlex.split(cmdstr or '')
+
+def _configprop(section, option, encode=None, decode=None, doc=None):
+    # pylint: disable=protected-access
+    def getprop(self):
+        value = self._get(section, option)
+        if callable(decode) and value is not None:
+            value = decode(value)
+        return value
+    def setprop(self, value):
+        if callable(encode):
+            value = encode(value)
+        self._set(section, option, value)
+    def delprop(self):
+        self._del(section, option)
+    return property(getprop, setprop, delprop, doc)
 
 class State(object):
     statefile = '/var/lib/system-upgrade/upgrade.state'
@@ -94,20 +110,6 @@ class State(object):
     def __exit__(self, exc_type, exc_value, traceback):
         if exc_type is None:
             self.write()
-
-    def _configprop(section, option, encode=None, decode=None, doc=None):
-        def getprop(self):
-            value = self._get(section, option)
-            if callable(decode) and value is not None:
-                value = decode(value)
-            return value
-        def setprop(self, value):
-            if callable(encode):
-                value = encode(value)
-            self._set(section, option, value)
-        def delprop(self):
-            self._del(section, option)
-        return property(getprop, setprop, delprop, doc)
 
     # cached/local boot images
     kernel = _configprop("upgrade", "kernel")
