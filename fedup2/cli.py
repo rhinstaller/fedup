@@ -76,7 +76,7 @@ def init_parser():
         help='download data for upgrade',
         description='Download data and boot images for upgrade.',
     )
-    cmds.add_parser('resume',
+    cmds.add_parser('resume', aliases=('retry','refresh'),
         help='resume or retry download',
         description='Resume a previously-started download.',
     )
@@ -439,7 +439,7 @@ class Cli(object):
 
         try:
             log.info("doing action %r", self.args.action)
-            if self.args.action == 'resume':
+            if self.args.action in ('resume', 'retry', 'refresh'):
                 self.resume() # updates self.args
             if self.args.action == 'download':
                 self.download()
