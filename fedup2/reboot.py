@@ -17,6 +17,8 @@
 #
 # Author: Will Woods <wwoods@redhat.com>
 
+import os, struct
+
 from dnf.util import ensure_dir
 from subprocess import check_output, PIPE
 
@@ -51,6 +53,24 @@ def reboot():
     cmd = ["systemctl","reboot"]
     return check_output(cmd, stderr=PIPE)
 
+def kernel_version(filename):
+    '''read the version number out of a vmlinuz file.'''
+    # this algorithm adapted from /usr/share/magic
+    with open(filename) as f:
+        f.seek(514)
+        if f.read(4) != 'HdrS':
+            return None
+        f.seek(526)
+        (offset,) = struct.unpack("<H", f.read(2))
+        f.seek(offset+0x200)
+        buf = f.read(256)
+    uname = buf[:buf.find('\0')]
+    version = uname[:uname.find(' ')]
+    return version
+
+def find_mount(path):
+    return os.stat(path).st_dev # XXX: don't think this is reliable on btrfs
+
 class Bootprep(object):
     def __init__(self, cli):
         self.cli = cli
@@ -59,19 +79,35 @@ class Bootprep(object):
         kernelpath = get_kernel_path(kernelname)
         initrdpath = get_initrd_path(kernelname)
         copy2(self.cli.state.kernel, kernelpath)
-        # FIXME: modify initrd here
+        # TODO: modify initrd here, if we're still using fedup-dracut
         copy2(self.cli.state.initrd, initrdpath)
         with self.cli.state as state:
             state.boot_name = kernelname
             state.boot_kernel = kernelpath
             state.boot_initrd = initrdpath
 
+    def prep_mount_units(self):
+        # What mounts do we need to make the upgrade work?
+        pkgdirs = set(os.path.dirname(p) for p in self.cli.state.packagelist)
+        need_mounts = set(find_mount(d) for d in pkgdirs)
+        # What mounts are we *definitely* going to have after we reboot?
+        # XXX: this is a weak-ass heuristic. Can we ask systemd?
+        sysdirs = set(("/","/usr","/boot"))
+        have_mounts = set(find_mount(d) for d in sysdirs)
+        for m in need_mounts.difference(have_mounts):
+            self.cli.error("OH POOP YOU NEED MORE MOUNTS: %s", m)
+            # TODO: generate a mount unit for m and save it to wantdir
+            #wantdir = '/lib/systemd/system/system-upgrade.target.wants'
+
     def prep_boot(self):
-        # TODO: make magic symlink to self.cli.state.datadir
+        # make the magic symlink
+        os.symlink(self.cli.state.datadir, "/system-upgrade")
         # make upgraderoot dir
         ensure_dir('/system-upgrade-root')
         # make empty module dir for new kernel
         kv = kernel_version(self.cli.state.boot_kernel)
         ensure_dir(os.path.join('/lib/modules', kv))
+        # prepare mount units for everything listed in packagelist
+        self.prep_mount_units()
         # add our boot entry
         add_boot_entry(self.cli.state.kernelname)
