@@ -100,21 +100,9 @@ def init_parser():
     d.add_argument('--datadir', default='/var/cache/system-upgrade',
         help=_('set download dir (default: %(default)s)'))
 
-
-    d.add_argument('--enablerepo', metavar='REPOID', action=RepoAction,
-        dest='repos', help=_('enable one or more repos (wildcards allowed)'))
-    d.add_argument('--disablerepo', metavar='REPOID', action=RepoAction,
-        dest='repos', help=_('disable one or more repos (wildcards allowed)'))
-    d.add_argument('--addrepo', metavar='REPOID=URL',
-        action=RepoAction, dest='repos',
-        help=_('add the repo at URL (use @URL for mirrorlists)'))
-    d.add_argument('--instrepoid', metavar='REPOID', action=RepoAction,
-        dest='repos', help=_('get boot images from repo with id REPOID'))
-    d.add_argument('--instrepo', metavar='URL', action=RepoAction,
-        dest='repos', help=_('get boot images from the repo at this URL'))
-    d.add_argument('--instrepokey', metavar='GPGKEY', type=gpgkeyfile,
-        help=_('use this GPG key to verify boot images'))
-    d.set_defaults(repos=[])
+    # testers only
+    d.add_argument('--instrepo', help=argparse.SUPPRESS)
+    d.add_argument('--instrepokey', help=argparse.SUPPRESS)
 
     # === DNF plugin options ===
     dnfopts = d.add_argument_group(_('DNF-specific options'))
@@ -354,8 +342,6 @@ class Cli(object):
 
         self.message(_("setting up package repos..."))
         dl.read_metadata()
-        # sanity check
-        dl.check_repos()
 
         self.message(_("downloading boot images..."))
         kernel, initrd = dl.download_images()
