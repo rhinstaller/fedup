@@ -96,7 +96,8 @@ class Bootprep(object):
 
     def prep_mount_units(self):
         # What mounts do we need to make the upgrade work?
-        pkgdirs = set(os.path.dirname(p) for p in self.cli.state.packagelist)
+        pkgdirs = set(os.path.dirname(p) for p in
+                      self.cli.state.read_packagelist())
         need_mounts = set(find_mount(d) for d in pkgdirs)
         # What mounts are we *definitely* going to have after we reboot?
         # XXX: this is a weak-ass heuristic. Can we ask systemd?

@@ -20,7 +20,7 @@
 import unittest
 from ..state import State
 
-from tempfile import mkstemp
+from tempfile import mkstemp, mkdtemp
 import os
 
 
@@ -35,6 +35,11 @@ class TestStateBasic(unittest.TestCase):
         k = "wow this is totally a kernel path"
         self.state.kernel = k
         self.assertEqual(self.state._conf.get("upgrade", "kernel"), k)
+
+    def test_set_invalid(self):
+        '''state: setting a property using an invalid type raises TypeError'''
+        with self.assertRaises(TypeError):
+            self.state.kernel = None
 
     def test_get(self):
         '''state: test getting a property'''
@@ -81,7 +86,7 @@ class TestStateBasic(unittest.TestCase):
 
 class TestStateWithFile(unittest.TestCase):
     def setUp(self):
-        # TODO it'd probably be better to use a mock file here
+        # it'd probably be better to use a mock file here
         _, self.tmpfile = mkstemp(prefix='state.')
         State.statefile = self.tmpfile
         self.state = State()
@@ -117,3 +122,42 @@ class TestStateWithFile(unittest.TestCase):
         with self.state as state:
             state.clear()
         self.assertEqual(self._read_data(), '')
+
+class TestStatePackageList(unittest.TestCase):
+    def setUp(self):
+        self.tmpdir = mkdtemp(prefix='state.')
+        self.pkglist = [
+            self.tmpdir + '/fake-1.rpm',
+            self.tmpdir + '/subdir/fake-2.rpm'
+        ]
+        self.state = State()
+        self.state.datadir = self.tmpdir
+
+    def tearDown(self):
+        for p in os.listdir(self.tmpdir):
+            os.unlink(os.path.join(self.tmpdir,p))
+        os.rmdir(self.tmpdir)
+
+    def test_no_datadir(self):
+        '''state: write_packagelist() raises TypeError if datadir is None'''
+        del self.state.datadir
+        with self.assertRaises(TypeError):
+            self.state.write_packagelist(self.pkglist)
+        self.assertEqual(self.state.read_packagelist(), [])
+
+    def test_packagelist(self):
+        '''state: write_packagelist(), read_packagelist()'''
+        self.state.write_packagelist(self.pkglist)
+        self.assertEqual(self.state.read_packagelist(), self.pkglist)
+
+    def test_no_packagelist_file(self):
+        '''state: read_packagelist() returns [] if file missing'''
+        self.assertEqual(self.state.read_packagelist(), [])
+
+    def test_packagelist_file_contents(self):
+        '''state: packages.list contains paths relative to its location'''
+        packagelist_data = ''.join(os.path.relpath(p,self.tmpdir)+'\n'
+                                   for p in self.pkglist)
+        self.state.write_packagelist(self.pkglist)
+        with open(os.path.join(self.tmpdir, "packages.list")) as inf:
+            self.assertEqual(inf.read(), packagelist_data)

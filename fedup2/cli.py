@@ -354,7 +354,7 @@ class Cli(object):
         with self.state as state:
             state.pkgs_total = len(pkglist)
             state.size_total = sum(p.size for p in pkglist)
-            state.packagelist = [p.localPkg() for p in pkglist]
+            state.write_packagelist(p.localPkg() for p in pkglist)
         # TODO: sanity-check pkglist
         # TODO: remove any existing packages that we don't need
 

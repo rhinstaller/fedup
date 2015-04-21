@@ -73,6 +73,8 @@ class State(object):
             return None
 
     def _set(self, section, option, value):
+        if value is None: # ...probably need a broader check here
+            raise TypeError('expected string, got %r' % type(value).__name__)
         try:
             self._conf.add_section(section)
         except DuplicateSectionError:
@@ -138,17 +140,20 @@ class State(object):
                           encode=shelljoin,
                           decode=shellsplit)
 
-    # TODO: unit tests for packagelist
-    @property
-    def packagelist(self):
+    def _check_datadir(self):
+        if not self.datadir:
+            raise TypeError("datadir is not set")
+
+    def read_packagelist(self):
         try:
+            self._check_datadir()
             listf = open(os.path.join(self.datadir,'packages.list'))
             return [os.path.join(self.datadir, p.strip()) for p in listf]
-        except (IOError, OSError):
+        except (TypeError, IOError, OSError):
             return []
 
-    @packagelist.setter
-    def packagelist(self, pkgs):
+    def write_packagelist(self, pkgs):
+        self._check_datadir()
         with open(os.path.join(self.datadir,'packages.list'),'w') as outf:
             outf.writelines(os.path.relpath(p, self.datadir)+'\n' for p in pkgs)
 
